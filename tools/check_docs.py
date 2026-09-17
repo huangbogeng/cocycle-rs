@@ -10,7 +10,7 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-PATTERNS = ("*.md", "docs/*.md", "benches/*.md", "tools/*.md", ".github/**/*.md")
+PATTERNS = ("*.md", "docs/*.md", "benches/*.md", "tools/*.md", "assets/*.md", ".github/**/*.md")
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^\s)]+)(?:\s+\"[^\"]*\")?\)")
 CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 

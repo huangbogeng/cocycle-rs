@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+  <title id="title">A square through its Rips filtration</title>
+  <desc id="desc">At edge-length zero, four square vertices are isolated. At one, its edges form a loop. At square root of two, both diagonals and the triangles enter. The H1 interval is one inclusive to square root of two exclusive.</desc>
+<rect x=".5" y=".5" width="1279" height="359" rx="17" fill="#F6F8F4" stroke="#DCE4DD"/>
+<text x="34" y="39" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="bold" text-anchor="start">FROM POINTS TO PERSISTENCE</text>
+<text x="34" y="66" font-family="Arial, DejaVu Sans, sans-serif" font-size="22" fill="#102D32" font-weight="normal" text-anchor="start">A loop appears. Then it fills.</text>
+<text x="36" y="111" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="bold" text-anchor="start">01  POINTS</text>
+<circle cx="102" cy="150" r="5" fill="#102D32"/>
+<circle cx="204" cy="150" r="5" fill="#102D32"/>
+<circle cx="204" cy="252" r="5" fill="#102D32"/>
+<circle cx="102" cy="252" r="5" fill="#102D32"/>
+<text x="153" y="286" font-family="Arial, DejaVu Sans, sans-serif" font-size="16" fill="#102D32" font-weight="normal" text-anchor="middle">t = 0</text>
+<text x="153" y="310" font-family="Arial, DejaVu Sans, sans-serif" font-size="13" fill="#54706F" font-weight="normal" text-anchor="middle">Four observations</text>
+<path d="M282 201 h22 m-6 -5 6 5 -6 5" fill="none" stroke="#9AACA3" stroke-width="1.5"/>
+<text x="330" y="111" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="bold" text-anchor="start">02  CONNECT</text>
+<path d="M396 150 H498 V252 H396 Z" fill="none" stroke="#087D70" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="396" cy="150" r="5" fill="#102D32"/>
+<circle cx="498" cy="150" r="5" fill="#102D32"/>
+<circle cx="498" cy="252" r="5" fill="#102D32"/>
+<circle cx="396" cy="252" r="5" fill="#102D32"/>
+<text x="447" y="286" font-family="Arial, DejaVu Sans, sans-serif" font-size="16" fill="#102D32" font-weight="normal" text-anchor="middle">t = 1</text>
+<text x="447" y="310" font-family="Arial, DejaVu Sans, sans-serif" font-size="13" fill="#54706F" font-weight="normal" text-anchor="middle">A loop is born</text>
+<path d="M576 201 h22 m-6 -5 6 5 -6 5" fill="none" stroke="#9AACA3" stroke-width="1.5"/>
+<text x="624" y="111" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="bold" text-anchor="start">03  FILL</text>
+<path d="M690 150 H792 V252 H690 Z" fill="#D9EAE1"/>
+<path d="M690 150 H792 V252 H690 Z" fill="none" stroke="#087D70" stroke-width="3" stroke-linejoin="round"/>
+<path d="M690 150 L792 252 M792 150 L690 252" fill="none" stroke="#83A59A" stroke-width="2"/>
+<circle cx="690" cy="150" r="5" fill="#102D32"/>
+<circle cx="792" cy="150" r="5" fill="#102D32"/>
+<circle cx="792" cy="252" r="5" fill="#102D32"/>
+<circle cx="690" cy="252" r="5" fill="#102D32"/>
+<text x="741" y="286" font-family="Arial, DejaVu Sans, sans-serif" font-size="16" fill="#102D32" font-weight="normal" text-anchor="middle">t = √2</text>
+<text x="741" y="310" font-family="Arial, DejaVu Sans, sans-serif" font-size="13" fill="#54706F" font-weight="normal" text-anchor="middle">The loop dies</text>
+<path d="M922 92 V322" stroke="#D4DED6"/>
+<text x="953" y="111" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="bold" text-anchor="start">THE H₁ INTERVAL</text>
+<path d="M970 209 H1226" stroke="#98AAA3" stroke-width="1.5"/>
+<path d="M1090 201 H1139.71" stroke="#087D70" stroke-width="6"/>
+<circle cx="1090" cy="201" r="5" fill="#087D70"/><circle cx="1139.71" cy="201" r="5" fill="#F6F8F4" stroke="#087D70" stroke-width="2.5"/>
+<path d="M970.00 205 V214" stroke="#98AAA3"/>
+<text x="970" y="234" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="normal" text-anchor="middle">0</text>
+<path d="M1090.00 205 V214" stroke="#98AAA3"/>
+<text x="1090" y="234" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="normal" text-anchor="middle">1</text>
+<path d="M1139.71 205 V214" stroke="#98AAA3"/>
+<text x="1139.71" y="234" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="normal" text-anchor="middle">√2</text>
+<path d="M1210.00 205 V214" stroke="#98AAA3"/>
+<text x="1210" y="234" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="normal" text-anchor="middle">2</text>
+<text x="1090" y="286" font-family="Arial, DejaVu Sans, sans-serif" font-size="22" fill="#087D70" font-weight="normal" text-anchor="middle">[1, √2)</text>
+<text x="1090" y="310" font-family="Arial, DejaVu Sans, sans-serif" font-size="12" fill="#54706F" font-weight="normal" text-anchor="middle">Birth included · death excluded</text>
+</svg>

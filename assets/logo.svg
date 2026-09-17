@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Cocycle</title>
+  <desc id="desc">A triangulated hexagonal ring with an open center. Three highlighted edges form a nontrivial F2 cocycle.</desc>
+<rect width="256" height="256" rx="52" fill="#102D32"/>
+<polygon points="128.00,34.00 209.41,81.00 167.08,105.44" fill="#193D40"/>
+<polygon points="128.00,34.00 167.08,105.44 128.00,82.88" fill="#193D40"/>
+<polygon points="209.41,81.00 209.41,175.00 167.08,150.56" fill="#193D40"/>
+<polygon points="209.41,81.00 167.08,150.56 167.08,105.44" fill="#193D40"/>
+<polygon points="209.41,175.00 128.00,222.00 128.00,173.12" fill="#193D40"/>
+<polygon points="209.41,175.00 128.00,173.12 167.08,150.56" fill="#193D40"/>
+<polygon points="128.00,222.00 46.59,175.00 88.92,150.56" fill="#193D40"/>
+<polygon points="128.00,222.00 88.92,150.56 128.00,173.12" fill="#193D40"/>
+<polygon points="46.59,175.00 46.59,81.00 88.92,105.44" fill="#193D40"/>
+<polygon points="46.59,175.00 88.92,105.44 88.92,150.56" fill="#193D40"/>
+<polygon points="46.59,81.00 128.00,34.00 128.00,82.88" fill="#193D40"/>
+<polygon points="46.59,81.00 128.00,82.88 88.92,105.44" fill="#193D40"/>
+<line x1="128.00" y1="34.00" x2="209.41" y2="81.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="82.88" x2="167.08" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="34.00" x2="128.00" y2="82.88" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="34.00" x2="167.08" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="81.00" x2="209.41" y2="175.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="167.08" y1="105.44" x2="167.08" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="81.00" x2="167.08" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="81.00" x2="167.08" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="175.00" x2="128.00" y2="222.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="167.08" y1="150.56" x2="128.00" y2="173.12" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="175.00" x2="167.08" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="209.41" y1="175.00" x2="128.00" y2="173.12" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="222.00" x2="46.59" y2="175.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="173.12" x2="88.92" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="222.00" x2="128.00" y2="173.12" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="222.00" x2="88.92" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="175.00" x2="46.59" y2="81.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="88.92" y1="150.56" x2="88.92" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="175.00" x2="88.92" y2="150.56" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="175.00" x2="88.92" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="81.00" x2="128.00" y2="34.00" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="88.92" y1="105.44" x2="128.00" y2="82.88" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="81.00" x2="88.92" y2="105.44" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="46.59" y1="81.00" x2="128.00" y2="82.88" stroke="#769F9B" stroke-width="1.69"/>
+<line x1="128.00" y1="34.00" x2="209.41" y2="81.00" stroke="#9EDAC2" stroke-width="3.29" stroke-linecap="round"/>
+<line x1="128.00" y1="34.00" x2="167.08" y2="105.44" stroke="#9EDAC2" stroke-width="3.29" stroke-linecap="round"/>
+<line x1="128.00" y1="82.88" x2="167.08" y2="105.44" stroke="#9EDAC2" stroke-width="3.29" stroke-linecap="round"/>
+<circle cx="128.00" cy="34.00" r="2.91" fill="#769F9B"/>
+<circle cx="209.41" cy="81.00" r="2.91" fill="#769F9B"/>
+<circle cx="209.41" cy="175.00" r="2.91" fill="#769F9B"/>
+<circle cx="128.00" cy="222.00" r="2.91" fill="#769F9B"/>
+<circle cx="46.59" cy="175.00" r="2.91" fill="#769F9B"/>
+<circle cx="46.59" cy="81.00" r="2.91" fill="#769F9B"/>
+<circle cx="128.00" cy="82.88" r="2.91" fill="#769F9B"/>
+<circle cx="167.08" cy="105.44" r="2.91" fill="#769F9B"/>
+<circle cx="167.08" cy="150.56" r="2.91" fill="#769F9B"/>
+<circle cx="128.00" cy="173.12" r="2.91" fill="#769F9B"/>
+<circle cx="88.92" cy="150.56" r="2.91" fill="#769F9B"/>
+<circle cx="88.92" cy="105.44" r="2.91" fill="#769F9B"/>
+<circle cx="128.00" cy="34.00" r="3.38" fill="#9EDAC2"/>
+<circle cx="209.41" cy="81.00" r="3.38" fill="#9EDAC2"/>
+<circle cx="128.00" cy="82.88" r="3.38" fill="#9EDAC2"/>
+<circle cx="167.08" cy="105.44" r="3.38" fill="#9EDAC2"/>
+</svg>

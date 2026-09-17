@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="352" viewBox="0 0 1280 352" role="img" aria-labelledby="title desc">
+  <title id="title">Cocycle — topology, computed in Rust</title>
+  <desc id="desc">Cocycle wordmark beside a triangulated ring. A mint-colored cocycle crosses the ring while leaving its central hole open.</desc>
+<rect width="1280" height="352" rx="18" fill="#102D32"/>
+<path d="M900 42 V310" stroke="#355254" stroke-width="1"/>
+<g font-family="Arial, DejaVu Sans, sans-serif">
+  <text x="58" y="64" fill="#9EDAC2" font-size="13" letter-spacing="4">TOPOLOGICAL DATA ANALYSIS</text>
+  <text x="58" y="251" fill="#D5E4DC" font-size="23">Topology, computed in Rust.</text>
+  <text x="58" y="307" fill="#9EB4AE" font-size="12" letter-spacing="1.8">POINT CLOUDS · PERSISTENCE · STRUCTURE</text>
+</g>
+<text x="51" y="195" fill="#F6F8F4" font-family="Georgia, DejaVu Serif, serif" font-size="116" letter-spacing="-4">cocycle</text>
+<polygon points="1082.00,59.00 1178.99,115.00 1128.56,144.12" fill="#193D40"/>
+<polygon points="1082.00,59.00 1128.56,144.12 1082.00,117.24" fill="#193D40"/>
+<polygon points="1178.99,115.00 1178.99,227.00 1128.56,197.88" fill="#193D40"/>
+<polygon points="1178.99,115.00 1128.56,197.88 1128.56,144.12" fill="#193D40"/>
+<polygon points="1178.99,227.00 1082.00,283.00 1082.00,224.76" fill="#193D40"/>
+<polygon points="1178.99,227.00 1082.00,224.76 1128.56,197.88" fill="#193D40"/>
+<polygon points="1082.00,283.00 985.01,227.00 1035.44,197.88" fill="#193D40"/>
+<polygon points="1082.00,283.00 1035.44,197.88 1082.00,224.76" fill="#193D40"/>
+<polygon points="985.01,227.00 985.01,115.00 1035.44,144.12" fill="#193D40"/>
+<polygon points="985.01,227.00 1035.44,144.12 1035.44,197.88" fill="#193D40"/>
+<polygon points="985.01,115.00 1082.00,59.00 1082.00,117.24" fill="#193D40"/>
+<polygon points="985.01,115.00 1082.00,117.24 1035.44,144.12" fill="#193D40"/>
+<line x1="1082.00" y1="59.00" x2="1178.99" y2="115.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="117.24" x2="1128.56" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="59.00" x2="1082.00" y2="117.24" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="59.00" x2="1128.56" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="115.00" x2="1178.99" y2="227.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1128.56" y1="144.12" x2="1128.56" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="115.00" x2="1128.56" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="115.00" x2="1128.56" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="227.00" x2="1082.00" y2="283.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1128.56" y1="197.88" x2="1082.00" y2="224.76" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="227.00" x2="1128.56" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="1178.99" y1="227.00" x2="1082.00" y2="224.76" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="283.00" x2="985.01" y2="227.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="224.76" x2="1035.44" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="283.00" x2="1082.00" y2="224.76" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="283.00" x2="1035.44" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="227.00" x2="985.01" y2="115.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1035.44" y1="197.88" x2="1035.44" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="227.00" x2="1035.44" y2="197.88" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="227.00" x2="1035.44" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="115.00" x2="1082.00" y2="59.00" stroke="#729993" stroke-width="2.02"/>
+<line x1="1035.44" y1="144.12" x2="1082.00" y2="117.24" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="115.00" x2="1035.44" y2="144.12" stroke="#729993" stroke-width="2.02"/>
+<line x1="985.01" y1="115.00" x2="1082.00" y2="117.24" stroke="#729993" stroke-width="2.02"/>
+<line x1="1082.00" y1="59.00" x2="1178.99" y2="115.00" stroke="#9EDAC2" stroke-width="3.92" stroke-linecap="round"/>
+<line x1="1082.00" y1="59.00" x2="1128.56" y2="144.12" stroke="#9EDAC2" stroke-width="3.92" stroke-linecap="round"/>
+<line x1="1082.00" y1="117.24" x2="1128.56" y2="144.12" stroke="#9EDAC2" stroke-width="3.92" stroke-linecap="round"/>
+<circle cx="1082.00" cy="59.00" r="3.47" fill="#729993"/>
+<circle cx="1178.99" cy="115.00" r="3.47" fill="#729993"/>
+<circle cx="1178.99" cy="227.00" r="3.47" fill="#729993"/>
+<circle cx="1082.00" cy="283.00" r="3.47" fill="#729993"/>
+<circle cx="985.01" cy="227.00" r="3.47" fill="#729993"/>
+<circle cx="985.01" cy="115.00" r="3.47" fill="#729993"/>
+<circle cx="1082.00" cy="117.24" r="3.47" fill="#729993"/>
+<circle cx="1128.56" cy="144.12" r="3.47" fill="#729993"/>
+<circle cx="1128.56" cy="197.88" r="3.47" fill="#729993"/>
+<circle cx="1082.00" cy="224.76" r="3.47" fill="#729993"/>
+<circle cx="1035.44" cy="197.88" r="3.47" fill="#729993"/>
+<circle cx="1035.44" cy="144.12" r="3.47" fill="#729993"/>
+<circle cx="1082.00" cy="59.00" r="4.03" fill="#9EDAC2"/>
+<circle cx="1178.99" cy="115.00" r="4.03" fill="#9EDAC2"/>
+<circle cx="1082.00" cy="117.24" r="4.03" fill="#9EDAC2"/>
+<circle cx="1128.56" cy="144.12" r="4.03" fill="#9EDAC2"/>
+<text x="1082" y="313" text-anchor="middle" fill="#9EB4AE" font-family="Arial, DejaVu Sans, sans-serif" font-size="11" letter-spacing="2.5">A SHAPE THAT PERSISTS</text>
+</svg>
