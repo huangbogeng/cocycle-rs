@@ -1,0 +1,570 @@
+{
+  "status": "passed",
+  "source_sha256": "be652a04dba1cff0f6e5feaa7d9a9186400db4516beddc90e020a07be0d728f1",
+  "fixtures_identical": 23,
+  "samples_checked": 3,
+  "cases": [
+    {
+      "case": "uniform_h1_128",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "cocycle",
+          "ripser_py"
+        ],
+        [
+          "cocycle",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "cocycle",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "cocycle",
+        "ripser_py",
+        "gudhi_edge_collapse",
+        "gudhi_simplex_tree"
+      ]
+    },
+    {
+      "case": "uniform_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "cocycle"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "ripser_py"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_simplex_tree",
+        "cocycle",
+        "ripser_py",
+        "gudhi_edge_collapse"
+      ]
+    },
+    {
+      "case": "uniform_h1_512",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "ripser_py",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "uniform_h1_1024",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "cocycle",
+          "ripser_py"
+        ],
+        [
+          "cocycle",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": [
+        "cocycle",
+        "ripser_py"
+      ]
+    },
+    {
+      "case": "circle_h1_128",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "cocycle",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "cocycle",
+          "ripser_py"
+        ],
+        [
+          "cocycle",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "cocycle",
+        "gudhi_edge_collapse",
+        "ripser_py",
+        "gudhi_simplex_tree"
+      ]
+    },
+    {
+      "case": "circle_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "ripser_py",
+        "gudhi_simplex_tree",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "circle_h1_512",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "ripser_py",
+          "cocycle"
+        ],
+        [
+          "ripser_py",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "ripser_py",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "ripser_py",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "circle_h1_1024",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "ripser_py",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "cocycle"
+      ]
+    },
+    {
+      "case": "sphere8_h1_128",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "ripser_py",
+        "gudhi_simplex_tree",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "sphere8_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "ripser_py",
+          "cocycle"
+        ],
+        [
+          "ripser_py",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "ripser_py",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": [
+        "ripser_py",
+        "cocycle",
+        "gudhi_simplex_tree",
+        "gudhi_edge_collapse"
+      ]
+    },
+    {
+      "case": "sphere8_h1_512",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "cocycle",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "cocycle",
+          "ripser_py"
+        ],
+        [
+          "cocycle",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "cocycle",
+        "ripser_py"
+      ]
+    },
+    {
+      "case": "nonmetric_h1_128",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "ripser_py",
+        "cocycle",
+        "gudhi_simplex_tree"
+      ]
+    },
+    {
+      "case": "nonmetric_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "cocycle",
+        "gudhi_simplex_tree"
+      ]
+    },
+    {
+      "case": "nonmetric_h1_512",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": []
+    },
+    {
+      "case": "grid_h1_64",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "cocycle"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "ripser_py"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_simplex_tree",
+        "gudhi_edge_collapse",
+        "cocycle",
+        "ripser_py"
+      ]
+    },
+    {
+      "case": "grid_h1_144",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "ripser_py",
+        "gudhi_simplex_tree",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "grid_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "ripser_py"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "cocycle"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_simplex_tree",
+        "ripser_py",
+        "cocycle",
+        "gudhi_edge_collapse"
+      ]
+    },
+    {
+      "case": "bipartite_h1_64",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "analytic"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "cocycle",
+        "gudhi_simplex_tree",
+        "ripser_py"
+      ]
+    },
+    {
+      "case": "bipartite_h1_64_cutoff",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "ripser_py",
+          "analytic"
+        ],
+        [
+          "ripser_py",
+          "gudhi_simplex_tree"
+        ],
+        [
+          "ripser_py",
+          "cocycle"
+        ],
+        [
+          "ripser_py",
+          "gudhi_edge_collapse"
+        ]
+      ],
+      "historical_completed_backends": [
+        "ripser_py",
+        "gudhi_simplex_tree",
+        "cocycle",
+        "gudhi_edge_collapse"
+      ]
+    },
+    {
+      "case": "bipartite_h1_128",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "analytic"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "cocycle"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "ripser_py"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_simplex_tree",
+        "gudhi_edge_collapse",
+        "cocycle",
+        "ripser_py"
+      ]
+    },
+    {
+      "case": "bipartite_h1_128_cutoff",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_edge_collapse",
+          "analytic"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "cocycle"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "ripser_py"
+        ],
+        [
+          "gudhi_edge_collapse",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_edge_collapse",
+        "cocycle",
+        "ripser_py",
+        "gudhi_simplex_tree"
+      ]
+    },
+    {
+      "case": "bipartite_h1_256",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "gudhi_simplex_tree",
+          "analytic"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "ripser_py"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "gudhi_simplex_tree",
+          "cocycle"
+        ]
+      ],
+      "historical_completed_backends": [
+        "gudhi_simplex_tree",
+        "ripser_py",
+        "gudhi_edge_collapse",
+        "cocycle"
+      ]
+    },
+    {
+      "case": "bipartite_h1_256_cutoff",
+      "same_fixture": true,
+      "validation": "passed",
+      "comparisons": [
+        [
+          "ripser_py",
+          "analytic"
+        ],
+        [
+          "ripser_py",
+          "gudhi_edge_collapse"
+        ],
+        [
+          "ripser_py",
+          "cocycle"
+        ],
+        [
+          "ripser_py",
+          "gudhi_simplex_tree"
+        ]
+      ],
+      "historical_completed_backends": [
+        "ripser_py",
+        "gudhi_edge_collapse",
+        "cocycle",
+        "gudhi_simplex_tree"
+      ]
+    }
+  ]
+}

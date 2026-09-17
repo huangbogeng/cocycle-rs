@@ -1,0 +1,55 @@
+{
+  "created_utc": "2026-09-17T06:33:45.417945+00:00",
+  "source_sha256": "73cf062beff141887ce8380d7c23774bc0f0579e6ca499c6e3f7f8b144d8ba54",
+  "python": "3.12.12 (main, Feb 12 2026, 00:42:14) [Clang 21.1.4 ]",
+  "platform": "Linux-5.15.0-181-generic-x86_64-with-glibc2.35",
+  "cpu": "Intel(R) Xeon(R) Platinum 8352V CPU @ 2.10GHz",
+  "affinity": [
+    0
+  ],
+  "threads": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1"
+  },
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.0\nLLVM version: 22.1.8\n",
+  "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+  "rustflags": null,
+  "packages": {
+    "gudhi": "3.13.0",
+    "numpy": "2.5.3",
+    "ripser": "0.6.14",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1"
+  },
+  "gudhi_wheel": "Wheel-Version: 1.0\nGenerator: scikit-build-core 0.12.2\nRoot-Is-Purelib: false\nTag: cp312-cp312-manylinux_2_27_x86_64\nTag: cp312-cp312-manylinux_2_28_x86_64\n\n",
+  "ripser_wheel": "Wheel-Version: 1.0\nGenerator: setuptools (80.9.0)\nRoot-Is-Purelib: false\nTag: cp312-cp312-manylinux_2_24_x86_64\nTag: cp312-cp312-manylinux_2_28_x86_64\n\n",
+  "ripser_python_sha256": "f12bc03537a8003680dc5a7e15ee1ea1442cb83630db1e2aa54f49bfe05b2d9a",
+  "build": "cargo --release; driver rustc -C opt-level=3; no target-cpu override",
+  "input_layout": {
+    "cocycle": "condensed lower triangle f64",
+    "gudhi": "contiguous square float64 ndarray"
+  },
+  "samples": 7,
+  "iterations": 1,
+  "warmups": 1,
+  "timeout_seconds": 120.0,
+  "quick": false,
+  "backends": [
+    "cocycle",
+    "gudhi_simplex_tree",
+    "gudhi_edge_collapse",
+    "ripser_py"
+  ],
+  "order_seed": 20260917,
+  "input_seed": 1729,
+  "precision": "float32-exact distances and cutoff, stored as f64",
+  "comparison": "exact distance-diagram multisets; point norms only use tolerance",
+  "omitted_input_modes": [
+    "points"
+  ],
+  "comparisons_passed": 88,
+  "comparisons_excluded": 2,
+  "status": "passed_with_exclusions"
+}

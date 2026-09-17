@@ -1,0 +1,42 @@
+name: TDA benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      scaling:
+        description: 'Also run bounded H1 scaling experiments (Linux, 2 GiB address space per worker)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tools/requirements-*.txt
+      - run: python -m pip install -r tools/requirements-benchmark.txt
+      - run: python tools/benchmark_gudhi.py --output target/gudhi-benchmark
+      - run: python tools/benchmark_gudhi.py --include-ripser --output target/ripser-benchmark
+      - if: inputs.scaling
+        run: python tools/benchmark_scaling.py --output target/scaling-benchmark
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tda-benchmark
+          path: |
+            target/gudhi-benchmark
+            target/ripser-benchmark
+            target/scaling-benchmark

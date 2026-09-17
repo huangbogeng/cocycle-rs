@@ -1,0 +1,3 @@
+# Reuse the already pinned external-validation environment, plus GUDHI.
+-r requirements-reference.txt
+-r requirements-gudhi.txt

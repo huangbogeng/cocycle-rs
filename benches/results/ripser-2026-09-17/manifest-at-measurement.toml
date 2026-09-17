@@ -1,0 +1,22 @@
+[package]
+name = "cocycle"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+description = "Topological data analysis in pure Rust"
+license = "MIT"
+readme = "README.md"
+keywords = ["tda", "topology", "homology", "persistence"]
+categories = ["mathematics", "science"]
+publish = ["crates-io"]
+include = ["/src/**", "/tests/**", "/examples/**", "/benches/*.rs", "/benches/*.csv", "/benches/*.md", "/tools/*.rs", "/tools/*.py", "/tools/*.txt", "/tools/*.md", "/docs/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/CHANGELOG.md", "/LICENSE"]
+
+[[bench]]
+name = "rips"
+harness = false
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[dependencies]
