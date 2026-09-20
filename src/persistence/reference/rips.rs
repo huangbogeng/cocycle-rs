@@ -3,7 +3,7 @@ use super::explicit::{ExplicitFiltration, FilteredSimplex};
 use crate::geometry::DissimilarityView;
 use crate::{Error, Result};
 
-pub(crate) fn build(
+pub(super) fn build(
     input: DissimilarityView<'_>,
     max_dimension: usize,
     cutoff: f64,
@@ -49,7 +49,7 @@ fn push(cells: &mut Vec<FilteredSimplex>, simplex: Simplex, value: f64) -> Resul
     Ok(())
 }
 
-pub(crate) fn distance(input: DissimilarityView<'_>, i: usize, j: usize) -> Result<f64> {
+pub(super) fn distance(input: DissimilarityView<'_>, i: usize, j: usize) -> Result<f64> {
     input.get(i, j).ok_or(Error::InternalInvariant {
         reason: "distance index out of bounds",
     })

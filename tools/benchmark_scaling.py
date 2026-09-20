@@ -1,4 +1,4 @@
-"""Bounded H1 scaling experiments; reuse the established cross-library workers.
+"""Historical Python-wrapper H1 scaling experiments, retained for reproduction.
 
 Linux only: every worker has a wall-time limit and an RLIMIT_AS address-space
 limit. Limits, failures and planned omissions are retained, never ranked as wins.
@@ -22,80 +22,7 @@ import tempfile
 
 import benchmark_gudhi as bench
 
-FAMILIES = ("uniform", "circle", "sphere8", "nonmetric", "grid", "bipartite")
-
-
-def lcg(count):
-    state = 1729
-    for _ in range(count):
-        state = (state * 6364136223846793005 + 1) & ((1 << 64) - 1)
-        yield (state >> 11) / (1 << 53)
-
-
-def make_case(family, n, cutoff=None):
-    """Deterministic, explicit input families, quantized once after construction."""
-    if n < 2:
-        raise ValueError("scaling fixtures need at least two vertices")
-    d = 2
-    if family == "uniform":
-        values = bench.distances(bench.uniform(n))
-    elif family == "circle":
-        points = [[math.cos(2 * math.pi * i / n), math.sin(2 * math.pi * i / n)] for i in range(n)]
-        values = bench.distances(points)
-    elif family == "sphere8":
-        # Normalized cube samples on S^7 in R^8, NOT uniform sphere samples.
-        d = 8
-        rng = iter(lcg(d * n))
-        points = []
-        for _ in range(n):
-            row = [2 * next(rng) - 1 for _ in range(d)]
-            norm = math.hypot(*row)
-            points.append([x / norm for x in row])
-        values = bench.distances(points)
-    elif family == "nonmetric":
-        values = [(int(x * 64) + 1) / 64 for x in lcg(n * (n - 1) // 2)]
-    elif family == "grid":
-        side = math.isqrt(n)
-        if side * side != n:
-            raise ValueError("grid needs a square vertex count")
-        values = bench.distances([[i / (side - 1), j / (side - 1)]
-                                 for i in range(side) for j in range(side)])
-    elif family == "bipartite":
-        # K_(a,b) at t=1; all remaining edges and the full simplex at t=2.
-        half = n // 2
-        values = [1. if (i < half) != (j < half) else 2. for i in range(n) for j in range(i)]
-    else:
-        raise ValueError("unknown family")
-    suffix = "_cutoff" if cutoff is not None else ""
-    return bench.float32_case(bench.Case(f"{family}_h1_{n}{suffix}", n, values, cutoff=cutoff, d=d))
-
-
-def case_specs(quick=False):
-    for family in FAMILIES:
-        if family in ("uniform", "circle"):
-            sizes = [16, 32] if quick else [128, 256, 512, 1024]
-        elif family == "grid":
-            sizes = [16, 36] if quick else [64, 144, 256]
-        elif family == "bipartite":
-            sizes = [16, 32] if quick else [64, 128, 256]
-        else:
-            sizes = [16, 32] if quick else [128, 256, 512]
-        for n in sizes:
-            for cutoff in ([None, 1.] if family == "bipartite" else [None]):
-                yield family, n, cutoff
-
-
-def bipartite_diagram(n, cutoff):
-    """Independent analytic H0/H1 multiset; connected graph has E-V+1 cycles."""
-    a, b = n // 2, n - n // 2
-    if cutoff not in (None, 1.):
-        raise ValueError("analytic fixture supports full range or cutoff=1")
-    full = cutoff is None or n == 2
-    intervals = [[0, 0., "F", 1.] for _ in range(n - 1)]
-    intervals.append([0, 0., "E" if full else "C", 0. if full else 1.])
-    intervals.extend([[1, 1., "F" if full else "C", 2. if full else 1.]
-                     for _ in range((a - 1) * (b - 1))])
-    return {"coverage": ["complete", None] if full else ["through", 1.], "intervals": intervals}
+from benchmark_inputs import FAMILIES, lcg, make_case, case_specs, bipartite_diagram
 
 
 def worker(backend, driver, fixture, samples, timeout, address_space_mib, env):
@@ -171,6 +98,7 @@ def summarize(path, records):
 
 
 def main():
+    print("Historical Python-wrapper protocol; use benchmark_native.py for native C++ comparisons.", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--quick", action="store_true")

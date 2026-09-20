@@ -9,7 +9,8 @@ mod explicit;
 pub(super) mod reduction;
 mod rips;
 
-use super::{RipsOptions, finish, range};
+use super::rips::resolve_rips_range;
+use super::{RipsOptions, assemble_diagram};
 use crate::Result;
 use crate::diagram::PersistenceDiagram;
 use crate::geometry::DissimilarityView;
@@ -19,7 +20,7 @@ pub(super) fn compute(
     input: DissimilarityView<'_>,
     options: &RipsOptions,
 ) -> Result<PersistenceDiagram> {
-    let (cutoff, coverage) = range(input, options);
+    let (cutoff, coverage) = resolve_rips_range(input, options);
     let filtration = rips::build(input, options.max_dimension(), cutoff)?;
     let reduced = reduction::reduce(&filtration)?;
     let paired = reduced.pairs.into_iter().map(|(i, j)| {
@@ -33,7 +34,7 @@ pub(super) fn compute(
         .unpaired
         .into_iter()
         .map(|i| (filtration.dimension(i), filtration.value(i), None));
-    finish(options.max_dimension(), coverage, paired.chain(unpaired))
+    assemble_diagram(options.max_dimension(), coverage, paired.chain(unpaired))
 }
 
 mod tests;

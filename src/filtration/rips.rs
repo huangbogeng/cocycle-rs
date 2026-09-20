@@ -1,4 +1,4 @@
-//! Implicit F2 Rips 2-skeleton; see mathematics.md section 9.
+//! Implicit F2 Rips 2-skeleton; see docs/reference/mathematics.md section 9.
 
 use std::cmp::Ordering;
 
@@ -7,34 +7,34 @@ use crate::{Error, Result};
 
 /// Within one dimension: increasing value, then decreasing combinatorial id.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Entry {
+pub(crate) struct SimplexEntry {
     pub(crate) id: usize,
     pub(crate) value: f64,
 }
 
 // Values come only from validated, canonicalized finite distances.
-impl Eq for Entry {}
-impl Ord for Entry {
+impl Eq for SimplexEntry {}
+impl Ord for SimplexEntry {
     fn cmp(&self, other: &Self) -> Ordering {
         self.value
             .total_cmp(&other.value)
             .then(other.id.cmp(&self.id))
     }
 }
-impl PartialOrd for Entry {
+impl PartialOrd for SimplexEntry {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 /// O(n) binomial prefixes, rather than an index for every triangle.
-pub(crate) struct Rips<'a> {
+pub(crate) struct RipsFiltration<'a> {
     input: DissimilarityView<'a>,
     offsets: Vec<[usize; 2]>,
     cutoff: f64,
 }
 
-impl<'a> Rips<'a> {
+impl<'a> RipsFiltration<'a> {
     pub(crate) fn new(input: DissimilarityView<'a>, cutoff: f64) -> Result<Self> {
         let n = input.len();
         // Check the largest counts before allocating or constructing any ids.
@@ -58,7 +58,7 @@ impl<'a> Rips<'a> {
         })
     }
 
-    pub(crate) fn edges(&self) -> Result<Vec<Entry>> {
+    pub(crate) fn edges(&self) -> Result<Vec<SimplexEntry>> {
         let mut edges = Vec::new();
         for b in 1..self.input.len() {
             for a in 0..b {
@@ -88,8 +88,8 @@ impl<'a> Rips<'a> {
         [a, b, c]
     }
 
-    fn edge(&self, a: usize, b: usize) -> Entry {
-        Entry {
+    fn edge(&self, a: usize, b: usize) -> SimplexEntry {
+        SimplexEntry {
             id: self.offsets[b][0] + a,
             value: self.distance(a, b),
         }
@@ -105,7 +105,7 @@ impl<'a> Rips<'a> {
 
     /// Descending triangle ids, NOT filtration order. Among cofacets at the
     /// edge's value, the first is the earliest possible filtration cofacet.
-    pub(crate) fn cofacets(&self, edge: Entry) -> impl Iterator<Item = Entry> + '_ {
+    pub(crate) fn cofacets(&self, edge: SimplexEntry) -> impl Iterator<Item = SimplexEntry> + '_ {
         let [a, b] = self.edge_vertices(edge.id);
         (0..self.input.len()).rev().filter_map(move |v| {
             if v == a || v == b {
@@ -122,11 +122,11 @@ impl<'a> Rips<'a> {
             } else {
                 self.offsets[b][1] + self.offsets[a][0] + v
             };
-            Some(Entry { id, value })
+            Some(SimplexEntry { id, value })
         })
     }
 
-    pub(crate) fn latest_facet(&self, triangle: Entry) -> Entry {
+    pub(crate) fn latest_facet(&self, triangle: SimplexEntry) -> SimplexEntry {
         let [a, b, c] = self.triangle_vertices(triangle.id);
         self.edge(a, b).max(self.edge(a, c)).max(self.edge(b, c))
     }
@@ -175,7 +175,7 @@ mod tests {
                 .collect();
             let input = DissimilarityView::new(&values, n).unwrap();
             for cutoff in [0.0, 2.0, 6.0] {
-                let rips = Rips::new(input, cutoff).unwrap();
+                let rips = RipsFiltration::new(input, cutoff).unwrap();
                 let mut triangles = Vec::new();
                 for c in 2..n {
                     for b in 1..c {
@@ -205,7 +205,7 @@ mod tests {
                                     .unwrap()
                                     .max(input.get(v[0], v[2]).unwrap())
                                     .max(input.get(v[1], v[2]).unwrap());
-                                (value <= cutoff).then_some(Entry { id, value })
+                                (value <= cutoff).then_some(SimplexEntry { id, value })
                             })
                             .collect();
                         assert_eq!(rips.cofacets(edge).collect::<Vec<_>>(), expected);

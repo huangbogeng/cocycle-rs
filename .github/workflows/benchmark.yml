@@ -1,10 +1,10 @@
-name: TDA benchmark
+name: Native TDA benchmark
 
 on:
   workflow_dispatch:
     inputs:
       scaling:
-        description: 'Also run bounded H1 scaling experiments (Linux, 2 GiB address space per worker)'
+        description: 'Also schedule every native backend on the full H1 scaling suite'
         type: boolean
         default: false
 
@@ -12,31 +12,52 @@ permissions:
   contents: read
 
 concurrency:
-  group: benchmark-${{ github.ref }}
+  group: native-benchmark-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
-          cache: pip
-          cache-dependency-path: tools/requirements-*.txt
-      - run: python -m pip install -r tools/requirements-benchmark.txt
-      - run: python tools/benchmark_gudhi.py --output target/gudhi-benchmark
-      - run: python tools/benchmark_gudhi.py --include-ripser --output target/ripser-benchmark
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: GUDHI/gudhi-devel
+          ref: cba915e3ab8e1f5b1fe26eb44b407285f7af4e78
+          path: target/native-sources/gudhi
+          sparse-checkout: |
+            src/common
+            src/Simplex_tree
+            src/Persistent_cohomology
+            src/Rips_complex
+            src/Collapse
+            src/Subsampling
+            src/Spatial_searching
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: Ripser/ripser
+          ref: 01add51ff64aaf40889483260cc5c3b7d0f2a1e7
+          path: target/native-sources/ripser
+      - run: sudo apt-get update && sudo apt-get install -y libboost-dev
+      - run: python tools/benchmark_native.py --samples 3 --output target/native-baseline
       - if: inputs.scaling
-        run: python tools/benchmark_scaling.py --output target/scaling-benchmark
+        run: python tools/benchmark_native.py --suite scaling --samples 3 --output target/native-scaling
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: tda-benchmark
+          name: native-benchmark
+          if-no-files-found: ignore
+          retention-days: 14
           path: |
-            target/gudhi-benchmark
-            target/ripser-benchmark
-            target/scaling-benchmark
+            target/native-*/environment.json
+            target/native-*/results.json
+            target/native-*/summary.csv
+            target/native-*/manifest-at-measurement.toml
+            target/native-*/fixtures/
+            target/native-*/build/build.json
+            target/native-*/build/build.log

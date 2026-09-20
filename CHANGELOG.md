@@ -2,6 +2,24 @@
 
 ## 0.1.0 (unreleased)
 
+- Consolidate code conventions and change-specific verification rules. Enforce
+  source hygiene and Python syntax in CI, validate Markdown reference links,
+  and keep native build probe output in its build directory.
+- Establish native GUDHI C++ and upstream Ripser C++ benchmark workers with pinned
+  sources, shared fixtures, per-sample validation and process memory records.
+  Separate the current protocol and native sources from historical wrapper reports.
+- Organize documentation into usage guides, mathematical reference, development,
+  design, and upstream research. Add task-based navigation and preserve recursive
+  link checking, guide examples, and documentation packaging.
+- Group Rips options and algorithms in a private module, extract shared
+  connectivity, and distinguish edge positions from transformation-column
+  positions. Preserve public entry points and update private profiling paths.
+- Organize geometry, diagrams, and descriptors into consistent domain directories
+  with private implementation files. Clarify internal filtration and result
+  assembly names while preserving public paths and mathematical behavior.
+- Maintenance: clarify H1 transformation indices and shortcut handling, share
+  result normalization at the public entry point, and fix a strict Clippy warning
+  in the test reference. Public APIs and mathematical conventions are unchanged.
 - Repository organization: isolate the test-only reference algorithm and developer
   profiling, retain public API paths, and provide English user/contributor/math
   documentation with a local-link check in CI.

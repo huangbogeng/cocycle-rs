@@ -6,7 +6,7 @@ use crate::Result;
 /// indices smaller than the current index, each of dimension one lower. The
 /// boundary operator squares to zero. Implementors establish these properties;
 /// reduction does not revalidate the whole complex on each column access.
-pub(crate) trait FilteredBoundary {
+pub(in crate::persistence) trait FilteredBoundary {
     fn len(&self) -> usize;
     fn dimension(&self, index: usize) -> usize;
     fn value(&self, index: usize) -> f64;

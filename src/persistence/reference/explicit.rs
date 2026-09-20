@@ -5,18 +5,18 @@ use super::complex::Simplex;
 use crate::{Error, Result, canonical_zero};
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct FilteredSimplex {
-    pub(crate) simplex: Simplex,
-    pub(crate) value: f64,
+pub(super) struct FilteredSimplex {
+    pub(super) simplex: Simplex,
+    pub(super) value: f64,
 }
 
-pub(crate) struct ExplicitFiltration {
+pub(super) struct ExplicitFiltration {
     cells: Vec<FilteredSimplex>,
     indices: HashMap<Simplex, usize>,
 }
 
 impl ExplicitFiltration {
-    pub(crate) fn new(mut cells: Vec<FilteredSimplex>) -> Result<Self> {
+    pub(super) fn new(mut cells: Vec<FilteredSimplex>) -> Result<Self> {
         for cell in &mut cells {
             if !cell.value.is_finite() || !cell.simplex.is_valid() {
                 return Err(Error::InternalInvariant {
@@ -47,7 +47,7 @@ impl ExplicitFiltration {
         // Closure and face-before-coface order imply a valid simplicial boundary.
         for (index, cell) in cells.iter().enumerate() {
             for face in cell.simplex.faces().into_iter().flatten() {
-                if !indices.get(&face).is_some_and(|&row| row < index) {
+                if indices.get(&face).is_none_or(|&row| row >= index) {
                     return Err(Error::InternalInvariant {
                         reason: "missing face or face after coface",
                     });
