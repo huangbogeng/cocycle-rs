@@ -6,8 +6,8 @@ This suite complements the existing [H0/H1 native protocol](../protocol.md) and
 [construction correctness workers](../../tools/README.md#native-rips-correctness-checks).
 The shared [reporting rules](../reporting.md) govern evidence classification and
 claims; use the [report template](../report-template.md) for retained experiments.
-This suite records a protocol description and source fingerprint, without a
-separate machine-emitted protocol version ID.
+The current machine-emitted protocol is `cocycle-rips-pipeline-v2`. Earlier
+unversioned, fixed-order measurements must not be pooled with this protocol.
 
 It measures the public APIs added by the complete Rips subsystem. GUDHI and
 Ripser execute as native C++ processes; Python only prepares fixtures, builds,
@@ -15,10 +15,13 @@ limits processes, checks outputs and summarizes samples.
 
 ```sh
 python3 tools/benchmark_rips_pipeline.py --quick --samples 1 --output target/rips-pipeline-smoke
-python3 tools/benchmark_rips_pipeline.py --samples 3 --output target/rips-pipeline
+python3 tools/benchmark_rips_pipeline.py --samples 12 --output target/rips-pipeline
 ```
 
-Each output directory must be new. The pinned source setup and optional
+Commit the harness and measured sources before running; a dirty working tree is
+rejected. `--kernel-revision <full-sha>` can identify an earlier kernel commit
+when its `src/` and Cargo manifests are identical to the current tree. The harness
+commit is recorded separately. Each output directory must be new. The pinned source setup and optional
 `--boost-include` match [the native setup](../native/README.md). Linux is required
 for `/proc/self/status` memory counters and per-child address-space limits.
 Library correctness tests and public examples remain portable.
@@ -26,10 +29,15 @@ Library correctness tests and public examples remain portable.
 ## Workflows and boundaries
 
 One fresh process performs one workflow. One discarded warmup and the requested
-measured samples use separate processes. Backend order is fixed; the controller
-does not currently shuffle runs or set CPU affinity. The default three samples
-support a descriptive resource snapshot, not a stable ranking. Measurements run
-serially; do not run other compilation or benchmark workloads concurrently.
+measured samples use separate processes. All warmups precede measured rounds.
+Each round executes each supported backend once. `--order-seed` (default zero)
+selects shuffled cyclic-order blocks; positions balance exactly over each block
+of two or three rounds. The default 12 measured rounds balance both group sizes.
+Each case adds its index to the seed and records its schedule and sample positions.
+`--cpu <id>` pins workers to an allowed Linux CPU; without it they inherit the
+controller's affinity. Frequency and competing host load remain uncontrolled.
+Measurements run serially; do not run other compilation or benchmark workloads
+concurrently. Repetition and balanced order alone do not establish stable rankings.
 There are five phase bins:
 
 | Bin | Rust | GUDHI C++ | Upstream Ripser C++ |
@@ -99,16 +107,20 @@ controller's RSS or cumulative child high-water mark as an individual sample.
 `--address-space-mib` is a process virtual-address-space cap, not a library RSS
 budget. `--timeout` kills that sample process. Failures and timeouts remain in
 `results.json`, fail the suite and cannot be silently converted to exclusions.
+After a backend fails, its remaining scheduled attempts are retained as `not_run`;
+other backends finish their schedules. All statistics for that case are withheld.
 The library's cooperative work limits are tested separately and do not claim
 hard memory or wall-time enforcement.
 
 `environment.json` records source/pin/header/binary hashes, compiler commands,
-CPU/platform details and limits. `fixtures/` retains exact inputs, `results.json`
+full kernel/harness commit identities, protocol ID, invocation, CPU/platform
+details, affinity, order seed and limits. `fixtures/` retains exact inputs, `results.json`
 all samples and validation outcomes, `measurements.json` phase medians, ranges,
 peak RSS and comparison scopes, and `summary.json` the overall outcome.
 `build/build.log` preserves compiler diagnostics. A comparison mismatch makes
 all measurements of that case unvalidated; retained timings are not successful
-performance evidence. Source changes during a run also invalidate that run.
+performance evidence. Source or commit changes during a run also fail the overall summary; a report
+must check that summary before using per-case statistics.
 
 Generated outputs belong under ignored `target/` or in external artifact storage.
 They must not be committed as loose files or archives; see the

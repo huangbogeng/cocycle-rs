@@ -20,8 +20,8 @@ warmup, export and memory boundaries; their samples must not be pooled.
 | What does the Rust API cost without external comparisons? | [rips.rs](rips.rs), `cargo bench --locked --bench rips` | Rust-only timings, not a cross-library baseline |
 
 The pipeline covers matrix/graph/point construction, explicit complexes, prime
-fields, representatives and approximation. Its current default of three samples
-is a resource snapshot. Native references doing less work are correctness-only;
+fields, representatives and approximation. Protocol v2 defaults to 12 measured
+rounds with seeded, position-balanced backend order and optional CPU pinning. Native references doing less work are correctness-only;
 Ripser approximation is explicitly unsupported. See the protocol for row-level
 comparison scopes and the reporting rules for stronger comparative studies.
 

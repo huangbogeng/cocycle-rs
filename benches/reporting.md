@@ -103,8 +103,8 @@ explanation. Unsupported capabilities are explicit exclusions, never zero times.
 
 Link the exact protocol and record the worker/controller source fingerprint.
 Use the machine-emitted protocol identity when available (`cocycle-native-v1`
-for the H0/H1 suite). The pipeline currently records its description and source
-hash rather than a separate version ID; preserve both. A prose label alone must
+for H0/H1 and `cocycle-rips-pipeline-v2` for the pipeline). Preserve the description
+and source hash too. Earlier unversioned pipeline runs used a fixed backend order. A prose label alone must
 not imply a new protocol was executed.
 
 | Boundary | H0/H1 native | Rips pipeline |
@@ -113,7 +113,7 @@ not imply a new protocol was executed.
 | Start | After validation and native input preparation | Before measured validation/conversion and construction |
 | Ripser dense f64-to-f32 conversion | Before timer | Construction phase inside timer |
 | End | Owned normalized intervals and algorithm cleanup, before JSON formatting | Interval payload export and workflow bookkeeping; final metrics transport excluded |
-| Samples | Fresh processes; no warmup; shuffled backend order | Fresh processes; one discarded warmup; fixed backend order |
+| Samples | Fresh processes; no warmup; shuffled backend order | Fresh processes; one discarded warmup; seeded, position-balanced rounds |
 | Last memory reading | Before JSON serialization | After computation/export |
 
 Both exclude fixture I/O and process startup from their internal times. Worker
@@ -137,7 +137,7 @@ fields and outputs relevant to the stated claim. For a before/after study, keep
 the fixtures, native references, toolchain, hardware and protocol fixed and record
 both Rust source identities. Retain regressions as well as improvements.
 
-Resource snapshots may use the suite's small default sample count. For a new
+Resource snapshots may use fewer samples with an explicit limitation. For a new
 comparative performance study, use at least ten independent measured processes
 per compared cell as a project minimum, and increase repetitions or narrow the
 claim when variation remains large. Ten is a reporting floor, not a statistical
@@ -147,11 +147,10 @@ confidence intervals must state their calculation method and sample count.
 
 Run workers serially without concurrent compilation or testing. Record CPU,
 OS, compiler/build flags, affinity and any frequency/load controls; explicitly
-state uncontrolled factors. The pipeline currently has fixed order and no
-affinity control. Its default three samples support a resource snapshot. Stronger
-ranking claims need an order-balanced experiment and a documented protocol
-revision implementing that schedule; additional repetitions alone do not remove
-order bias. CI smoke timings are not performance baselines.
+state uncontrolled factors. Pipeline v2 defaults to 12 measured rounds with
+seeded, position-balanced backend order and optional `--cpu` affinity. It records
+both selected and inherited affinity; frequency and host load are not controlled
+by the harness. More repetitions alone do not remove these sources of variation. CI smoke timings are not performance baselines.
 
 Do not discard outliers or retry until a favorable run appears. Preserve all
 attempts and explain an invalidated run before replacing it. A timeout is a
