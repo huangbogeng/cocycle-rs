@@ -23,3 +23,45 @@ fn union_find_matches_reference_reduction_with_ties_and_cutoffs() {
         }
     }
 }
+
+#[test]
+fn every_small_weighted_graph_matches_independent_explicit_reduction() {
+    use crate::complex::{WeightedEdge, WeightedGraph};
+    use crate::filtration::FlagFiltration;
+    let pairs = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+    for mut code in 0..3usize.pow(6) {
+        let mut edges = Vec::new();
+        for vertices in pairs {
+            let state = code % 3;
+            code /= 3;
+            if state > 0 {
+                edges.push(WeightedEdge {
+                    vertices,
+                    value: (state - 1) as f64,
+                });
+            }
+        }
+        let filtration = FlagFiltration::new(WeightedGraph::new(5, edges).unwrap());
+        for q in [0, 1] {
+            for cutoff in [None, Some(0.), Some(0.5), Some(1.)] {
+                let options = PersistenceOptions::new(q, cutoff).unwrap();
+                let actual =
+                    compute_flag(&filtration, &options, &ExecutionLimits::default()).unwrap();
+                let expected = reference::compute_graph(
+                    5,
+                    filtration.graph().edges(),
+                    q,
+                    cutoff.unwrap_or(1.),
+                    actual.diagram().coverage(),
+                )
+                .unwrap();
+                assert_eq!(
+                    actual.diagram(),
+                    &expected,
+                    "edges={:?}, q={q}, cutoff={cutoff:?}",
+                    filtration.graph().edges()
+                );
+            }
+        }
+    }
+}

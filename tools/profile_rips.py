@@ -52,7 +52,7 @@ def main():
             env = dict(os.environ, COCYCLE_ABLATION_FIXTURE=str(fixture.resolve()),
                        COCYCLE_ABLATION_STAGE=stage)
             output = subprocess.check_output(
-                [executable, "persistence::rips::cohomology::profiling::profile_stage",
+                [executable, "persistence::flag::cohomology::profiling::profile_stage",
                  "--exact", "--ignored", "--nocapture"],
                 cwd=repo, env=env, text=True, timeout=180,
             )

@@ -1,53 +1,74 @@
 # Benchmarks
 
-The formal cross-library comparison uses Cocycle's Rust API, GUDHI's C++ API,
-and upstream Ripser C++. No Python TDA binding runs in a measured worker.
-Python's standard library only prepares fixtures, starts executables, and checks
-results. Follow the [native protocol](protocol.md) and
-[build/run instructions](native/README.md).
+Current cross-library measurements execute Cocycle's Rust API, GUDHI's C++ API,
+and upstream Ripser C++. Python's standard library prepares fixtures, starts
+executables and validates outputs; no Python TDA binding runs in a measured worker.
+
+Start with the [reporting rules](reporting.md) to define a comparable experiment,
+then select its execution protocol below. Use the [report template](report-template.md)
+for retained conclusions. The two native timing suites have different preparation,
+warmup, export and memory boundaries; their samples must not be pooled.
+
+## Choose a suite
+
+| Question | Tool and contract | Evidence |
+| --- | --- | --- |
+| How does precomputed F2 H0/H1 compare, including GUDHI edge collapse? | [Native setup](native/README.md), [H0/H1 protocol](protocol.md); `tools/benchmark_native.py` | Time to owned intervals and process memory |
+| What do complete public Rips workflows cost? | [Pipeline protocol](pipeline/README.md); `tools/benchmark_rips_pipeline.py` | Validation/construction/expansion/compute/export, end-to-end time and process memory |
+| Do exact construction, fields and higher dimensions agree? | [Exact correctness](../tools/README.md#native-rips-correctness-checks); `tools/compare_rips.py` | Topology and persistence validation, not performance |
+| Do sparse sampling, blockers and persistence agree? | [Sparse correctness](../tools/README.md#native-sparse-rips-checks); `tools/compare_sparse_rips.py` | Approximation validation, not performance |
+| What does the Rust API cost without external comparisons? | [rips.rs](rips.rs), `cargo bench --locked --bench rips` | Rust-only timings, not a cross-library baseline |
+
+The pipeline covers matrix/graph/point construction, explicit complexes, prime
+fields, representatives and approximation. Its current default of three samples
+is a resource snapshot. Native references doing less work are correctness-only;
+Ripser approximation is explicitly unsupported. See the protocol for row-level
+comparison scopes and the reporting rules for stronger comparative studies.
 
 ## Layout
 
 | Location | Responsibility |
 | --- | --- |
-| [rips.rs](rips.rs) | Dependency-free Rust-only benchmark, run with `cargo bench --locked --bench rips` |
-| [native/](native/README.md) | Native worker sources, source pins, and setup commands |
-| [protocol.md](protocol.md) | Current input, correctness, timing, memory, and evidence contract |
-| [reports/](reports/README.md) | Dated conclusions, with native and historical wrapper evidence explicitly labeled |
-| `results/` | Retained immutable fixtures, raw measurements, environments, and summaries |
+| [reporting.md](reporting.md) | Shared comparability, sampling, claim and evidence rules |
+| [report-template.md](report-template.md) | Reusable PR/commit-bound experiment report structure |
+| [native/](native/README.md) | H0/H1 workers, shared upstream source pins and setup |
+| [protocol.md](protocol.md) | `cocycle-native-v1` H0/H1 execution contract |
+| [pipeline/](pipeline/README.md) | Complete-workflow workers and their execution contract |
+| [reports/](reports/README.md) | Concise commit/PR-bound conclusions with external evidence links |
+| `target/` (repository root) | Ignored local run outputs; CI uploads selected results as artifacts |
 
-The controller is [tools/benchmark_native.py](../tools/benchmark_native.py).
-Fixture generation is shared by current and historical controllers; worker
-implementations and measurement protocols remain separate.
+Fixture and build helpers are shared where their contracts agree; correctness
+instrumentation and timing adapters remain separate. In particular, the sparse
+correctness sampler is not the sampler used by the timed GUDHI workflow.
 
 ## Compared implementations
 
-| Backend ID | Native execution path |
+| Path | Native execution |
 | --- | --- |
-| `cocycle` | Rust public Rips API: H0 union-find or implicit H1 cohomology |
-| `gudhi_cpp` | C++ `Rips_complex` -> `Simplex_tree` expansion -> CAM persistence |
-| `gudhi_collapse_cpp` | C++ threshold edges -> one flag edge collapse -> `Simplex_tree` expansion -> CAM |
-| `ripser_cpp` | Upstream C++ Ripser; dense unrestricted or sparse threshold path |
+| Cocycle | Rust public APIs, specialized F2 H1 or generic prime-field computation; requested construction/bases depend on the workflow |
+| GUDHI direct | C++ Rips/flag construction, `Simplex_tree` expansion and CAM persistence |
+| GUDHI collapse | One native flag edge-collapse call before expansion/CAM; available in the H0/H1 suite |
+| GUDHI sparse approximation | Original metric greedy sampler with documented start/accessor instrumentation, sparse construction, blocker expansion and CAM; pipeline only |
+| Upstream Ripser | C++ implicit exact dense or sparse-threshold persistence; no equivalent approximate constructor |
 
-GUDHI's integrated Ripser module is not the upstream Ripser backend. These paths
-do not imply a comparison of every GUDHI engine or feature. Point-cloud distance
-construction and diagram descriptors remain separate Rust benchmarks.
-
-The retained 2026-09-17 GUDHI/Ripser.py studies are
-[historical Python-wrapper measurements](reports/README.md). Their values and
-source identities are preserved; they must not be relabeled as native results.
-
-The [native validation record](reports/native-validation-2026-09-20.md) links the
-first retained C++ baseline and small scaling results, including their exclusions.
+Backend IDs are suite-specific and retained in the raw results. GUDHI's integrated
+Ripser is not the upstream Ripser backend. The adapters do not cover every engine
+or feature of either library. Native execution removes Python wrapper overhead,
+but does not remove required native conversions, allocations or copies.
 
 ## Evidence lifecycle
 
-Use a new directory under `target/` for exploration. Every native run keeps its
-source pins, compiler commands, binary/header hashes, environment, input fixtures,
-raw sample outcomes, diagrams, and validated summary. Review the full result
-before retaining a run under `results/` and adding a dated report.
+Run experiments in a fresh directory under the repository's ignored `target/`.
+Validate complete outcomes before using any timing. Native CI comparisons upload
+selected outputs as GitHub Actions artifacts with a 14-day retention period;
+archives, logs, generated fixtures and raw results never enter source Git.
 
-Retain failures, exclusions, and resource limits. A smoke run validates the
-harness; it does not establish broad performance superiority. Benchmarks are not
-CI speed gates, and shared-runner timings are not a local performance baseline.
-Raw experiments, C++ sources and binaries are not part of the Rust crate payload.
+A lasting report needs the measured commit, protocol, external artifact URL,
+checksum and retention information. No durable experiment store is configured
+yet. See the [storage policy](reporting.md#storage-and-evidence-lifecycle) and
+[report index](reports/README.md). Historical run outputs and old measurement
+reports have been removed; generate fresh evidence for new comparisons.
+
+Benchmarks are not CI speed gates. Smoke checks validate the harness; shared-runner
+timings do not establish a local performance baseline. After staging changes, run
+`python3 tools/check_artifacts.py` to catch accidental generated-file additions.

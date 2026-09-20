@@ -41,8 +41,8 @@ the [kernel design gates](../design/kernel.md), not create empty module trees.
 
 ## Public contracts and ownership
 
-The current public domains are `geometry`, `persistence`, `diagram`, and
-`descriptors`. These are not a permanent closed list. Add a public domain when a
+The current public domains are `geometry`, `complex`, `filtration`, `persistence`,
+`diagram`, and `descriptors`. These are not a permanent closed list. Add a public domain when a
 concrete implemented capability needs it, with documented inputs, outputs,
 dependencies, and independent validation. Preserve established public paths when
 reorganizing private files. Prefer concrete types until real implementations
@@ -103,9 +103,12 @@ C++ here is benchmark infrastructure; it must not become a core dependency.
 
 Developer commands must fail visibly on invalid input or subprocess failure.
 Keep generated files under `target/` or the explicitly selected output directory.
-Record source revisions and numerical protocol for comparisons. Do not overwrite
-retained benchmark artifacts or reformat downloaded third-party sources; the
-immutable `benches/results/` tree is excluded from source hygiene checks.
+Record source revisions and numerical protocol for comparisons. Store generated
+outputs under ignored `target/` or in external artifact storage. Do not commit
+logs, raw results or archives, and do not reformat downloaded third-party sources.
+Run `tools/check_artifacts.py` after staging to check artifact admission. Follow
+the [reporting rules](../../benches/reporting.md) for comparison contracts,
+measurement claims and retained evidence.
 
 ## Tests and documentation
 

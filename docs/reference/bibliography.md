@@ -77,10 +77,39 @@ changes and precision are recorded with each run.
 are optional historical development references. Pin versions and record precision, input,
 coefficient field, scale, truncation, and interval conventions for each comparison.
 
-The retained 2026-09-17 wrapper experiments use GUDHI 3.13.0 and Ripser.py 0.6.14. Ripser.py is a
+The optional wrapper tools pin GUDHI 3.13.0 and Ripser.py 0.6.14. Ripser.py is a
 Python binding/fork, distinct from the upstream C++ CLI. Its installed dense
 input path converts distances to float32; the comparison suite uses shared
 float32-exact inputs while retaining Cocycle/GUDHI f64 arithmetic. The
 [online source](https://ripser.scikit-tda.org/en/latest/_modules/ripser/ripser.html)
 helps locate this behavior but may describe a different version. See the
 [benchmark protocol](../../benches/README.md) and recorded artifacts for actual runs.
+
+## RP2
+
+Sonia Balagopalan. **Small Triangulations of Projective Spaces**.
+[Author's conference slides](https://www.maths.tcd.ie/~hmigca-18/slides/SoniaCGA.pdf).
+
+The displayed six-vertex triangulation has facets 123, 124, 135, 146, 156, 236,
+245, 256, 345, 346. Tests subtract one from these labels and take barycentric
+subdivision to obtain a flag complex. Independent modular boundary ranks verify
+the field-sensitive fixture; the source identifies the triangulation.
+
+## CJS15
+
+Nicholas J. Cavanna, Mahmoodreza Jahanseir and Donald R. Sheehy.
+**A Geometric Perspective on Sparse Filtrations**. CCCG 2015.
+[Author-hosted full text](https://donsheehy.net/research/cavanna15geometric.pdf),
+[arXiv](https://arxiv.org/abs/1506.03797).
+
+Relevant locations: §2 for finite metrics embedded in the max norm, §3 for the
+covering lemma, §4 Theorem 4 for sparse nerve approximation, and §5 for Rips
+simplex birth and disappearance constraints. The parameter conversion and
+edge-length convention used by Cocycle are recorded in the
+[specification](mathematics.md#15-sparse-rips-approximation).
+[GUDHI's C++ documentation](https://gudhi.inria.fr/doc/latest/group__rips__complex.html)
+states its `(1, 1/(1-epsilon))` convention; its pinned
+[Sparse_rips_complex.h](https://github.com/GUDHI/gudhi-devel/blob/cba915e3ab8e1f5b1fe26eb44b407285f7af4e78/src/Rips_complex/include/gudhi/Sparse_rips_complex.h)
+defines the compared edge/blocker algorithm. Theorem statements do not certify
+floating-point implementations; native agreement and mathematical guarantees
+are separate forms of evidence.

@@ -1,13 +1,18 @@
 //! Cocycle is a general-purpose topological data analysis library in pure Rust.
 //!
-//! Computes Vietoris-Rips persistent homology in dimensions zero and one over F2
-//! and descriptors of the resulting persistence diagrams. Algorithms are
+//! Computes Vietoris-Rips persistent homology in arbitrary dimensions over prime fields
+//! and descriptors of the resulting persistence diagrams. Constructs exact
+//! threshold graphs and computes supplied weighted flag filtrations with sparse
+//! adjacency access and explicit original-input coverage. Algorithms are
 //! implemented in Rust without a foreign TDA backend or runtime dependencies.
 //!
 //! # Status
 //!
 //! Version 0.1 computes H1 by implicit Rips persistent cohomology; H0-only uses
-//! union-find. The explicit boundary reducer is retained as a test oracle.
+//! union-find. Higher dimensions use implicit cohomology with clearing. Explicit
+//! Rips expansion provides frozen simplices and oriented incidence queries.
+//! Requested cycle/cocycle representatives use production boundary reduction;
+//! independent test oracles verify ranks and interval semantics.
 //! Work and memory can still grow substantially with input size and reduction
 //! fill-in. See the mathematical specification and benchmark records for limits.
 //!
@@ -23,10 +28,12 @@
 //! # Ok::<(), cocycle::Error>(())
 //! ```
 
+pub mod algebra;
+pub mod complex;
 pub mod descriptors;
 pub mod diagram;
 mod error;
-mod filtration;
+pub mod filtration;
 pub mod geometry;
 pub mod persistence;
 

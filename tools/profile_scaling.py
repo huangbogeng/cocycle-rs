@@ -53,7 +53,7 @@ def main():
             env = dict(os.environ, COCYCLE_ABLATION_FIXTURE=str(fixture.resolve()), **metadata["threads"])
             command = [sys.executable, str(Path(scaling.__file__).resolve()), "--limited-worker",
                        str(metadata["address_space_mib"]), executable,
-                       "persistence::rips::cohomology::profiling::profile_workload", "--exact", "--ignored", "--nocapture"]
+                       "persistence::flag::cohomology::profiling::profile_workload", "--exact", "--ignored", "--nocapture"]
             result = subprocess.check_output(command, cwd=bench.REPO, env=env, text=True, timeout=args.timeout)
             row, = [json.loads(line.split("WORKLOAD ", 1)[1]) for line in result.splitlines() if "WORKLOAD " in line]
             bench.compare(row, records[name]["results"]["cocycle"], "distances")

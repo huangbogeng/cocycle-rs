@@ -2,9 +2,11 @@
 
 [Benchmarks](README.md)
 
-Status: implemented native worker protocol, `cocycle-native-v1`. It supersedes
-the [Python-wrapper protocol](reports/python-protocol.md) for new performance
-comparisons. It does not change the meaning of historical measurements.
+Status: implemented H0/H1 native worker protocol, `cocycle-native-v1`.
+This suite calls native C++ APIs directly. Broader public workflows use the separate
+[Rips pipeline protocol](pipeline/README.md). Follow the shared
+[reporting rules](reporting.md); do not pool the two suites or reinterpret
+historical measurements. This clarification does not change execution boundaries.
 
 ## Inputs and precision
 

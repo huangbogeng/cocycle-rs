@@ -1,6 +1,6 @@
 //! Vietoris-Rips persistence and its computation options.
 //!
-//! Rips computation targets ordinary homology over F2, with an
+//! Rips computation targets ordinary homology over prime fields, with an
 //! edge-length filtration and a closed cutoff. H1 uses implicit persistent
 //! cohomology; H0-only requests use an independent union-find path.
 
@@ -9,10 +9,18 @@ use crate::Result;
 use crate::diagram::{Coverage, PersistenceDiagram};
 use crate::geometry::{DissimilarityView, PointCloudView, euclidean_distances};
 
-mod cohomology;
-mod h0;
+use super::execution::WorkBudget;
+use super::flag;
+use super::{ExecutionLimits, PersistenceOptions, RepresentativeRequest};
+use crate::filtration::flag::CliqueAccess;
+mod approximation;
+mod expanded;
+pub use approximation::{
+    compute_expanded_sparse_rips, compute_expanded_sparse_rips_with_representatives,
+    compute_sparse_rips, compute_sparse_rips_with_representatives,
+};
 mod options;
-mod union_find;
+pub use expanded::{compute_expanded_rips, compute_expanded_rips_with_representatives};
 
 pub use options::RipsOptions;
 
@@ -47,11 +55,14 @@ pub fn rips_from_dissimilarities(
     options: &RipsOptions,
 ) -> Result<PersistenceDiagram> {
     let (cutoff, coverage) = resolve_rips_range(input, options);
-    let raw = if options.max_dimension() == 0 {
-        h0::compute(input, cutoff)?
-    } else {
-        cohomology::compute(input, cutoff)?
-    };
+    let mut budget = WorkBudget::new(&ExecutionLimits::default())?;
+    let raw = flag::compute_dense(
+        input.into(),
+        options.max_dimension(),
+        cutoff,
+        crate::algebra::PrimeField::default(),
+        &mut budget,
+    )?;
     assemble_diagram(options.max_dimension(), coverage, raw)
 }
 
@@ -80,5 +91,213 @@ pub(super) fn resolve_rips_range(
     match options.max_edge() {
         Some(cutoff) if cutoff < input.diameter() => (cutoff, Coverage::Through(cutoff)),
         _ => (input.diameter(), Coverage::Complete),
+    }
+}
+
+/// Compute dimension-generic prime-field persistence from any validated matrix layout without converting buffers.
+///
+/// Produces an owned diagram and exact-Rips context. The cutoff is inclusive;
+/// survivors below the input diameter are censored. Internal cone stopping does
+/// not change this coverage. See [`ExecutionLimits`] for counted work and limits.
+///
+/// # Errors
+/// Returns index/size/allocation errors, cancellation, work exhaustion, or an
+/// internal invariant failure. No partial result is returned.
+pub fn compute_rips_from_distances(
+    input: crate::geometry::DissimilarityMatrixView<'_>,
+    options: &PersistenceOptions,
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    compute_rips_from_distances_with_representatives(input, options, &[], limits)
+}
+
+/// Compute persistence and requested cycle/cocycle bases for this input.
+///
+/// Uses the same input and coverage contracts as [`compute_rips_from_distances`].
+/// Nonempty requests opt into explicit skeleton materialization and boundary
+/// transformations; execution limits include this extra work. No cone stopping
+/// discards simplices needed at a representative query scale.
+///
+/// # Errors
+/// Includes [`compute_rips_from_distances`] errors, uncomputed dimensions and query
+/// scales outside known coverage. Failure returns no partial result.
+pub fn compute_rips_from_distances_with_representatives(
+    input: crate::geometry::DissimilarityMatrixView<'_>,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    use crate::diagram::{ComputationContext, FiltrationKind, PersistenceResult};
+    let mut budget = WorkBudget::new(limits)?;
+    let (cutoff, coverage) = match options.max_edge() {
+        Some(t) if t < input.diameter() => (t, Coverage::Through(t)),
+        _ => (input.diameter(), Coverage::Complete),
+    };
+    let (diagram, representatives) = flag::finish(
+        &CliqueAccess::Dense(input, cutoff),
+        options,
+        requests,
+        coverage,
+        &mut budget,
+        |budget| {
+            flag::compute_dense(
+                input,
+                options.max_homology_dimension(),
+                cutoff,
+                options.field(),
+                budget,
+            )
+        },
+    )?;
+    Ok(PersistenceResult {
+        diagram,
+        representatives,
+        context: ComputationContext {
+            approximation: None,
+            field: options.field(),
+            kind: FiltrationKind::RipsDissimilarities,
+            vertex_count: input.len(),
+            requested_cutoff: options.max_edge(),
+            construction_cutoff: None,
+        },
+    })
+}
+
+/// Compute from an exact threshold graph, preserving its original-input coverage.
+///
+/// `None` uses the available construction range. A requested scale above an
+/// incomplete construction is rejected. It never certifies completeness using
+/// only the largest stored edge. Uses sparse adjacency without densification.
+///
+/// # Errors
+/// Returns [`crate::Error::IncompleteFiltration`] when the requested range is
+/// unavailable, in addition to the computation errors of [`compute_rips_from_distances`].
+pub fn compute_threshold_rips(
+    input: &crate::filtration::ThresholdRips,
+    options: &PersistenceOptions,
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    compute_threshold_rips_with_representatives(input, options, &[], limits)
+}
+
+/// Compute persistence and requested cycle/cocycle bases for this input.
+///
+/// Uses the same input and coverage contracts as [`compute_threshold_rips`].
+/// Nonempty requests opt into explicit skeleton materialization and boundary
+/// transformations; execution limits include this extra work. No cone stopping
+/// discards simplices needed at a representative query scale.
+///
+/// # Errors
+/// Includes [`compute_threshold_rips`] errors, uncomputed dimensions and query
+/// scales outside known coverage. Failure returns no partial result.
+pub fn compute_threshold_rips_with_representatives(
+    input: &crate::filtration::ThresholdRips,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    use crate::diagram::{ComputationContext, FiltrationKind, PersistenceResult};
+    use crate::filtration::RipsInputKind;
+    let mut budget = WorkBudget::new(limits)?;
+    let (cutoff, coverage) = match input.coverage() {
+        Coverage::Through(through) => {
+            let t = options.max_edge().unwrap_or(through);
+            if t > through {
+                return Err(crate::Error::IncompleteFiltration {
+                    requested: t,
+                    through,
+                });
+            }
+            (t, Coverage::Through(t))
+        }
+        Coverage::Complete => match options.max_edge() {
+            Some(t) if t < input.graph().max_edge() => (t, Coverage::Through(t)),
+            _ => (input.graph().max_edge(), Coverage::Complete),
+        },
+    };
+    let (diagram, representatives) = flag::finish(
+        &CliqueAccess::Sparse(input.graph(), cutoff),
+        options,
+        requests,
+        coverage,
+        &mut budget,
+        |budget| {
+            flag::compute_graph(
+                input.graph(),
+                options.max_homology_dimension(),
+                cutoff,
+                options.field(),
+                budget,
+            )
+        },
+    )?;
+    let kind = match input.input_kind() {
+        RipsInputKind::Dissimilarities => FiltrationKind::RipsDissimilarities,
+        RipsInputKind::Euclidean => FiltrationKind::RipsEuclidean,
+        RipsInputKind::Custom => FiltrationKind::RipsCustom,
+    };
+    Ok(PersistenceResult {
+        diagram,
+        representatives,
+        context: ComputationContext {
+            approximation: None,
+            field: options.field(),
+            kind,
+            vertex_count: input.graph().vertex_count(),
+            requested_cutoff: options.max_edge(),
+            construction_cutoff: input.requested_cutoff(),
+        },
+    })
+}
+
+/// Compute Euclidean prime-field persistence with owned mathematical context.
+///
+/// A finite cutoff constructs a threshold graph directly, without a dense
+/// distance buffer. Without a cutoff, materializes one condensed matrix.
+/// Coordinate indices and duplicate points are retained. Execution controls
+/// apply to persistence, not distance/graph construction; cancellation is also
+/// checked before and after that preparation.
+///
+/// # Errors
+/// Returns distance/construction errors and the errors of the selected exact
+/// computation path, without a partial result.
+pub fn compute_rips_from_points(
+    input: PointCloudView<'_>,
+    options: &PersistenceOptions,
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    compute_rips_from_points_with_representatives(input, options, &[], limits)
+}
+
+/// Compute persistence and requested cycle/cocycle bases for this input.
+///
+/// Uses the same input and coverage contracts as [`compute_rips_from_points`].
+/// Nonempty requests opt into explicit skeleton materialization and boundary
+/// transformations; execution limits include this extra work. No cone stopping
+/// discards simplices needed at a representative query scale.
+///
+/// # Errors
+/// Includes [`compute_rips_from_points`] errors, uncomputed dimensions and query
+/// scales outside known coverage. Failure returns no partial result.
+pub fn compute_rips_from_points_with_representatives(
+    input: PointCloudView<'_>,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    limits: &ExecutionLimits<'_>,
+) -> Result<crate::diagram::PersistenceResult> {
+    WorkBudget::new(limits)?.check()?;
+    if options.max_edge().is_some() {
+        let graph = crate::filtration::threshold_rips_from_points(input, options.max_edge())?;
+        compute_threshold_rips_with_representatives(&graph, options, requests, limits)
+    } else {
+        let values = euclidean_distances(input)?;
+        let mut result = compute_rips_from_distances_with_representatives(
+            DissimilarityView::new(&values, input.len())?.into(),
+            options,
+            requests,
+            limits,
+        )?;
+        result.context.kind = crate::diagram::FiltrationKind::RipsEuclidean;
+        Ok(result)
     }
 }

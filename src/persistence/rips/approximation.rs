@@ -1,0 +1,150 @@
+//! Prime-field persistence on the blocker-aware sparse Rips filtration.
+use crate::diagram::{
+    ComputationContext, Coverage, FiltrationKind, PersistenceResult, RipsApproximation,
+};
+use crate::filtration::{
+    RipsInputKind, SparseRips, SparseRipsExpansion,
+    flag::{ExplicitAccess, SimplicialAccess},
+    rips::approximation::SparseRipsAccess,
+};
+use crate::persistence::{
+    ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, flag,
+};
+use crate::{Error, Result};
+
+/// Compute sparse Rips persistence through any homology dimension over a prime field.
+///
+/// Uses the insertion-radius blocker for every coface; no ordinary-flag H1 or
+/// dense-cone shortcut is applied. Coverage refers to the approximate filtration.
+/// # Errors
+/// Rejects unavailable scale ranges, allocation failures or exhausted limits.
+pub fn compute_sparse_rips(
+    input: &SparseRips,
+    options: &PersistenceOptions,
+    limits: &ExecutionLimits<'_>,
+) -> Result<PersistenceResult> {
+    compute_sparse_rips_with_representatives(input, options, &[], limits)
+}
+
+/// Compute sparse Rips persistence and requested cycle/cocycle bases.
+///
+/// Representative terms use original vertex IDs and belong to the approximate
+/// filtration. They are not asserted to be representatives of exact Rips classes.
+/// # Errors
+/// Includes computation errors and representative dimension/coverage errors.
+pub fn compute_sparse_rips_with_representatives(
+    input: &SparseRips,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    limits: &ExecutionLimits<'_>,
+) -> Result<PersistenceResult> {
+    let mut budget = WorkBudget::new(limits)?;
+    let (cutoff, coverage) = range(input.coverage, input.graph.max_edge(), options.max_edge())?;
+    let access = SparseRipsAccess { input, cutoff };
+    compute(
+        &access,
+        &input.metadata,
+        input.kind,
+        coverage,
+        options,
+        requests,
+        &mut budget,
+    )
+}
+
+/// Compute persistence using a frozen sparse Rips skeleton's stored incidence.
+/// # Errors
+/// Rejects insufficient construction dimension or scale, and exhausted limits.
+pub fn compute_expanded_sparse_rips(
+    input: &SparseRipsExpansion,
+    options: &PersistenceOptions,
+    limits: &ExecutionLimits<'_>,
+) -> Result<PersistenceResult> {
+    compute_expanded_sparse_rips_with_representatives(input, options, &[], limits)
+}
+
+/// Compute persistence and representatives from frozen sparse Rips incidence.
+/// # Errors
+/// Includes insufficient skeleton/scale, execution and representative errors.
+pub fn compute_expanded_sparse_rips_with_representatives(
+    input: &SparseRipsExpansion,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    limits: &ExecutionLimits<'_>,
+) -> Result<PersistenceResult> {
+    let mut budget = WorkBudget::new(limits)?;
+    if !input.complete && options.max_homology_dimension() >= input.max_simplex_dimension {
+        return Err(Error::InsufficientSkeleton {
+            requested_homology_dimension: options.max_homology_dimension(),
+            constructed_simplex_dimension: input.max_simplex_dimension,
+        });
+    }
+    let (cutoff, coverage) = range(input.coverage, input.max_edge, options.max_edge())?;
+    let access = ExplicitAccess {
+        complex: &input.complex,
+        vertex_count: input.metadata.retained_vertices().len(),
+        cutoff,
+    };
+    compute(
+        &access,
+        &input.metadata,
+        input.kind,
+        coverage,
+        options,
+        requests,
+        &mut budget,
+    )
+}
+fn compute(
+    access: &impl SimplicialAccess,
+    metadata: &RipsApproximation,
+    kind: RipsInputKind,
+    coverage: Coverage,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    budget: &mut WorkBudget<'_>,
+) -> Result<PersistenceResult> {
+    let (diagram, representatives) =
+        flag::finish(access, options, requests, coverage, budget, |budget| {
+            flag::compute_simplicial(
+                access,
+                options.max_homology_dimension(),
+                options.field(),
+                budget,
+            )
+        })?;
+    Ok(PersistenceResult {
+        diagram,
+        representatives,
+        context: ComputationContext {
+            approximation: Some(metadata.clone()),
+            field: options.field(),
+            kind: match kind {
+                RipsInputKind::Dissimilarities => FiltrationKind::SparseRipsDissimilarities,
+                RipsInputKind::Euclidean => FiltrationKind::SparseRipsEuclidean,
+                RipsInputKind::Custom => FiltrationKind::SparseRipsCustom,
+            },
+            vertex_count: access.vertex_count(),
+            requested_cutoff: options.max_edge(),
+            construction_cutoff: metadata.max_scale(),
+        },
+    })
+}
+fn range(coverage: Coverage, max_edge: f64, requested: Option<f64>) -> Result<(f64, Coverage)> {
+    match coverage {
+        Coverage::Through(through) => {
+            let cutoff = requested.unwrap_or(through);
+            if cutoff > through {
+                return Err(Error::IncompleteFiltration {
+                    requested: cutoff,
+                    through,
+                });
+            }
+            Ok((cutoff, Coverage::Through(cutoff)))
+        }
+        Coverage::Complete => match requested {
+            Some(cutoff) if cutoff < max_edge => Ok((cutoff, Coverage::Through(cutoff))),
+            _ => Ok((max_edge, Coverage::Complete)),
+        },
+    }
+}

@@ -1,14 +1,25 @@
 # Documentation
 
-Cocycle is a native Rust TDA library. It currently computes ordinary Rips H0/H1
-over F2 and derives lifetime statistics and Betti curves from owned diagrams.
-Start with a task below; design proposals and upstream research describe work
-beyond this supported scope.
+Cocycle is a native Rust TDA library. It computes dimension-generic ordinary Rips
+persistence over prime fields, constructs exact threshold graphs and frozen
+simplicial complexes, and accepts supplied flag filtrations. Sparse Rips
+approximation includes blocker-aware computation and explicit metric hypotheses.
+Owned results preserve coverage, field and approximation context; cycle and
+cocycle bases are available on request at specified scales. Descriptors derive
+lifetime statistics and Betti curves from diagrams.
+Start with a task below; design pages distinguish implemented decisions from
+proposed APIs and remaining acceptance gates.
 
 ## Use the library
 
 - [Rips guide](guides/rips.md): choose an input, compute persistence, interpret
   coverage and endpoints, and derive measurements.
+- [Rips construction guide](guides/rips-construction.md): matrix layouts, custom
+  distances, threshold graphs, sparse computation and execution controls.
+- [Sparse Rips approximation](guides/sparse-rips.md): metric hypotheses, blockers,
+  sampling provenance and implicit/explicit computation.
+- [Fields and representatives](guides/rips-representatives.md): select a prime
+  field and request owned cycle/cocycle bases associated with intervals.
 - [Runnable square example](../examples/square.rs): run
   `cargo run --locked --example square` from the repository root.
 - [API reference source](../src/lib.rs): build rustdoc with
@@ -34,9 +45,13 @@ and numbered derivations in one place; rustdoc owns individual API contracts.
 | Document | Status and purpose |
 | --- | --- |
 | [Roadmap](design/roadmap.md) | Selected priorities; not a delivery schedule |
+| [Complete Rips subsystem](design/rips.md) | Rips target, original GUDHI/Ripser comparison, API sketches and current acceptance matrix; use guides/rustdoc for callable APIs |
+| [Rips acceptance audit](design/rips-acceptance.md) | R1-R10 evidence, resource boundaries and local/hosted validation distinction |
+| [Rips implementation scope](design/rips-implementation.md) | Stage-specific new directories, source moves, code/tooling changes and review units |
 | [Kernel design](design/kernel.md) | Design rationale, extension boundaries, and proposed capability gates |
 | [GUDHI C++ study](research/gudhi-cpp.md) | Pinned upstream source map and reading plan; excludes Python wrappers |
-| [Benchmarks](../benches/README.md) | Measurement protocols and dated experiment evidence |
+| [Benchmarks](../benches/README.md) | Suite-specific protocols and concise PR/commit-bound reports linking external evidence |
+| [Performance reporting rules](../benches/reporting.md) | Comparability, sampling, memory, source retention and report template |
 | [Changelog](../CHANGELOG.md) | Completed user-visible changes |
 
 For future capabilities, use the GUDHI study as evidence, the kernel design to
@@ -51,7 +66,7 @@ the performance of unmeasured code.
 | `guides/` | Task-oriented usage of implemented capabilities |
 | `reference/` | Mathematical contracts, derivations, and bibliography |
 | `development/` | Current architecture, coding conventions, and validation strategy |
-| `design/` | Future direction, decisions, acceptance gates, and priorities |
+| `design/` | Design decisions, implementation records, future direction and acceptance gates |
 | `research/` | Upstream investigations tied to a source revision and scope |
 
 Add a document to the directory matching its purpose and link it from this index.

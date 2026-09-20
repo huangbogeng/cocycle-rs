@@ -104,12 +104,38 @@ impl<'a> DissimilarityView<'a> {
 }
 
 /// Divide before multiplying so representable binomial coefficients are accepted.
-pub(super) fn pair_count(n: usize) -> Option<usize> {
+pub(crate) fn pair_count(n: usize) -> Option<usize> {
     if n < 2 {
         Some(0)
     } else if n.is_multiple_of(2) {
         (n / 2).checked_mul(n - 1)
     } else {
         n.checked_mul((n - 1) / 2)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pair_count;
+
+    #[test]
+    fn condensed_shape_accepts_representable_counts_without_intermediate_overflow() {
+        let middle = 1usize << (usize::BITS / 2);
+        for n in [
+            0,
+            1,
+            2,
+            middle - 1,
+            middle,
+            middle + 1,
+            usize::MAX / 2,
+            usize::MAX,
+        ] {
+            let wide = n as u128;
+            let expected = usize::try_from(wide * wide.saturating_sub(1) / 2).ok();
+            assert_eq!(pair_count(n), expected);
+        }
+        assert!(pair_count(middle + 1).is_some());
+        assert!((middle + 1).checked_mul(middle).is_none());
     }
 }

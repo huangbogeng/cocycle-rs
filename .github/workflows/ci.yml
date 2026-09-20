@@ -29,14 +29,18 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/check_source.py
+      - run: python tools/check_artifacts.py
       - run: python tools/check_docs.py
       - run: python -m unittest discover -s tools -p 'test_*.py'
       - run: cargo fmt --all -- --check
-      - run: rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs
+      - run: rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       - run: cargo build --locked
       - run: rustdoc --edition 2024 --test README.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
       - run: rustdoc --edition 2024 --test docs/guides/rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+      - run: rustdoc --edition 2024 --test docs/guides/rips-construction.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+      - run: rustdoc --edition 2024 --test docs/guides/rips-representatives.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+      - run: rustdoc --edition 2024 --test docs/guides/sparse-rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
       - run: cargo doc --locked --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
@@ -55,6 +59,11 @@ jobs:
       - run: cargo test --locked --all-features
       - run: cargo test --locked --release --all-features
       - run: cargo run --locked --example square
+      - run: cargo run --locked --example rips_graph
+      - run: cargo run --locked --example flag_persistence
+      - run: cargo run --locked --example rips_sphere
+      - run: cargo run --locked --example rips_representatives
+      - run: cargo run --locked --example sparse_rips
 
   msrv:
     name: Minimum Rust (1.91)
@@ -79,7 +88,7 @@ jobs:
   reference:
     name: Native C++ reference comparisons
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: dtolnay/rust-toolchain@stable
@@ -105,14 +114,26 @@ jobs:
           ref: 01add51ff64aaf40889483260cc5c3b7d0f2a1e7
           path: target/native-sources/ripser
       - run: sudo apt-get update && sudo apt-get install -y libboost-dev
+      - name: Record reference run identity
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          fields = ("GITHUB_SHA", "GITHUB_REF", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_REPOSITORY")
+          Path("target/reference-run.json").write_text(json.dumps({key: os.environ.get(key) for key in fields}, indent=2) + "\n")
+          PY
       - run: python tools/benchmark_native.py --quick --samples 1 --output target/native-smoke
+      - run: python tools/compare_rips.py --output target/rips-reference
+      - run: python tools/compare_sparse_rips.py --output target/sparse-rips-reference
+      - run: python tools/benchmark_rips_pipeline.py --quick --samples 1 --output target/rips-pipeline-smoke
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: native-reference-comparisons
+          name: native-reference-${{ github.sha }}-${{ github.run_attempt }}
           if-no-files-found: ignore
           retention-days: 14
           path: |
+            target/reference-run.json
             target/native-smoke/environment.json
             target/native-smoke/results.json
             target/native-smoke/summary.csv
@@ -120,3 +141,19 @@ jobs:
             target/native-smoke/fixtures/
             target/native-smoke/build/build.json
             target/native-smoke/build/build.log
+            target/rips-reference/environment.json
+            target/rips-reference/summary.json
+            target/rips-reference/results.json
+            target/rips-reference/fixtures/
+            target/rips-reference/build/build.log
+            target/sparse-rips-reference/environment.json
+            target/sparse-rips-reference/summary.json
+            target/sparse-rips-reference/results.json
+            target/sparse-rips-reference/fixtures/
+            target/sparse-rips-reference/build/build.log
+            target/rips-pipeline-smoke/environment.json
+            target/rips-pipeline-smoke/summary.json
+            target/rips-pipeline-smoke/results.json
+            target/rips-pipeline-smoke/measurements.json
+            target/rips-pipeline-smoke/fixtures/
+            target/rips-pipeline-smoke/build/build.log
