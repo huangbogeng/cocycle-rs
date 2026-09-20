@@ -1,12 +1,15 @@
 """Protocol failures must not turn into successful performance comparisons."""
 import copy
+from collections import Counter
 from dataclasses import replace
+from types import SimpleNamespace
 import subprocess
 import unittest
 from unittest.mock import patch
 
 from benchmark_rips_pipeline import (Case, cases, compare_samples, exclusion,
-                                    instrument_sparse, timing_scope, validate_output, worker)
+                                    instrument_sparse, measure_case, provenance, schedule,
+                                    timing_scope, validate_output, worker)
 from compare_rips import Fixture
 
 
@@ -73,6 +76,87 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(bool(exclusion(case, 'ripser')), case.path.startswith('approximate'))
         self.assertTrue(any(c.representatives for c in fixtures))
         self.assertTrue(any(c.coordinates is not None for c in fixtures))
+
+    def test_schedule_reproducible_and_balanced_with_separate_warmups(self):
+        for backends in (['cocycle', 'gudhi'], ['cocycle', 'gudhi', 'ripser']):
+            entries = schedule(backends, 12, 42)
+            self.assertEqual(entries, schedule(backends, 12, 42))
+            self.assertNotEqual(entries, schedule(backends, 12, 99))
+            warmups = [e for e in entries if e['warmup']]
+            self.assertEqual(set(e['backend'] for e in warmups), set(backends))
+            self.assertEqual(entries[:len(backends)], warmups)
+            for round_index in range(1, 13):
+                group = [e for e in entries if e['round'] == round_index]
+                self.assertEqual(set(e['backend'] for e in group), set(backends))
+            positions = Counter((e['backend'], e['position']) for e in entries if not e['warmup'])
+            self.assertEqual(set(positions.values()), {12 // len(backends)})
+        self.assertEqual(len(schedule(['cocycle', 'gudhi', 'ripser'], 1, 42)), 6)
+
+    def test_failed_groups_keep_planned_samples_but_no_statistics(self):
+        for failure in ({'status': 'timeout'}, dict(self.output, intervals=[])):
+            record = {'workers': {b: {'command': [b], 'samples': []} for b in ('cocycle', 'gudhi')}}
+            calls = Counter()
+
+            def execute(command, *args):
+                backend = command[0]
+                calls[backend] += 1
+                return copy.deepcopy(failure if backend == 'gudhi' and calls[backend] == 2 else self.output)
+
+            args = SimpleNamespace(samples=3, timeout=1, address_space_mib=128, cpu=None)
+            with patch('benchmark_rips_pipeline.worker', side_effect=execute):
+                rows = measure_case(record, self.case, args, 0)
+            self.assertEqual(record['validation'], 'failed')
+            self.assertTrue(all(r['median_ms'] is None for r in rows))
+            self.assertEqual(calls, {'cocycle': 4, 'gudhi': 2})
+            self.assertEqual(len(record['workers']['gudhi']['samples']), 4)
+            self.assertEqual(record['workers']['gudhi']['samples'][-1]['status'], 'not_run')
+
+    def test_backend_specific_metadata_checked_when_native_is_first(self):
+        record = {'workers': {b: {'command': [b], 'samples': []} for b in ('gudhi', 'cocycle')}}
+        calls = Counter()
+
+        def execute(command, *args):
+            backend = command[0]
+            calls[backend] += 1
+            output = copy.deepcopy(self.output)
+            if backend == 'cocycle':
+                output['coverage'] = calls[backend]
+            return output
+
+        entries = [{'backend': b, 'round': r, 'warmup': r == 0, 'position': i}
+                   for r in range(2) for i, b in enumerate(('gudhi', 'cocycle'))]
+        args = SimpleNamespace(samples=1, timeout=1, address_space_mib=128, cpu=None)
+        with patch('benchmark_rips_pipeline.worker', side_effect=execute), patch(
+                'benchmark_rips_pipeline.schedule', return_value=entries):
+            measure_case(record, self.case, args, 0)
+        self.assertEqual(record['validation'], 'failed')
+        self.assertIn('coverage', record['workers']['cocycle']['samples'][-1]['comparison_error'])
+
+    def test_missing_ripser_counts_do_not_mask_later_topology_mismatch(self):
+        for counts, expected in (({'ripser': 0, 'gudhi': 3, 'cocycle': 3}, 'passed'),
+                                 ({'ripser': 0, 'gudhi': 3, 'cocycle': 4}, 'failed')):
+            record = {'workers': {b: {'command': [b], 'samples': []} for b in counts}}
+            entries = [{'backend': b, 'round': r, 'warmup': r == 0, 'position': i}
+                       for r in range(2) for i, b in enumerate(counts)]
+            args = SimpleNamespace(samples=1, timeout=1, address_space_mib=128, cpu=None)
+            with patch('benchmark_rips_pipeline.worker', side_effect=lambda command, *args:
+                       dict(self.output, simplices=counts[command[0]])), patch(
+                       'benchmark_rips_pipeline.schedule', return_value=entries):
+                rows = measure_case(record, self.case, args, 0)
+            self.assertEqual(record['validation'], expected)
+            self.assertEqual(all(r['median_ms'] == 5. for r in rows), expected == 'passed')
+
+    def test_provenance_rejects_dirty_or_different_kernel(self):
+        with patch('subprocess.check_output', return_value=' M src/lib.rs'):
+            with self.assertRaisesRegex(ValueError, 'commit or stash'):
+                provenance('HEAD')
+        with patch('subprocess.check_output', side_effect=['', 'harness', 'kernel', 'diff']):
+            with self.assertRaisesRegex(ValueError, 'differs'):
+                provenance('HEAD')
+        with patch('subprocess.check_output', side_effect=['', 'harness', 'kernel', '']):
+            self.assertEqual(provenance('HEAD'), {
+                'harness_commit': 'harness', 'kernel_commit': 'kernel', 'dirty': False})
+
 
 
 class TimingScopeTests(unittest.TestCase):

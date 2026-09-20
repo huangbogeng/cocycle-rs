@@ -25,6 +25,7 @@ from build_native import PINS, REPO, checked_source, instrument_ripser, sha256
 from compare_rips import Fixture
 
 PIPELINE = REPO / 'benches/pipeline'
+PROTOCOL = 'cocycle-rips-pipeline-v2'
 PHASES = ['input', 'construction', 'expansion', 'compute', 'export']
 
 
@@ -239,12 +240,14 @@ def validate_output(data, case):
             raise ValueError('interval outside cutoff')
 
 
-def worker(command, case, timeout, memory_mib):
+def worker(command, case, timeout, memory_mib, cpu=None):
     import resource
 
     def limits():
         limit = memory_mib * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+        if cpu is not None:
+            os.sched_setaffinity(0, {cpu})
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=timeout, preexec_fn=limits)
@@ -277,8 +280,90 @@ def compare_samples(anchor, other, case):
         raise ValueError('coverage changed between samples')
     if anchor.get('representative_terms') is not None and other.get('representative_terms') is not None and anchor['representative_terms'] != other['representative_terms']:
         raise ValueError('representative payload changed between samples')
-    if anchor.get('simplices') is not None and other.get('simplices') and anchor['simplices'] != other['simplices']:
+    # Ripser reports zero when explicit simplex counts are unavailable.
+    if anchor.get('simplices') and other.get('simplices') and anchor['simplices'] != other['simplices']:
         raise ValueError('expanded simplex count mismatch')
+
+
+def provenance(kernel_revision):
+    def git(*args):
+        return subprocess.check_output(['git', *args], cwd=REPO, text=True).strip()
+
+    dirty = git('status', '--porcelain', '--untracked-files=normal')
+    if dirty:
+        raise ValueError('commit or stash changes before a version-bound measurement')
+    harness = git('rev-parse', 'HEAD')
+    kernel = git('rev-parse', '--verify', kernel_revision + '^{commit}')
+    if git('diff', kernel, '--', 'Cargo.toml', 'Cargo.lock', 'src'):
+        raise ValueError('current Rust kernel differs from --kernel-revision')
+    return {'harness_commit': harness, 'kernel_commit': kernel, 'dirty': False}
+
+
+def schedule(backends, samples, seed):
+    """Balance positions within blocks; retain an independently shuffled warmup."""
+    rng = random.Random(seed)
+    order = list(backends)
+    if not order:
+        return []
+    rng.shuffle(order)
+    rounds = [list(order)]
+    while len(rounds) <= samples:
+        rng.shuffle(order)
+        rotations = list(range(len(order)))
+        rng.shuffle(rotations)
+        rounds.extend(order[i:] + order[:i] for i in rotations)
+    return [{'backend': backend, 'round': round_index, 'warmup': round_index == 0,
+             'position': position}
+            for round_index, order in enumerate(rounds[:samples + 1])
+            for position, backend in enumerate(order)]
+
+
+def measure_case(record, case, args, seed):
+    active = [b for b, w in record['workers'].items() if w.get('status') != 'excluded']
+    record['schedule'] = schedule(active, args.samples, seed)
+    record['validation'] = 'passed'
+    anchors = {}
+    stopped = set()
+    for sequence, entry in enumerate(record['schedule']):
+        backend = entry['backend']
+        info = record['workers'][backend]
+        if backend in stopped:
+            sample = {'status': 'not_run', 'reason': 'earlier sample failed for this backend'}
+        else:
+            sample = worker(info['command'], case, args.timeout, args.address_space_mib, args.cpu)
+        sample.update(entry, sequence=sequence)
+        info['samples'].append(sample)
+        if sample['status'] != 'completed':
+            record['validation'] = 'failed'
+            stopped.add(backend)
+            continue
+        try:
+            # Compare every available pair: the first backend may omit topology,
+            # coverage or bases that two later backends both expose.
+            for anchor in [sample, *anchors.values()]:
+                compare_samples(anchor, sample, case)
+            anchors.setdefault(backend, sample)
+        except ValueError as error:
+            record['validation'] = 'failed'
+            sample['comparison_error'] = str(error)
+            stopped.add(backend)
+    rows = []
+    for backend in active:
+        completed = [s for s in record['workers'][backend]['samples']
+                     if s['status'] == 'completed' and not s['warmup'] and 'comparison_error' not in s]
+        # Never publish statistics for incomplete or mismatched cases.
+        valid = completed if record['validation'] == 'passed' else []
+        rows.append({'case': case.name, 'backend': backend, 'samples': len(completed),
+                     'planned_samples': args.samples, 'validation': record['validation'],
+                     'timing_scope': timing_scope(case, backend),
+                     'median_ms': statistics.median(s['elapsed_ms'] for s in valid) if valid else None,
+                     'min_ms': min((s['elapsed_ms'] for s in valid), default=None),
+                     'max_ms': max((s['elapsed_ms'] for s in valid), default=None),
+                     'max_peak_rss_kib': max((s['peak_rss_kib'] for s in valid), default=None),
+                     'max_hwm_growth_kib': max((s['peak_rss_kib'] - s['hwm_before_kib'] for s in valid), default=None),
+                     'phase_medians_ms': {name: statistics.median(s['phases_ms'][i] for s in valid) if valid else None
+                                          for i, name in enumerate(PHASES)}})
+    return rows
 
 
 def run(args):
@@ -286,6 +371,10 @@ def run(args):
         raise ValueError('Linux is required for per-process VmHWM and RLIMIT_AS')
     if args.samples < 1 or not math.isfinite(args.timeout) or args.timeout <= 0 or args.address_space_mib < 128:
         raise ValueError('positive sample/timeout and at least 128 MiB address space required')
+    identity = provenance(args.kernel_revision)
+    affinity = sorted(os.sched_getaffinity(0))
+    if args.cpu is not None and args.cpu not in affinity:
+        raise ValueError('--cpu must belong to the current allowed affinity')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     fixture_dir = output / 'fixtures'
@@ -293,7 +382,11 @@ def run(args):
     started = datetime.now(timezone.utc).isoformat()
     initial_hash = source_hash()
     metadata = build(args, output)
-    metadata.update({'started_utc': started, 'source_sha256': initial_hash, 'platform': platform.platform(), 'machine': platform.machine(),
+    metadata.update({**identity, 'protocol_id': PROTOCOL, 'order_seed': args.order_seed,
+                     'allowed_cpus': affinity, 'worker_cpus': [args.cpu] if args.cpu is not None else affinity,
+                     'command': [sys.executable, *sys.argv], 'quick': args.quick,
+                     'frequency_and_load_control': 'not controlled by this harness',
+                     'started_utc': started, 'source_sha256': initial_hash, 'platform': platform.platform(), 'machine': platform.machine(),
                      'processor': platform.processor(), 'cpuinfo': Path('/proc/cpuinfo').read_text().split('\n\n')[0],
                      'samples': args.samples, 'warmups': 1, 'phases': PHASES, 'timeout_seconds': args.timeout,
                      'address_space_mib': args.address_space_mib, 'RUSTFLAGS': os.environ.get('RUSTFLAGS'),
@@ -301,7 +394,7 @@ def run(args):
     (output / 'environment.json').write_text(json.dumps(metadata, indent=2) + '\n')
     records = []
     rows = []
-    for case in cases(args.quick):
+    for case_index, case in enumerate(cases(args.quick)):
         path = fixture_dir / f'{case.name}.txt'
         case.fixture.write(path)
         if case.coordinates is not None:
@@ -312,8 +405,6 @@ def run(args):
         if case.coordinates is not None:
             record['points_sha256'] = sha256(Path(str(path) + '.points'))
         records.append(record)
-        anchor = None
-        record['validation'] = 'passed'
         for backend in ('cocycle', 'gudhi', 'ripser'):
             reason = exclusion(case, backend)
             if reason:
@@ -321,43 +412,18 @@ def run(args):
                 continue
             command = [str(output / 'build' / backend), str(path), case.path, case.layout,
                        str(case.epsilon), 'yes' if case.representatives else 'no']
-            samples = []
-            record['workers'][backend] = {'command': command, 'samples': samples}
-            for iteration in range(args.samples + 1):
-                sample = worker(command, case, args.timeout, args.address_space_mib)
-                sample['warmup'] = iteration == 0
-                samples.append(sample)
-                if sample['status'] != 'completed':
-                    record['validation'] = 'failed'
-                    break
-                try:
-                    if anchor is None:
-                        anchor = sample
-                    else:
-                        compare_samples(anchor, sample, case)
-                except ValueError as error:
-                    record['validation'] = 'mismatch'
-                    sample['comparison_error'] = str(error)
-                    break
-            completed = [s for s in samples if s['status'] == 'completed' and not s['warmup']]
-            rows.append({'case': case.name, 'backend': backend, 'samples': len(completed),
-                         'timing_scope': timing_scope(case, backend),
-                         'median_ms': statistics.median(s['elapsed_ms'] for s in completed) if completed else None,
-                         'min_ms': min((s['elapsed_ms'] for s in completed), default=None),
-                         'max_ms': max((s['elapsed_ms'] for s in completed), default=None),
-                         'max_peak_rss_kib': max((s['peak_rss_kib'] for s in completed), default=None),
-                         'max_hwm_growth_kib': max((s['peak_rss_kib'] - s['hwm_before_kib'] for s in completed), default=None),
-                         'phase_medians_ms': {name: statistics.median(s['phases_ms'][i] for s in completed) if completed else None
-                                              for i, name in enumerate(PHASES)}})
-        for row in rows:
-            if row['case'] == case.name:
-                row['validation'] = record['validation']
+            record['workers'][backend] = {'command': command, 'samples': []}
+        record['order_seed'] = args.order_seed + case_index
+        rows.extend(measure_case(record, case, args, record['order_seed']))
         (output / 'results.json').write_text(json.dumps(records, indent=2) + '\n')
         (output / 'measurements.json').write_text(json.dumps(rows, indent=2) + '\n')
         print(case.name, record['validation'], flush=True)
-    if source_hash() != initial_hash:
-        raise ValueError('sources changed during measurement')
-    summary = {'status': 'passed' if all(r['validation'] == 'passed' for r in records) else 'failed',
+    try:
+        unchanged = source_hash() == initial_hash and provenance(args.kernel_revision) == identity
+    except (ValueError, subprocess.CalledProcessError):
+        unchanged = False
+    summary = {**identity, 'protocol_id': PROTOCOL, 'sources_unchanged': unchanged,
+               'status': 'passed' if unchanged and all(r['validation'] == 'passed' for r in records) else 'failed',
                'finished_utc': datetime.now(timezone.utc).isoformat(),
                'cases': len(records), 'worker_measurements': len(rows), 'samples_per_worker': args.samples,
                'excluded_workers': sum(w.get('status') == 'excluded' for r in records for w in r['workers'].values()),
@@ -372,7 +438,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--quick', action='store_true')
-    parser.add_argument('--samples', type=int, default=3)
+    parser.add_argument('--samples', type=int, default=12)
+    parser.add_argument('--order-seed', type=int, default=0)
+    parser.add_argument('--cpu', type=int, help='pin every worker to this allowed Linux CPU')
+    parser.add_argument('--kernel-revision', default='HEAD', help='commit whose Cargo manifests and src are measured')
     parser.add_argument('--timeout', type=float, default=30.)
     parser.add_argument('--address-space-mib', type=int, default=2048)
     parser.add_argument('--gudhi-source', type=Path, default=REPO / 'target/native-sources/gudhi')

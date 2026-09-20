@@ -2,10 +2,14 @@
 
 [Benchmarks](README.md) / [Reporting rules](reporting.md)
 
-Copy the sections below into a PR/commit-named file in `benches/reports/`, following
-the [identity rules](reporting.md#bind-reports-to-changes-and-measured-commits).
-Use a title such as "Rips pipeline: PR #N at SHA" or "Rips pipeline: commit SHA".
-Adjust relative links and add the measured revision/PR to the report index. Replace instructions with recorded facts;
+Use the sections below when creating a topic-based report such as
+`benches/reports/rips-comparison.md`, following the
+[identity rules](reporting.md#bind-reports-to-changes-and-measured-commits).
+For a rerun, update the existing report in place, including its measured revisions,
+results, evidence status and conclusions. Git history preserves older versions;
+do not create another file or append an archive of old runs. Use a stable title
+such as "Cocycle, GUDHI and Ripser: Rips comparison". Adjust relative links and
+link the report from the index. Replace instructions with recorded facts;
 write "not recorded" for missing evidence. This template contains no measurements.
 
 ## Question and conclusion
@@ -65,9 +69,14 @@ these results justify it.
 
 ## Evidence
 
-Link the external run or durable artifact containing environment metadata,
+State whether evidence is local-only, externally available or expired. When
+available, link the external run or durable artifact containing environment metadata,
 fixtures, all raw samples, validation results, full matrices and build logs.
 Record the artifact checksum, measured SHA, run/attempt IDs, retention/expiry and
 retrieval instructions. Do not copy the archive, logs or full generated output
 into this repository. State missing or expired evidence explicitly; do not claim
 public reproducibility for a local-only run.
+
+For local-only evidence, give its ignored path as code, the available checksum
+and reproduction commands. Do not add links that require an untracked local file
+to exist. The report summarizes observations; it does not archive the original run.

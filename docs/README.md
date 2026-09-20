@@ -50,7 +50,8 @@ and numbered derivations in one place; rustdoc owns individual API contracts.
 | [Rips implementation scope](design/rips-implementation.md) | Stage-specific new directories, source moves, code/tooling changes and review units |
 | [Kernel design](design/kernel.md) | Design rationale, extension boundaries, and proposed capability gates |
 | [GUDHI C++ study](research/gudhi-cpp.md) | Pinned upstream source map and reading plan; excludes Python wrappers |
-| [Benchmarks](../benches/README.md) | Suite-specific protocols and concise PR/commit-bound reports linking external evidence |
+| [Benchmarks](../benches/README.md) | Suite-specific protocols and maintained comparisons with measured revisions and evidence status |
+| [Rips comparison](../benches/reports/rips-comparison.md) | Measured native correctness and performance; updated in place on reruns |
 | [Performance reporting rules](../benches/reporting.md) | Comparability, sampling, memory, source retention and report template |
 | [Changelog](../CHANGELOG.md) | Completed user-visible changes |
 

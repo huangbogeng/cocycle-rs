@@ -148,9 +148,10 @@ When adding or moving a document:
    `cargo package --locked --allow-dirty --list` and ensure nested docs remain in
    the package. Raw benchmark artifacts remain outside the crate payload.
 
-Performance reports bind to the measured commit and associated PR, with a full
-SHA, source fingerprint and protocol. Dates are execution metadata. The report
-commit and measured commit are distinct; uncommitted runs remain drafts. Do not
+Performance reports use stable topic-based paths; update the existing report on
+reruns and let Git retain its history. Each report binds to the measured commit
+and associated PR, with a full SHA, source fingerprint and protocol. Dates are
+execution metadata. The report commit and measured commit are distinct; uncommitted runs remain drafts. Do not
 rewrite its raw data after a refactor or treat old timing as a new measurement.
 The [reporting rules](benches/reporting.md) own evidence classification,
 comparability, sampling and artifact retention; use the
