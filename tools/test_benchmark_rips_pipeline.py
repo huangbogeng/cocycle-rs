@@ -132,6 +132,20 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(record['validation'], 'failed')
         self.assertIn('coverage', record['workers']['cocycle']['samples'][-1]['comparison_error'])
 
+    def test_missing_ripser_counts_do_not_mask_later_topology_mismatch(self):
+        for counts, expected in (({'ripser': 0, 'gudhi': 3, 'cocycle': 3}, 'passed'),
+                                 ({'ripser': 0, 'gudhi': 3, 'cocycle': 4}, 'failed')):
+            record = {'workers': {b: {'command': [b], 'samples': []} for b in counts}}
+            entries = [{'backend': b, 'round': r, 'warmup': r == 0, 'position': i}
+                       for r in range(2) for i, b in enumerate(counts)]
+            args = SimpleNamespace(samples=1, timeout=1, address_space_mib=128, cpu=None)
+            with patch('benchmark_rips_pipeline.worker', side_effect=lambda command, *args:
+                       dict(self.output, simplices=counts[command[0]])), patch(
+                       'benchmark_rips_pipeline.schedule', return_value=entries):
+                rows = measure_case(record, self.case, args, 0)
+            self.assertEqual(record['validation'], expected)
+            self.assertEqual(all(r['median_ms'] == 5. for r in rows), expected == 'passed')
+
     def test_provenance_rejects_dirty_or_different_kernel(self):
         with patch('subprocess.check_output', return_value=' M src/lib.rs'):
             with self.assertRaisesRegex(ValueError, 'commit or stash'):

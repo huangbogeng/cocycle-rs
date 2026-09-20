@@ -280,7 +280,8 @@ def compare_samples(anchor, other, case):
         raise ValueError('coverage changed between samples')
     if anchor.get('representative_terms') is not None and other.get('representative_terms') is not None and anchor['representative_terms'] != other['representative_terms']:
         raise ValueError('representative payload changed between samples')
-    if anchor.get('simplices') is not None and other.get('simplices') and anchor['simplices'] != other['simplices']:
+    # Ripser reports zero when explicit simplex counts are unavailable.
+    if anchor.get('simplices') and other.get('simplices') and anchor['simplices'] != other['simplices']:
         raise ValueError('expanded simplex count mismatch')
 
 
@@ -337,8 +338,9 @@ def measure_case(record, case, args, seed):
             stopped.add(backend)
             continue
         try:
-            # Cross-backend agreement plus stable backend-specific coverage/bases.
-            for anchor in (next(iter(anchors.values()), sample), anchors.get(backend, sample)):
+            # Compare every available pair: the first backend may omit topology,
+            # coverage or bases that two later backends both expose.
+            for anchor in [sample, *anchors.values()]:
                 compare_samples(anchor, sample, case)
             anchors.setdefault(backend, sample)
         except ValueError as error:
