@@ -110,8 +110,8 @@ explanation. Unsupported capabilities are explicit exclusions, never zero times.
 Link the exact protocol and record the worker/controller source fingerprint.
 Use the machine-emitted protocol identity when available (`cocycle-native-v1`
 for H0/H1 and `cocycle-rips-pipeline-v2` for the pipeline). Preserve the description
-and source hash too. Earlier unversioned pipeline runs used a fixed backend order. A prose label alone must
-not imply a new protocol was executed.
+and source hash too. Earlier unversioned pipeline runs used a fixed backend order.
+A prose label alone must not imply a new protocol was executed.
 
 | Boundary | H0/H1 native | Rips pipeline |
 | --- | --- | --- |
@@ -156,7 +156,8 @@ OS, compiler/build flags, affinity and any frequency/load controls; explicitly
 state uncontrolled factors. Pipeline v2 defaults to 12 measured rounds with
 seeded, position-balanced backend order and optional `--cpu` affinity. It records
 both selected and inherited affinity; frequency and host load are not controlled
-by the harness. More repetitions alone do not remove these sources of variation. CI smoke timings are not performance baselines.
+by the harness. More repetitions alone do not remove these sources of variation.
+CI smoke timings are not performance baselines.
 
 Do not discard outliers or retry until a favorable run appears. Preserve all
 attempts and explain an invalidated run before replacing it. A timeout is a

@@ -56,7 +56,7 @@ for cutoffs, input layouts, and result semantics.
 
 [Documentation](docs/README.md) · [Rips guide](docs/guides/rips.md) · [Graph construction](docs/guides/rips-construction.md) · [Mathematics](docs/reference/mathematics.md) ·
 [Architecture](docs/development/architecture.md) · [Benchmarks](benches/README.md) ·
-[Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
+[Rips comparison](benches/reports/rips-comparison.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 
 Build the API reference with `cargo doc --no-deps --open`, or run the example with
 `cargo run --locked --example square`. Dimension-generic prime-field persistence and

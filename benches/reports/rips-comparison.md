@@ -102,7 +102,7 @@ and end before final JSON export. Uniform inputs use seed 1729; the cutoff row
 uses edge length 0.2. H1 rows request H0 through H1, without representatives.
 
 | Workload | Cocycle | GUDHI direct | GUDHI collapse | Ripser |
-| --- | --- | --- | --- | --- |
+| --- | ---: | ---: | ---: | ---: |
 | Uniform H0, n=1024 | 37.081 [36.740, 37.749] | 268.667 [264.755, 272.411] | 3682.013 [3655.707, 3704.987] | 84.424 [83.509, 85.264] |
 | Uniform H1, n=128 | 3.832 [3.811, 4.016] | 118.184 [117.649, 121.455] | 9.071 [9.030, 9.223] | 2.665 [2.652, 2.761] |
 | Equal-weight H1, n=128 | 2.461 [2.449, 2.500] | 97.092 [96.380, 97.783] | 8.161 [8.098, 8.243] | 0.853 [0.836, 0.884] |
@@ -124,7 +124,7 @@ uses an exact dyadic Manhattan metric, epsilon 0.5, start vertex zero, unique
 greedy choices and assumed metric hypotheses; it requests F3 H0/H1 diagrams.
 
 | Workflow | Cocycle | GUDHI | Ripser |
-| --- | --- | --- | --- |
+| --- | ---: | ---: | ---: |
 | Circle F2/H1, n=64 | 2.309 [2.287, 2.339] | 10.474 [10.404, 10.621] | 2.158 [2.140, 2.293] |
 | Nonmetric F3/H2, n=24 | 8.996 [8.917, 9.119] | 4.856 [4.801, 5.033] | 1.009 [0.993, 1.042] |
 | Same nonmetric input, explicit complex | 23.198 [22.816, 23.652] | 4.896 [4.853, 5.196] | Reference only |
@@ -151,7 +151,7 @@ algorithm allocation. Input widths and retained structures differ as above.
 Prepared-input RSS and high-water growth are separate raw metrics.
 
 | Workflow | Cocycle | GUDHI | Ripser |
-| --- | --- | --- | --- |
+| --- | ---: | ---: | ---: |
 | Circle F2/H1, n=64 | 3356 | 6408 | 4212 |
 | Nonmetric F3/H2, n=24 | 3624 | 4716 | 3848 |
 | Same nonmetric input, explicit complex | 8292 | 4712 | Reference only |
