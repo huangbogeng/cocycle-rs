@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "cases": 156,
+  "topology_comparisons": 156,
+  "persistence_comparisons": 153,
+  "unmodified_metric_sampling_checks": 145,
+  "source_sha256": "608f472f9a55f5d1e3925d7159798e6b9df676909b59b38f6d8da1cb4b3ce36a",
+  "ripser": "excluded: no sparse Rips approximation with higher-simplex blockers"
+}

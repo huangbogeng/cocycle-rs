@@ -10,3 +10,12 @@ mod persistence_diagram;
 
 pub use interval::{IntervalEnd, PersistenceInterval};
 pub use persistence_diagram::{Coverage, PersistenceDiagram};
+
+mod approximation;
+pub use approximation::{ApproximationTarget, RipsApproximation, RipsApproximationBound};
+
+mod computation;
+pub use computation::{ComputationContext, FiltrationKind, PersistenceResult};
+
+mod representative;
+pub use representative::{Representative, RepresentativeKind, RepresentativeTerm};

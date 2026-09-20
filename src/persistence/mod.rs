@@ -1,14 +1,30 @@
 //! Persistent homology computations and owned result assembly.
 //!
-//! The current entry points compute ordinary Rips H0/H1 over F2. Algorithm
+//! The entry points compute ordinary exact Rips or supplied flag persistence over prime fields. Algorithm
 //! configuration and working state stay in private, operation-specific modules.
 
 use crate::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceInterval};
 use crate::{Error, Result};
 
+mod execution;
+mod flag;
+mod options;
 #[cfg(test)]
 mod reference;
 mod rips;
+pub use execution::ExecutionLimits;
+pub use flag::{
+    RepresentativeRequest, RepresentativeSelection, compute_flag, compute_flag_with_representatives,
+};
+pub use options::PersistenceOptions;
+pub use rips::{
+    compute_expanded_rips, compute_expanded_rips_with_representatives,
+    compute_expanded_sparse_rips, compute_expanded_sparse_rips_with_representatives,
+    compute_rips_from_distances, compute_rips_from_distances_with_representatives,
+    compute_rips_from_points, compute_rips_from_points_with_representatives, compute_sparse_rips,
+    compute_sparse_rips_with_representatives, compute_threshold_rips,
+    compute_threshold_rips_with_representatives,
+};
 
 pub use rips::{RipsOptions, rips_from_dissimilarities, rips_from_points};
 

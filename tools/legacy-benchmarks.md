@@ -163,7 +163,7 @@ python tools/benchmark_scaling.py --cpu 0 --samples 3 --timeout 180 \
 
 This command can still time out on difficult cases; it is not a completion
 guarantee. Its independent results are documented in
-[the full-schedule comparison](../benches/reports/scaling-threeway.md).
+[the full-schedule comparison](../benches/reports/archive/source-be652a04dba1-python-threeway.md).
 
 The controller continues after worker timeout/error and saves all statuses.
 Mismatched diagrams, process errors or malformed output cause a nonzero exit;

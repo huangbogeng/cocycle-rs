@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "finished_utc": "2026-09-20T05:08:58.144325+00:00",
+  "cases": 25,
+  "worker_measurements": 69,
+  "samples_per_worker": 3,
+  "excluded_workers": 6,
+  "source_sha256": "9e6000c557ca183863336c9406cf39c89a9d058d7fa081cc4871f0631efdb7f2",
+  "failed_cases": []
+}

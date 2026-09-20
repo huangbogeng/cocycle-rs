@@ -1,0 +1,10 @@
+
+running 4 tests
+test docs/guides/rips-construction.md - Exact_Rips_construction_and_supplied_flag_filtrations::Construct__inspect_and_compute (line 28) ... ok
+test docs/guides/rips-construction.md - Exact_Rips_construction_and_supplied_flag_filtrations::Borrow_matrix_layouts (line 63) ... ok
+test docs/guides/rips-construction.md - Exact_Rips_construction_and_supplied_flag_filtrations::A_supplied_graph_is_its_own_filtration (line 103) ... ok
+test docs/guides/rips-construction.md - Exact_Rips_construction_and_supplied_flag_filtrations::Expand_and_inspect_a_Rips_skeleton (line 127) ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.32s; merged doctests compilation took 0.31s

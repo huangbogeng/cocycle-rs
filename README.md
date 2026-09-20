@@ -9,8 +9,14 @@ dissimilarities into persistence diagrams: which components and loops appear,
 and how long they last. A general-purpose TDA library in pure Rust, with no runtime
 dependencies and no unsafe code.
 
-- **Rips persistence** — ordinary H₀/H₁ over F₂, using union-find and implicit
-  persistent cohomology. Euclidean points or precomputed dissimilarities.
+- **Rips persistence** — dimension-generic ordinary persistence over prime fields,
+  with a specialized F₂ H₀/H₁ path. Euclidean points or borrowed matrix layouts.
+- **Inspectable construction** — exact threshold graphs, supplied weighted flag
+  filtrations, and frozen simplicial complexes with boundary/cofacet queries.
+- **Sparse approximation** — deterministic sampling, modified edges and higher-simplex
+  blockers, with explicit metric hypotheses and approximation provenance.
+- **Optional representatives** — owned persistent cycle bases and query-scale dual
+  cocycles, associated with intervals and original vertex IDs.
 - **Meaningful results** — owned diagrams preserve multiplicity and distinguish
   finite deaths, essential classes, and right-censored intervals.
 - **Useful summaries** — finite lifetimes, persistence entropy in nats, and Betti
@@ -48,15 +54,20 @@ for cutoffs, input layouts, and result semantics.
 
 ## Explore
 
-[Documentation](docs/README.md) · [Rips guide](docs/guides/rips.md) · [Mathematics](docs/reference/mathematics.md) ·
+[Documentation](docs/README.md) · [Rips guide](docs/guides/rips.md) · [Graph construction](docs/guides/rips-construction.md) · [Mathematics](docs/reference/mathematics.md) ·
 [Architecture](docs/development/architecture.md) · [Benchmarks](benches/README.md) ·
 [Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 
 Build the API reference with `cargo doc --no-deps --open`, or run the example with
-`cargo run --locked --example square`. Higher homology dimensions and representative
-cycles are not implemented. Work and memory depend on the input and reduction
-fill-in. Current comparisons use native GUDHI and upstream Ripser C++; older
-Python-wrapper measurements remain explicitly labeled historical evidence.
+`cargo run --locked --example square`. Dimension-generic prime-field persistence and
+explicit complex queries are demonstrated by `cargo run --example rips_sphere`.
+[Prime fields and representative bases](docs/guides/rips-representatives.md) are
+demonstrated by `cargo run --example rips_representatives`.
+[Sparse Rips approximation](docs/guides/sparse-rips.md), including metric hypotheses
+and sampling provenance, is demonstrated by `cargo run --example sparse_rips`.
+Work and memory depend on the input and reduction fill-in. Current comparisons
+use native GUDHI and upstream Ripser C++; older Python-wrapper measurements remain
+explicitly labeled historical evidence.
 
 [Issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) ·
 Code and original artwork are [MIT licensed](LICENSE).

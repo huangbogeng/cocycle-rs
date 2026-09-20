@@ -2,6 +2,46 @@
 
 ## 0.1.0 (unreleased)
 
+- Add phase-separated native Rips workflow measurements, per-process memory
+  evidence, failure retention and an R1-R10 acceptance audit. Cover cancellation
+  and work-budget recovery across twelve paths and concurrent prime-field calls.
+- Reuse overflow-safe condensed pair counting in sparse callback construction;
+  distinguish numerical overflow/underflow from invalid nonfinite input.
+
+- Add deterministic sparse Rips approximation with explicit metric hypotheses,
+  insertion-radius provenance, perturbed edges and higher-simplex blockers.
+  Support implicit/explicit prime-field persistence and requested representatives
+  with original vertex IDs. Add a runnable example and native GUDHI C++ checks.
+
+- Add borrowed lower/upper/square matrix views, streamed exact threshold graph
+  construction from Euclidean or custom distances, and checked weighted graphs.
+- Share dense/sparse flag H0/H1 computation over F2 with neighbor-intersection
+  cofacets. Preserve existing Rips APIs and distinguish original-input censoring
+  from essential classes in a supplied graph's complete filtration.
+- Add owned computation context, cooperative work limits/cancellation, graph
+  examples, independent graph-oracle tests and pinned native C++ correctness
+  workers.
+- Add frozen simplicial expansion, lookup, oriented boundaries and cofacet queries.
+  Keep construction dimension and scale coverage separate in `RipsExpansion`;
+  reject insufficient skeletons before reporting Rips persistence.
+- Extend `PersistenceOptions` and rich computation entry points to arbitrary F2
+  homology dimensions using implicit coboundary reduction with clearing. Retain
+  the legacy `RipsOptions` H0/H1 contract and specialized H1 engine.
+- Add the H2 sphere example, H2/H3/H4 analytic and independent boundary-oracle
+  tests, and native C++ comparisons of expanded simplices and high-dimensional
+  interval multisets.
+
+- Add validated prime-u32 fields with overflow-safe modular arithmetic and
+  oriented implicit cohomology. `PersistenceOptions::with_field` selects the
+  field; F2 remains the default and the specialized H1 path remains available.
+- Add opt-in `_with_representatives` entry points for all exact input paths.
+  Results own persistent cycle bases and their query-scale dual cocycles, with
+  local interval identities preserving multiplicity. Ordinary calls retain
+  implicit computation without materializing a representative skeleton.
+- Add field-sensitive flag RP2 fixtures, independent modular rank and basis
+  verification, a representative example, and native prime-field comparisons.
+  Record upstream coefficient limits explicitly instead of narrowing moduli.
+
 - Consolidate code conventions and change-specific verification rules. Enforce
   source hygiene and Python syntax in CI, validate Markdown reference links,
   and keep native build probe output in its build directory.
@@ -42,5 +82,4 @@ Initial pure Rust implementation, with no runtime dependencies. Requires Rust 1.
   explicit timeout/omission records and private workload diagnostics for H1.
 
 H1 avoids constructing the full 2-skeleton; repeated enumeration and reduction
-fill-in still limit scalability. Higher homology dimensions, representative
-cycles, diagram distances, other filtrations and Polars bindings are future work.
+fill-in still limit scalability. Diagram distances, other filtrations and Polars bindings are future work.

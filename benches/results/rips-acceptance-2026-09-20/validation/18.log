@@ -1,0 +1,4 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target/debug/examples/rips_graph`
+4 vertices, 4 edges; Through(1.0)
+H1 Betti curve: [0, 1]

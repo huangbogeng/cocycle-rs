@@ -1,0 +1,191 @@
+   Compiling cocycle v0.1.0 (/home/jzdy/github.com/huangbogeng/cocycle-rs)
+    Finished `release` profile [optimized] target(s) in 3.33s
+     Running unittests src/lib.rs (target/release/deps/cocycle-5698ffed481427e5)
+
+running 20 tests
+test persistence::flag::cohomology::profiling::profile_stage ... ignored, explicit development profiling, no timing assertions
+test persistence::flag::cohomology::profiling::profile_workload ... ignored, development workload counters; validated by tools/profile_scaling.py
+test filtration::flag::dense::tests::binomial_counts_detect_overflow_without_intermediate_overflow ... ok
+test geometry::dissimilarity::tests::condensed_shape_accepts_representable_counts_without_intermediate_overflow ... ok
+test persistence::flag::cohomology::tests::cone_stopping_preserves_user_coverage_and_closed_boundary ... ok
+test persistence::flag::cohomology::tests::extreme_scales_and_adjacent_f64_values_do_not_quantize_or_overflow ... ok
+test persistence::flag::cohomology::tests::heap_entries_cancel_by_parity_instead_of_set_deduplication ... ok
+test persistence::flag::cohomology::tests::reversed_transpose_pairs_and_unpaired_indices_map_back_to_boundary_reduction ... ok
+test persistence::reference::reduction::tests::hand_filtration_pairs_a_loop_with_a_later_face ... ok
+test persistence::reference::column::tests::addition_matches_independent_bit_vector_xor ... ok
+test persistence::reference::tests::boundaries_are_ordered_and_square_to_zero ... ok
+test persistence::reference::tests::closed_square_filtration_has_expected_skeletons ... ok
+test persistence::reference::tests::invalid_explicit_filtrations_are_rejected ... ok
+test filtration::flag::dense::tests::combinatorial_ids_and_cofacets_match_independent_vertex_enumeration ... ok
+test persistence::flag::cohomology::tests::shortcut_and_reconstruction_paths_are_exercised ... ok
+test persistence::tests::union_find_matches_reference_reduction_with_ties_and_cutoffs ... ok
+test persistence::flag::cohomology::tests::large_cycles_and_disconnected_components_survive_truncation ... ok
+test persistence::tests::every_small_weighted_graph_matches_independent_explicit_reduction ... ok
+test persistence::flag::cohomology::tests::every_three_level_four_vertex_filtration_matches_reference_with_each_optimization ... ok
+test persistence::flag::cohomology::tests::randomized_f64_nonmetric_filtrations_and_ties_match_each_optimization ... ok
+
+test result: ok. 18 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/contracts.rs (target/release/deps/contracts-e00026e5cc3b680e)
+
+running 26 tests
+test canonical_order_retains_multiplicity_and_ignores_input_permutation ... ok
+test all_interval_scale_fields_reject_nonfinite_values ... ok
+test condensed_layout_matches_a_symmetric_matrix ... ok
+test censoring_includes_birth_at_the_cutoff ... ok
+test condensed_shape_validation_divides_before_multiplying ... ok
+test construction_takes_ownership_of_the_interval_buffer ... ok
+test complete_diagrams_cannot_contain_censored_intervals ... ok
+test coordinates_reject_nonfinite_values_with_their_position ... ok
+test dissimilarities_accept_zero_pairs_and_nonmetric_data ... ok
+test diagrams_reject_intervals_outside_recorded_dimensions ... ok
+test dissimilarities_reject_nonfinite_and_negative_entries ... ok
+test empty_cloud_still_requires_positive_coordinate_dimension ... ok
+test empty_diagrams_distinguish_absent_intervals_from_uncomputed_dimensions ... ok
+test errors_integrate_with_standard_error_handling ... ok
+test explicit_vertex_count_distinguishes_empty_and_singleton ... ok
+test finite_endpoints_do_not_require_a_representable_lifetime ... ok
+test finite_intervals_reject_zero_or_negative_lifetime ... ok
+test generic_coverage_accepts_negative_cutoffs_but_rejects_nonfinite_ones ... ok
+test generic_diagrams_do_not_assume_rips_connectivity_or_births ... ok
+test generic_intervals_allow_signed_scales_and_high_dimensions ... ok
+test interval_and_coverage_zeros_are_canonical ... ok
+test point_shape_mismatch_is_distinct_from_overflow ... ok
+test rips_cutoff_must_be_finite_and_nonnegative ... ok
+test rips_options_limit_computation_dimensions_without_limiting_diagrams ... ok
+test row_major_points_borrow_and_preserve_duplicates ... ok
+test truncated_diagrams_check_every_endpoint_against_the_cutoff ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/descriptors.rs (target/release/deps/descriptors-57d873f6f7a39c0d)
+
+running 6 tests
+test equal_lifetimes_have_natural_log_entropy_and_dimension_specific_exclusions ... ok
+test betti_counts_births_deaths_and_the_censoring_cutoff_correctly ... ok
+test grid_validation_rejects_invalid_order_values_and_uncomputed_dimensions ... ok
+test a_single_finite_interval_has_zero_entropy_and_censored_intervals_are_excluded ... ok
+test overflow_is_reported_and_extreme_probability_ratios_remain_finite ... ok
+test total_persistence_uses_compensation_for_disparate_lifetimes ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/euclidean.rs (target/release/deps/euclidean-56c408c20f3991a8)
+
+running 4 tests
+test empty_singleton_and_duplicate_clouds_remain_distinct_inputs ... ok
+test stable_norm_handles_large_and_tiny_representable_distances ... ok
+test square_matches_distances_and_survives_release_of_coordinate_storage ... ok
+test translation_rotation_and_concurrent_calls_preserve_diagrams ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/flag.rs (target/release/deps/flag-f423d4d8d9c25653)
+
+running 3 tests
+test control_failures_do_not_leak_state_into_later_computations ... ok
+test cycle_and_isolate_have_essential_classes_only_for_complete_graph ... ok
+test sparse_h1_handles_many_isolated_vertices_with_bounded_work ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/graph.rs (target/release/deps/graph-881c97f6ba53096d)
+
+running 2 tests
+test adjacency_preserves_zero_edges_and_isolated_vertices ... ok
+test invalid_graphs_are_never_repaired_silently ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/matrix.rs (target/release/deps/matrix-d7df70604840f577)
+
+running 2 tests
+test all_layouts_borrow_and_compute_the_same_filtration ... ok
+test shapes_structure_and_numeric_errors_are_checked ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/prime_fields.rs (target/release/deps/prime_fields-1ed956aab1ae10a2)
+
+running 7 tests
+test empty_requests_and_point_inputs_preserve_ownership ... ok
+test duplicate_intervals_and_selections_keep_local_identity ... ok
+test request_validation_censoring_and_execution_are_explicit ... ok
+test prime_validation_and_full_u32_arithmetic ... ok
+test finite_cycles_die_with_their_intervals_and_paths_agree ... ok
+test odd_prime_random_filtrations_match_independent_ranks ... ok
+test torsion_changes_the_diagram_and_representatives ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/rips.rs (target/release/deps/rips-d841f2239714b36e)
+
+running 8 tests
+test bounded_distance_perturbations_obey_the_diagram_stability_bound ... ok
+test square_loop_dies_at_the_diagonal_and_is_censored_at_a_smaller_cutoff ... ok
+test zero_cutoff_merges_duplicate_vertices_without_zero_length_bars ... ok
+test top_skeleton_homology_is_not_exported ... ok
+test empty_singleton_pair_duplicates_and_filled_triangle ... ok
+test vertex_permutations_and_scaling_preserve_the_expected_diagram ... ok
+test complete_bipartite_filtrations_preserve_quadratic_interval_multiplicity ... ok
+test diagrams_match_independent_ranks_and_truncation_on_small_nonmetric_inputs ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/rips_construction.rs (target/release/deps/rips_construction-80e1e40f0922e4ca)
+
+running 4 tests
+test callbacks_validate_every_pair_even_outside_the_cutoff ... ok
+test construction_equivalence_duplicate_points_and_owned_results ... ok
+test original_range_is_not_inferred_from_the_largest_retained_edge ... ok
+test empty_singleton_numeric_limits_and_complete_cutoffs ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rips_expansion.rs (target/release/deps/rips_expansion-85505718fe1ecfb1)
+
+running 6 tests
+test incidence_is_closed_oriented_and_ordered ... ok
+test expansion_rejects_missing_dimensions_and_unknown_scales ... ok
+test arbitrary_requests_empty_inputs_and_control_failures ... ok
+test sparse_high_dimensions_do_not_densify ... ok
+test high_dimensional_spheres_die_when_opposite_edges_enter ... ok
+test high_dimensions_match_independent_boundary_reduction ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/rips_resources.rs (target/release/deps/rips_resources-3ba7e066fb4d4062)
+
+running 2 tests
+test simultaneous_prime_field_calls_share_only_immutable_input ... ok
+test all_rips_paths_recover_after_budget_and_cancellation_failures ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/sparse_rips.rs (target/release/deps/sparse_rips-e4ed33a63ff4b78c)
+
+running 9 tests
+test empty_singleton_duplicate_inputs_and_execution_limits ... ok
+test coverage_and_dimension_are_independent_and_no_bound_for_large_epsilon ... ok
+test input_paths_cache_callbacks_once_and_keep_matrix_layouts_equivalent ... ok
+test deterministic_sampling_preserves_zero_duplicates_and_subsample_provenance ... ok
+test invalid_parameters_and_unrepresentable_arithmetic_fail_explicitly ... ok
+test metric_evidence_is_explicit_and_rounding_does_not_hide_violations ... ok
+test noncontiguous_h1_representatives_are_closed_dual_and_owned ... ok
+test blocker_excludes_a_real_metric_clique_and_preserves_face_closure ... ok
+test arbitrary_dimensions_fields_and_representatives_agree_on_blocked_topology ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Doc-tests cocycle
+
+running 5 tests
+test src/lib.rs - (line 19) ... ok
+test src/geometry/dissimilarity.rs - geometry::dissimilarity::DissimilarityView (line 10) ... ok
+test src/diagram/persistence_diagram.rs - diagram::persistence_diagram::PersistenceDiagram (line 26) ... ok
+test src/persistence/rips/mod.rs - persistence::rips::rips_from_dissimilarities (line 45) ... ok
+test src/geometry/point_cloud.rs - geometry::point_cloud::PointCloudView (line 10) ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.26s; merged doctests compilation took 0.25s

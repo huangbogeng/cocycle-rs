@@ -1,0 +1,13 @@
+   Compiling cocycle v0.1.0 (/home/jzdy/github.com/huangbogeng/cocycle-rs/target/package/cocycle-0.1.0)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running `target/package/cocycle-0.1.0/target/debug/examples/sparse_rips`
+original vertices: 5; retained: [0, 1, 2, 3]
+conditional ideal-arithmetic bound: Some(RipsApproximationBound { factor: 2.0, target: OriginalInput })
+approximation coverage: Complete
+PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }
+PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }
+PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }
+PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }
+PersistenceInterval { dimension: 1, birth: 1.0, end: Finite(1.4142135623730951) }
+Representative { request_index: 0, interval_index: 4, dimension: 1, characteristic: 3, scale: 1.0, kind: Cycle, terms: [RepresentativeTerm { vertices: [0, 1], coefficient: 1 }, RepresentativeTerm { vertices: [0, 3], coefficient: 2 }, RepresentativeTerm { vertices: [1, 2], coefficient: 1 }, RepresentativeTerm { vertices: [2, 3], coefficient: 1 }] }
+Representative { request_index: 0, interval_index: 4, dimension: 1, characteristic: 3, scale: 1.0, kind: Cocycle, terms: [RepresentativeTerm { vertices: [2, 3], coefficient: 1 }] }

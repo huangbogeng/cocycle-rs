@@ -1,0 +1,384 @@
+[
+  {
+    "command": [
+      "python3",
+      "tools/check_source.py"
+    ],
+    "exit_code": 0,
+    "log": "00.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tools/check_docs.py"
+    ],
+    "exit_code": 0,
+    "log": "01.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "test_*.py"
+    ],
+    "exit_code": 0,
+    "log": "02.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "03.log"
+  },
+  {
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "tools/diagram_dump.rs",
+      "tools/benchmark_driver.rs",
+      "benches/native/cocycle.rs",
+      "tools/reference/rips_cocycle.rs",
+      "tools/reference/sparse_cocycle.rs",
+      "benches/pipeline/cocycle.rs"
+    ],
+    "exit_code": 0,
+    "log": "04.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--all-targets",
+      "--all-features",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "05.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "log": "06.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--release",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "log": "07.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "+1.91.0",
+      "test",
+      "--locked",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "log": "08.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "+1.91.0",
+      "check",
+      "--locked",
+      "--all-targets",
+      "--all-features"
+    ],
+    "exit_code": 0,
+    "log": "09.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "build",
+      "--locked"
+    ],
+    "exit_code": 0,
+    "log": "10.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "doc",
+      "--locked",
+      "--no-deps"
+    ],
+    "exit_code": 0,
+    "log": "11.log"
+  },
+  {
+    "command": [
+      "rustdoc",
+      "--edition",
+      "2024",
+      "--test",
+      "README.md",
+      "--extern",
+      "cocycle=target/debug/libcocycle.rlib",
+      "-L",
+      "dependency=target/debug/deps"
+    ],
+    "exit_code": 0,
+    "log": "12.log"
+  },
+  {
+    "command": [
+      "rustdoc",
+      "--edition",
+      "2024",
+      "--test",
+      "docs/guides/rips.md",
+      "--extern",
+      "cocycle=target/debug/libcocycle.rlib",
+      "-L",
+      "dependency=target/debug/deps"
+    ],
+    "exit_code": 0,
+    "log": "13.log"
+  },
+  {
+    "command": [
+      "rustdoc",
+      "--edition",
+      "2024",
+      "--test",
+      "docs/guides/rips-construction.md",
+      "--extern",
+      "cocycle=target/debug/libcocycle.rlib",
+      "-L",
+      "dependency=target/debug/deps"
+    ],
+    "exit_code": 0,
+    "log": "14.log"
+  },
+  {
+    "command": [
+      "rustdoc",
+      "--edition",
+      "2024",
+      "--test",
+      "docs/guides/rips-representatives.md",
+      "--extern",
+      "cocycle=target/debug/libcocycle.rlib",
+      "-L",
+      "dependency=target/debug/deps"
+    ],
+    "exit_code": 0,
+    "log": "15.log"
+  },
+  {
+    "command": [
+      "rustdoc",
+      "--edition",
+      "2024",
+      "--test",
+      "docs/guides/sparse-rips.md",
+      "--extern",
+      "cocycle=target/debug/libcocycle.rlib",
+      "-L",
+      "dependency=target/debug/deps"
+    ],
+    "exit_code": 0,
+    "log": "16.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "square"
+    ],
+    "exit_code": 0,
+    "log": "17.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "rips_graph"
+    ],
+    "exit_code": 0,
+    "log": "18.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "flag_persistence"
+    ],
+    "exit_code": 0,
+    "log": "19.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "rips_sphere"
+    ],
+    "exit_code": 0,
+    "log": "20.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "rips_representatives"
+    ],
+    "exit_code": 0,
+    "log": "21.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--example",
+      "sparse_rips"
+    ],
+    "exit_code": 0,
+    "log": "22.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "package",
+      "--locked",
+      "--offline",
+      "--allow-dirty",
+      "--list"
+    ],
+    "exit_code": 0,
+    "log": "23.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "package",
+      "--locked",
+      "--offline",
+      "--allow-dirty"
+    ],
+    "exit_code": 0,
+    "log": "24.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "square"
+    ],
+    "exit_code": 0,
+    "log": "25.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "rips_graph"
+    ],
+    "exit_code": 0,
+    "log": "26.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "flag_persistence"
+    ],
+    "exit_code": 0,
+    "log": "27.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "rips_sphere"
+    ],
+    "exit_code": 0,
+    "log": "28.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "rips_representatives"
+    ],
+    "exit_code": 0,
+    "log": "29.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "run",
+      "--locked",
+      "--offline",
+      "--manifest-path",
+      "target/package/cocycle-0.1.0/Cargo.toml",
+      "--example",
+      "sparse_rips"
+    ],
+    "exit_code": 0,
+    "log": "30.log"
+  }
+]

@@ -2,35 +2,47 @@
 
 [Benchmarks](../README.md)
 
-Reports state which source and protocol were measured. New cross-library
-performance evidence must use the [native C++ protocol](../protocol.md).
+Formal reports bind to a measured full commit SHA and, when applicable, a PR.
+Execution dates are metadata. Use the [reporting rules](../reporting.md) and
+[report template](../report-template.md); a report's own commit does not identify
+its measured code.
 
-## Native C++ evidence
+## Commit-bound reports
 
-[Native validation: 2026-09-20](native-validation-2026-09-20.md) records the standard
-baseline and small scaling checks, exact source pins, declared exclusions, and
-retained raw outputs. It does not claim a complete large-input comparison.
+No retained report currently has a verified measured-commit binding. The source
+checks in the [migration audit](archive/migration.md) did not establish one.
+New formal reports use `pr-<number>-<head12>-<suite>.md` or
+`commit-<sha12>-<suite>.md`, recording full SHAs and upstream pins inside.
+
+## Native drafts
+
+| Report | Measured source | Evidence class and scope |
+| --- | --- | --- |
+| [Complete Rips workflows](draft-9e6000c557ca-rips-pipeline.md) | `9e6000c557ca`; separate exact/sparse fingerprints in artifacts | Resource snapshot: 25 workflows, 69 backend groups, three measured processes; independent correctness suites |
+| [H0/H1 native validation](draft-e1493a10ae91-native-h0h1.md) | `e1493a10ae91`; preserved source archive | Correctness/smoke validation and initial resource snapshots |
+
+Both drafts lack measured-commit attribution. They describe their recorded source
+snapshots and cannot establish performance for current HEAD or an eventual merge.
+Promotion requires verified source mapping or a fresh committed run.
 
 ## Historical Python-wrapper evidence
 
-The following external-library results include Python binding and conversion
-costs. They remain useful historical observations and correctness evidence, but
-are not native GUDHI/Ripser C++ performance measurements.
+The [source-indexed archive](archive/README.md) separates explicit and implicit
+implementations, shared-precision baselines, scaling experiments and instrumented
+ablation. Each record states its full fingerprint, evidence type and attribution
+limits. Wrapper observations remain distinct from native C++ measurements.
 
-| Report | Scope |
-| --- | --- |
-| [Same-size comparison](scaling-threeway.md) | Four paths on 23 scaling fixtures, including larger GUDHI cases |
-| [Scaling and difficult inputs](scaling.md) | Bounded wrapper run, circle supplement and private work counters |
-| [Implementation history](history.md) | Rust algorithm transitions, wrapper comparisons and ablation evidence |
-| [Historical protocol](python-protocol.md) | Exact boundaries used by the retained Python-wrapper runs |
+The [historical wrapper protocol](../python-wrapper-protocol.md) is maintained
+separately from experiment reports. The [unattributed Rust baseline](archive/unattributed-rust-baseline.md)
+records the oldest CSV's missing source identity explicitly.
 
-## Maintenance and raw evidence
+## Maintenance records
 
-[Project cleanup verification](project-cleanup.md) records the 2026-09-17
-maintenance checks, not a fresh performance experiment. The original Rust-only
-baseline is [linux-x86_64.csv](../results/linux-x86_64.csv).
+[Repository cleanup verification](archive/maintenance/source-977573dab74e-cleanup.md)
+is a local maintenance record identified by source `977573dab74e`, not a performance
+experiment. The [migration audit](archive/migration.md) maps removed document paths
+to their replacements and records the provenance checks.
 
-Existing raw records remain under `../results/` with original bytes, source
-hashes, fixture files, statuses and diagrams. Moving a report does not update its
-measurements. Add native reports only after inspecting a new native run, and
-label smoke validation separately from performance conclusions.
+Raw artifacts stay under their original `../results/` paths with unchanged bytes,
+source identities, fixtures and outcomes. Document migration does not rerun an
+experiment, assign a new source version or upgrade its statistical evidence.

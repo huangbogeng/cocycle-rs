@@ -10,9 +10,11 @@ sources and [testing](../development/testing.md) for independent checks.
 ## 1. Scope and notation
 
 The current algorithms compute ordinary Vietoris–Rips persistent homology of
-finite inputs over $\mathbb F_2$, returning H0 or H0/H1. Reduced homology, other
-fields, representative cycles, zigzag, and multiparameter persistence are not
-implemented. Nonnegative scales and zero H0 births are Rips-specific; the general
+finite inputs over a validated prime field $\mathbb F_p$ through any requested
+homology dimension, with F2 the default. The legacy `RipsOptions` path remains
+limited to F2 H0/H1. Optional cycle and cocycle bases are described in section 14.
+Reduced homology, non-prime coefficient rings, zigzag and multiparameter
+persistence are not implemented. Nonnegative scales and zero H0 births are Rips-specific; the general
 interval representation is not restricted to these dimensions or scales.
 
 | Symbol | Meaning |
@@ -20,7 +22,7 @@ interval representation is not restricted to these dimensions or scales.
 | $n,d$ | Vertex count and ambient dimension |
 | $\delta_{ij}$ | Finite, nonnegative, symmetric dissimilarity; Euclidean distance for point clouds |
 | $t,T$ | Filtration scale and optional cutoff |
-| $q$ | Maximum requested homology dimension, currently 0 or 1 |
+| $q$ | Maximum requested homology dimension |
 | $\sigma,f(\sigma)$ | Simplex and filtration value |
 | $D,R$ | Boundary matrix and reduced matrix |
 | $\mathcal D_k$ | Persistence diagram in dimension k, as a multiset |
@@ -87,7 +89,8 @@ an epsilon.
 
 ## 3. Chains, boundaries, and homology
 
-Let $C_k(K;\mathbb F_2)$ have the k-simplices as a basis. A chain can be represented
+First consider the F2 specialization; section 13 gives oriented prime-field
+coefficients. Let $C_k(K;\mathbb F_2)$ have the k-simplices as a basis. A chain can be represented
 by a set of simplex indices, with addition given by symmetric difference.
 
 $$
@@ -155,8 +158,9 @@ this pairing theorem: the direct source is [B21 Proposition 3.1 and Algorithm 1]
 A pair `(i,j)` gives dimension $\dim\sigma_i$ and endpoints $f(\sigma_i),f(\sigma_j)$.
 Determine unpaired births only after reduction, and output only dimensions through q.
 Internal validation retains zero-length index pairs; public diagrams omit $b=d$
-because $[b,b)$ is empty. There is no additional minimum-persistence filter or
-representative-cycle output.
+because $[b,b)$ is empty. There is no additional minimum-persistence filter.
+The independent F2 test oracle described here does not export representatives;
+section 14 specifies the production representative path.
 
 Sparse columns use ordered symmetric difference with reusable buffers. An empty
 reduced column retains its index marker while its allocation may be reused: an
@@ -365,3 +369,204 @@ This independent derivation checks repeated endpoints, quadratic output
 multiplicity, and triangle-free enumeration. The output itself can contain
 $\Theta(n^2)$ intervals; do not attribute all their storage to reduction fill-in
 or deduplicate intervals to improve measured cost.
+
+## 11. Exact graph inputs and shared flag computation
+
+The [construction guide](../guides/rips-construction.md) describes the public APIs.
+A finite graph G has vertices at zero, edge weights w >= 0, and a simplex for
+each clique, born at its maximum edge weight. Missing edges never enter. This
+complete flag filtration can have essential H1. A cutoff below its maximum edge
+conservatively gives right-censored survivors under the existing diagram contract.
+
+An exact threshold graph constructed from a full pairwise input instead certifies
+only the original Rips through its recorded cutoff, unless every original pair
+was included. Its maximum retained edge cannot establish original completeness.
+Requesting computation beyond that certified range is an error. With no new
+cutoff, computation uses the construction's available range.
+
+The shared H1 engine requires forward edge order and decreasing combinatorial ID
+order for triangle cofacets. For a fixed edge, inserting increasing third vertices
+increases the triangle ID. Reverse intersection of sorted neighbor lists therefore
+satisfies the dense enumerator's order. Every emitted triangle has all three edges,
+and latest-facet lookup uses the same value/ID order. These facts preserve the
+original-column apparent/emergent-pair tests on supplied flag filtrations. No
+complete-distance cone bound is inferred from missing sparse edges. Independent
+vertex-triple enumeration and ordinary reduction validate the sparse path.
+
+Lower/upper/square layouts borrow original f64 values. Exact square symmetry and
+zero diagonal are checked without tolerance repairs. Exact construction needs no
+triangle inequality. Custom callbacks supply one orientation of each pair and
+must respect the documented symmetric, stable-function contract. Work limits and
+cancellation indicate execution failure; they do not change a filtration cutoff
+or return a successful partial diagram.
+
+## 12. Explicit skeletons and dimension-generic cohomology
+
+For a weighted graph, each stored clique has increasing vertices and value equal
+to its largest edge (vertices enter at zero). Production filtration order is
+increasing value, increasing dimension, then decreasing colexicographic order.
+For equal-sized simplices this last order agrees with decreasing combinatorial
+rank from section 9, without requiring that rank to fit a machine integer.
+An increasing-vertex simplex has oriented boundary obtained by omitting vertex
+position i with coefficient (-1)^i. Each codimension-two face appears twice with
+opposite signs, so the stored integer boundary squares to zero before reduction
+modulo two.
+
+An explicit p-skeleton suffices for Hq only when p >= q+1, or when construction
+certifies that it already contains the whole threshold clique complex. Otherwise
+missing cofaces can create artificial top-dimensional survivors. The expansion
+probes unique extensions of its last dimension to establish exhaustion. This
+certificate concerns only dimensions at the constructed scale; it does not extend
+original-input scale coverage. Dimension and scale checks are independent.
+
+For dimension-generic F2 computation, classify edges by forward union-find, then
+process remaining edges in reverse order. At each dimension, the working column
+is a set of cofacets; symmetric difference performs F2 addition. Its earliest
+forward cofacet is the reverse coboundary pivot. An owned pivot triggers addition
+of the owner's transformation column, regenerating its coboundary on demand. A
+new pivot pairs the current simplex with that cofacet; an empty reduced column
+records an unpaired class unless the simplex was cleared. Pivot simplices become
+cleared columns in the next dimension. Cleared simplices still participate in
+clique generation: clearing skips algebra, not topology. This is the dimensional
+extension of the reversed-transpose duality in section 9 and [B21](bibliography.md#b21).
+
+Only the current dimension, transformations, pivot ownership and a working
+coboundary are needed on the implicit path. These can still be exponentially
+large. The explicit path uses the same reducer over stored incidence and thus
+also pays for the already materialized skeleton. H0/H1-only implicit requests
+retain the specialized compact-index engine and its pair shortcuts.
+
+As an independent high-dimensional fixture, partition 2r vertices into r pairs.
+Give opposite partners distance 2 and all other pairs distance 1. Between scales
+1 and 2 the clique complex is the join of r copies of S0, hence S^(r-1); at scale
+2 it becomes a full simplex. Its positive-dimensional diagram consists of one
+H_(r-1) interval [1,2) for r >= 2. Omitting opposite edges permanently instead
+makes that sphere essential in the supplied graph filtration. Tests exercise
+r=3,4,5, alongside independent forward boundary reduction of all small vertex
+subsets and native C++ comparisons.
+
+## 13. Prime fields and oriented reduction
+
+`PrimeField` accepts exactly prime u32 characteristics. Arithmetic outputs residues
+in 0..p; nonzero sparse entries lie in 1..p. The largest accepted characteristic
+is 4294967291. Exact trial division validates primality, u64 intermediates cover
+every u32 product and sum, and modular exponentiation computes inverses. Zero
+has no multiplicative inverse and is rejected. These arithmetic choices are
+implementation contracts, independent of filtration precision.
+
+For increasingly oriented vertices, the coefficient on the facet omitting position
+i is (-1)^i modulo p. Coboundary incidence uses the same coefficient. Normalizing
+a pivot c multiplies its column and transformation by c^(-1); eliminating a
+coefficient a against a normalized pivot adds -a times that column. F2 reduces
+to parity cancellation. Dimension progression and clearing do not depend on p.
+H0 connectivity uses union-find over every supported field.
+
+Independent dense rank checks use separate arithmetic and enumeration. A
+barycentric subdivision of the [six-vertex RP2 triangulation](bibliography.md#rp2)
+is flag: vertices represent nonempty faces, and edges join comparable faces.
+Pairwise comparable faces form chains, so its clique complex is the subdivision.
+This fixture has one H1 and one H2 class over F2 and neither over odd primes.
+The test independently checks those ranks, and native C++ comparisons check the
+same weighted flag filtration with matching coefficient fields. Reference modulus
+limits are recorded as exclusions, never silent narrowing.
+
+## 14. Persistent representative bases
+
+For a full forward boundary reduction R=DV in filtration order, a finite pair
+(i,j) supplies cycle R_j with leading simplex i. It is available at birth i and
+becomes a boundary at death j. An unpaired birth i supplies V_i. The active
+subset of these cycles gives a homology basis at every scale; see
+[B21, section 3.1](bibliography.md#b21). Using V_i for every finite pair would
+not establish its death association. Production normalizes nonzero pivot columns,
+which only rescales the selected basis vectors.
+
+The caller requests representatives after all simplices at a finite query scale
+t have entered. Active intervals satisfy birth <= t < death, with an unpaired
+interval alive through an inclusive known cutoff. Zero-length pairs are omitted.
+At t, reduced boundary columns whose source simplices have entered span B_q(K_t).
+For active cycle basis z_i, solve cochain constraints
+
+$$
+\varphi_i(b)=0\quad(b\in B_q(K_t)),\qquad
+\varphi_i(z_j)=\delta_{ij}.
+$$
+
+Sparse row elimination normalizes pivot constraints and then back-substitutes
+with free coordinates set to zero. Annihilating boundaries is exactly the
+cocycle equation; identity pairing proves nontriviality and independence modulo
+coboundaries. This construction defines a dual basis for the requested scale,
+not a promise that the returned cochain entries remain unchanged at another
+scale. No shortest-support or canonical-across-algorithms claim is made.
+
+Output identities are indices into one result's sorted interval multiset.
+Repeated intervals retain distinct indices; request positions distinguish repeated
+queries. Terms contain original, increasing simplex vertices and canonical
+nonzero coefficients. Queries outside known coverage or computed dimensions fail.
+Requested representatives own their terms and do not borrow a reduction workspace.
+
+Only nonempty request slices materialize a representative skeleton and retain
+forward transformations. All relevant exact paths produce the same diagram with
+or without requests, while resource costs differ. Tests independently verify
+closure, boundary/coboundary quotient ranks, identity pairings, birth support,
+finite-death association, coefficient ranges, repeated intervals and censoring.
+Native references validate prime-field interval multisets; these adapters do not
+claim an upstream representative-vector oracle.
+
+## 15. Sparse Rips approximation
+
+Sparse Rips is a different filtration from exact threshold Rips. The construction
+follows the pinned GUDHI C++ sparse edge/blocker convention, with deterministic
+sampling instead of its random initial landmark. See [CJS15](bibliography.md#cjs15)
+and the [source study](../design/rips.md#three-project-baseline).
+
+Let `p_0,...,p_(n-1)` be a greedy farthest-point permutation. Its insertion radii
+are `lambda_0 = infinity` and `lambda_j = min_(i<j) d(p_i,p_j)`. Ties choose the
+smallest original vertex ID. Retain the initial vertex and the prefix of positive
+radii at least the optional minimum insertion radius. A pseudometric may have
+zero-distance duplicates; identifying these preserves its Rips persistence.
+
+For retained `i < j`, write `d = d(p_i,p_j)`, `li = lambda_i`, `lj = lambda_j`.
+The modified edge value, in edge-length units, is:
+
+```text
+alpha = d                    if d * epsilon <= 2 * lj
+edge absent                  if d * epsilon > li + lj (and the first case failed)
+alpha = 2 * (d - lj/epsilon)  otherwise
+```
+
+For `epsilon < 1`, the last branch is additionally absent if
+`alpha * c > lj`, where `c = epsilon * (1-epsilon)/2`. Retain only values at most
+the construction threshold. Vertices have value zero. A higher simplex is a
+clique whose value `f` is its largest edge value and which satisfies
+`lambda_v >= f*c` at every vertex. For epsilon at least one this additional
+constraint is disabled. This is not ordinary flag expansion for epsilon below one.
+The constraint is hereditary: a face has a no-larger value and no-smaller minimum
+insertion radius. Therefore rejecting a simplex cannot remove an admissible coface.
+
+The conditional metric theorem uses `0 < epsilon < 1`, exact arithmetic and a
+greedy permutation. GUDHI states a `(1, 1/(1-epsilon))` interleaving with exact
+Rips. In [CJS15](bibliography.md#cjs15), set the paper's parameter to
+`delta = epsilon/(1-epsilon)`: the ball cap is `lambda/epsilon`, disappearance
+radius is `lambda/[epsilon*(1-epsilon)]`, and the factor is `1+delta`.
+GUDHI doubles radius scales to edge-length scales. CJS15 §2 embeds finite metrics
+isometrically in the max norm, allowing its nerve argument to cover metric Rips;
+§4 states the approximation theorem and §5 explains the higher-simplex test.
+Bounds apply to the retained metric subset after positive-radius subsampling.
+No unchanged multiplicative guarantee to the full input is claimed then.
+
+The library records checked, caller-assumed or absent metric hypotheses. Exact
+checking treats finite binary64 inputs as real dyadic numbers. FastTwoSum
+recovers the sign of a rounded sum's error to test triangle equality correctly;
+no tolerance silently changes the hypothesis. A pseudometric with zero-distance
+pairs is allowed. The reported factor is a nominal binary64 evaluation of the
+ideal theorem, not a certificate for accumulated construction rounding. Extreme
+arithmetic that overflows, or epsilon causing a zero blocker factor by underflow,
+returns a numerical error. Other operations use ordinary binary64 rounding.
+
+Coverage describes the approximate filtration. Edges excluded by its rules never
+enter; those omitted solely by a finite threshold make the range incomplete.
+Dimension truncation is separate: Hq requires construction through q+1 unless
+expansion certified exhaustion. All public simplex/representative vertex labels
+refer to original input IDs, while the exposed graph uses a documented compact
+map. Representative bases describe this approximate filtration and do not claim
+a chain map into original Rips at the same scale.

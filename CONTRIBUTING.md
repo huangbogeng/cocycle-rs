@@ -36,11 +36,16 @@ quality, test, and MSRV jobs:
 
 ```sh
 cargo fmt --all -- --check
-rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs
+rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked --all-features
 cargo test --locked --release --all-features
 cargo run --locked --example square
+cargo run --locked --example rips_graph
+cargo run --locked --example flag_persistence
+cargo run --locked --example rips_sphere
+cargo run --locked --example rips_representatives
+cargo run --locked --example sparse_rips
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
@@ -50,6 +55,9 @@ python3 -m unittest discover -s tools -p 'test_*.py'
 cargo build --locked
 rustdoc --edition 2024 --test README.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/guides/rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/guides/rips-construction.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/guides/rips-representatives.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/guides/sparse-rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 ```
 
 Select additional checks by the changed contract:
@@ -61,7 +69,7 @@ Select additional checks by the changed contract:
 | Mathematical algorithm | Independent expectation/property and relevant native comparisons, in addition to Rust checks |
 | Python checks or controllers | Source and Markdown checks, all `test_*.py`; exercise the changed command on a small case |
 | Native adapters, builder, or benchmark protocol | Tool tests, standalone Rust formatting when affected, and the native smoke command below |
-| Performance | Comparable before/after measurements under the native protocol; keep unfavorable results |
+| Performance | Comparable before/after measurements under the applicable native suite and reporting rules; keep unfavorable results |
 | File layout or packaging | Relevant checks above, package file-list review, package build and packaged example |
 
 The source and documentation checks need only Python's standard library. For
@@ -71,8 +79,10 @@ in [tools/README.md](tools/README.md). Performance changes need the same fixture
 precision, and timing boundaries before and after; keep unfavorable results.
 Ordinary tests must not assert machine-dependent timing thresholds.
 
-Benchmark changes must follow the [native comparison protocol](benches/protocol.md)
-and run the affected native smoke suite. GUDHI and Ripser comparisons use C++
+Benchmark changes must follow the [reporting rules](benches/reporting.md) and the
+affected execution contract: [H0/H1 native](benches/protocol.md) or
+[Rips pipeline](benches/pipeline/README.md). Run the affected native smoke suite
+when changing workers, controllers or measurement semantics. GUDHI and Ripser comparisons use C++
 executables; Python TDA wrappers belong only to historical reproduction. Tool
 changes also need `python3 -m unittest discover -s tools -p 'test_*.py'`.
 
@@ -83,6 +93,12 @@ python3 tools/benchmark_native.py --quick --samples 1 --output target/native-smo
 ```
 
 Supply `--boost-include` when Boost headers are outside system include paths.
+For exact graph/matrix changes also run
+`python3 tools/compare_rips.py --output target/rips-reference` with a fresh output
+directory and the same optional Boost setting. For sparse approximation, also run
+`python3 tools/compare_sparse_rips.py --output target/sparse-rips-reference`
+with a fresh output directory. For workflow timing/resource changes, also run
+`python3 tools/benchmark_rips_pipeline.py --quick --samples 1 --output target/rips-pipeline-smoke`.
 Treat unsupported reference inputs as documented exclusions, not successful
 cross-library comparisons. See the native guide for platform requirements.
 
@@ -125,9 +141,13 @@ When adding or moving a document:
    `cargo package --locked --allow-dirty --list` and ensure nested docs remain in
    the package. Raw benchmark artifacts remain outside the crate payload.
 
-A dated report describes the source hash and protocol at measurement time. Do not
+Performance reports bind to the measured commit and associated PR, with a full
+SHA, source fingerprint and protocol. Dates are execution metadata. The report
+commit and measured commit are distinct; uncommitted runs remain drafts. Do not
 rewrite its raw data after a refactor or treat old timing as a new measurement.
-The [benchmark guide](benches/README.md) explains artifact retention.
+The [reporting rules](benches/reporting.md) own evidence classification,
+comparability, sampling and artifact retention; use the
+[report template](benches/report-template.md) for new experiments.
 
 ## Release procedure
 

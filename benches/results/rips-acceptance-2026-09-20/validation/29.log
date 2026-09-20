@@ -1,0 +1,10 @@
+   Compiling cocycle v0.1.0 (/home/jzdy/github.com/huangbogeng/cocycle-rs/target/package/cocycle-0.1.0)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running `target/package/cocycle-0.1.0/target/debug/examples/rips_representatives`
+cycle at 1 for interval PersistenceInterval { dimension: 1, birth: 1.0, end: Finite(2.0) } over F3:
+  [0, 1]: 1
+  [0, 3]: 2
+  [1, 2]: 1
+  [2, 3]: 1
+cocycle at 1 for interval PersistenceInterval { dimension: 1, birth: 1.0, end: Finite(2.0) } over F3:
+  [2, 3]: 1

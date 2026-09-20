@@ -1,0 +1,3 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target/debug/examples/flag_persistence`
+SuppliedFlag: [PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }, PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }, PersistenceInterval { dimension: 1, birth: 1.0, end: Essential }]

@@ -15,43 +15,66 @@ behavior. Runnable Rust examples demonstrate the kernel; language bindings and
 application frameworks are not first-stage deliverables.
 
 The [GUDHI C++ study](../research/gudhi-cpp.md) maps upstream capabilities and remaining
-reading work. The [kernel design](kernel.md) proposes responsibility
-boundaries and capability gates. These are design inputs, not a feature-parity
-promise or a request to copy GUDHI's module layout.
+reading work. The [kernel design](kernel.md) proposes responsibility boundaries.
+The [Rips subsystem design](rips.md) defines the selected complete Rips target,
+including upstream Ripser, its API draft and acceptance gates. These are design
+inputs, not claims of implemented parity or a request to copy either source layout.
 
 ## Current scope
 
-The implemented core provides validated point clouds and dissimilarities,
-ordinary Rips H0/H1 over F2, owned diagrams with explicit censoring, and basic
-descriptors. H1 uses implicit cohomology; the explicit boundary implementation is
-a test oracle. The crate has not been published.
+The implemented core provides borrowed point clouds and matrix layouts, exact
+threshold graph construction, supplied weighted flag filtrations, ordinary prime-field
+persistence through dense/sparse access, explicit simplicial expansion and
+incidence queries, requested cycle/cocycle bases, blocker-aware sparse approximation,
+owned diagrams/context and basic descriptors.
+Cooperative work limits and cancellation are available on the richer compute
+entry points. An independent explicit boundary implementation remains a test oracle; the
+production representative path owns a separate reducer. The
+crate has not been published. See the [construction guide](../guides/rips-construction.md).
 
 ## Next priorities
 
-1. **Native comparison baseline.** Source boundaries are implemented as described
-   in the [current architecture](../development/architecture.md).
-   The [native harness](../../benches/native/README.md) now compares pinned GUDHI
-   and upstream Ripser C++ workers. Extend controlled measurements to the full
-   scaling suite and review limits and regressions before drawing performance
-   conclusions. Historical Python-wrapper runs remain separate evidence.
-2. **A complete analysis capability.** Select one concrete operation from the
-   [proposed capability sequence](kernel.md#capability-sequence-and-acceptance-gates),
-   with an input/output specification, an independent oracle, and a runnable Rust
-   example. Diagram representations or scalar-line persistence are initial
-   candidates; do not introduce the whole proposed module tree at once.
-3. **Difficult H1 inputs.** Follow the scoped sequence below when addressing Rips
-   scaling. The
-   [same-size comparison](../../benches/reports/scaling-threeway.md) shows clear weaknesses
-   on nonmetric and bipartite inputs. These optimizations are proposed, not
-   implemented.
+1. **Complete the Rips subsystem.** Follow the
+   [delivery sequence and exit gates](rips.md#delivery-sequence-and-exit-gates):
+   exact sparse input through computation, explicit and higher-dimensional Rips,
+   prime fields and requested representatives, then sparse approximation through
+   computation. Stages 1-4 are implemented, including sparse approximation
+   with hypotheses, blocker rules and provenance. Stage 5 has an [acceptance audit](rips-acceptance.md), resource
+   regressions and native workflow measurements. Hosted CI for the submitted
+   revision remains a release gate. Review new API contracts before extending scope.
+   Each stage delivers a usable path with tests, examples and documentation;
+   finishing one stage does not complete the whole target.
+   The [implementation scope](rips-implementation.md) identifies exact directories,
+   existing-file edits and review units for the first stage and later additions.
+2. **Extend native evidence with each capability.** The
+   [native suites](../../benches/README.md) compare pinned GUDHI and upstream
+   Ripser C++ workers. Exact and sparse correctness suites now cover construction,
+   higher dimensions, fields and approximation; the pipeline records phase and
+   end-to-end resource snapshots. Extend those fixtures with each new contract,
+   following the [verification matrix](rips.md#verification-and-native-comparison)
+   and [reporting rules](../../benches/reporting.md). Stronger performance claims
+   need a comparative study; historical wrapper timings remain separate evidence.
+3. **Retain focused H1 performance work.** The scoped sequence below can improve
+   the existing path while broader capabilities arrive. The
+   [historical comparison](../../benches/reports/archive/source-be652a04dba1-python-threeway.md) motivates
+   nonmetric and bipartite fixtures, but new claims need fresh native evidence.
+   Review enumeration/reduction optimizations separately from API and storage
+   refactors.
+
+This Rips-first direction supersedes the earlier suggestion to add a diagram
+representation or scalar-line operation next. Those remain future library
+capabilities; they are not substitutes for completing Rips. The selected target
+includes ownership, resources, reproducibility and result interpretation, not only
+an expanded constructor list. See [R1-R10](rips.md#required-capability-matrix).
 
 The first crates.io release remains a separate readiness gate: verify the name
 and publisher, confirm hosted CI for the release commit, and inspect the package
 using the [release procedure](../../CONTRIBUTING.md#release-procedure). This planning
 work does not publish a crate or commit to a release date.
 
-Performance changes must preserve pivot order, F2 parity, multiplicity, and public
-coverage. Check each optimization separately against the reference and external
+Performance-only changes to existing paths must preserve pivot order, F2 parity,
+multiplicity, and public coverage. New fields and generalized algorithms establish
+their own documented invariants. Check each optimization against the reference and external
 implementations; do not remove hard cases or use point count as a universal limit.
 
 ## H1 implementation sequence
@@ -79,9 +102,12 @@ against their saved diagrams checks agreement with those outputs; it is neither
 a fresh external-library run nor a new performance baseline. Record new source
 hashes and fresh measurements before making a speed or memory claim.
 
-The dense distance buffer and H0 edge sorting remain separate scaling limits.
-Sparse inputs, higher dimensions, and a new mathematical capability each require
-their own API and validation decision rather than being folded into this work.
+Dense computations and the legacy point entry point still retain a full distance
+buffer. New threshold point construction and sparse computation avoid that buffer.
+H0 edge sorting remains a separate scaling cost.
+Sparse inputs and higher dimensions are now explicit Rips deliverables, with
+their own API and validation gates rather than being folded into these H1
+optimizations. Other mathematical capabilities remain separate work.
 
 ## Feature admission
 

@@ -1,0 +1,8 @@
+
+running 2 tests
+test docs/guides/rips.md - Rips_persistence_guide::Precomputed_dissimilarities (line 41) ... ok
+test docs/guides/rips.md - Rips_persistence_guide::Point_clouds (line 19) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.27s; merged doctests compilation took 0.26s

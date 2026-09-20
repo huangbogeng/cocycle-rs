@@ -17,24 +17,28 @@ pub(crate) fn euclidean_distances(input: PointCloudView<'_>) -> Result<Vec<f64>>
         })?;
     for i in 0..input.len() {
         for j in 0..i {
-            let mut norm: f64 = 0.0;
-            let a = input.point(i).ok_or(Error::InternalInvariant {
-                reason: "missing point",
-            })?;
-            let b = input.point(j).ok_or(Error::InternalInvariant {
-                reason: "missing point",
-            })?;
-            for (&x, &y) in a.iter().zip(b) {
-                // hypot avoids forming squared magnitudes that overflow/underflow.
-                norm = norm.hypot(x - y);
-            }
-            if !norm.is_finite() {
-                return Err(Error::NumericalFailure {
-                    context: "Euclidean distance",
-                });
-            }
-            values.push(canonical_zero(norm));
+            values.push(euclidean_distance(input, i, j)?);
         }
     }
     Ok(values)
+}
+
+/// Pair evaluation shared by dense conversion and streamed threshold construction.
+pub(crate) fn euclidean_distance(input: PointCloudView<'_>, i: usize, j: usize) -> Result<f64> {
+    let a = input.point(i).ok_or(Error::InternalInvariant {
+        reason: "missing point",
+    })?;
+    let b = input.point(j).ok_or(Error::InternalInvariant {
+        reason: "missing point",
+    })?;
+    let mut norm: f64 = 0.0;
+    for (&x, &y) in a.iter().zip(b) {
+        norm = norm.hypot(x - y);
+    }
+    if !norm.is_finite() {
+        return Err(Error::NumericalFailure {
+            context: "Euclidean distance",
+        });
+    }
+    Ok(canonical_zero(norm))
 }

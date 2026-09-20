@@ -20,7 +20,9 @@ assumptions rather than obscure them.
 
 The [GUDHI study](../research/gudhi-cpp.md) records source observations. The
 [architecture](../development/architecture.md) and [guide](../guides/rips.md) remain authoritative for
-current behavior. The [roadmap](roadmap.md) selects the next work.
+current behavior. The [roadmap](roadmap.md) selects the next work. The
+[complete Rips subsystem design](rips.md) specializes this direction into the
+selected Rips capability matrix, API draft and acceptance gates.
 
 ## Starting point
 
@@ -29,17 +31,23 @@ diagram, and descriptor contracts. This design builds on those contracts.
 
 Important existing limits:
 
-- Point-cloud computations materialize a dense condensed distance buffer.
-- Filtration indexing and H1 cofacet enumeration specialize in edges/triangles.
-- Rips options admit H0/H1 only. There is no production general boundary reducer,
-  public explicit complex, sparse graph input, cubical computation, or prime-field
-  API.
-- Diagrams record dimensions and coverage, but not a complete computation
-  provenance record such as filtration convention or coefficient field.
+- The legacy point API and unrestricted richer point calls materialize a dense
+  condensed buffer; finite-cutoff richer calls stream a threshold graph.
+- The specialized H1 path uses compact edge/triangle indexing. Higher-dimensional
+  and odd-prime requests use tuple-indexed implicit cohomology and clearing; apparent/emergent
+  pair shortcuts remain specialized to H1.
+- Legacy `RipsOptions` admits H0/H1; `PersistenceOptions` accepts arbitrary
+  dimensions. Frozen explicit simplicial expansion is available. There is no
+  public general boundary-reducer API or cubical computation. Prime fields are
+  validated explicitly; a private forward reducer serves requested representatives.
+- Richer results now add exact-Rips/supplied-flag context and coefficient field.
+  Representatives now carry original simplex vertices, coefficients and interval
+  identities. Approximation metadata remains unimplemented.
 - Intervals permit signed scales; the existing Betti-curve grid deliberately
   permits only nonnegative values. Scalar-field support must address that mismatch
   explicitly.
-- No batch scheduler, cancellation contract, or hard process memory limit exists.
+- Cooperative work limits and cancellation exist for persistence. Construction
+  is not covered by those controls; no batch scheduler or hard RSS limit exists.
 - The current source is not a workspace of separate kernel/adapter crates.
 
 These limits must remain visible while the project grows.
@@ -128,7 +136,10 @@ Preserve owned diagrams and existing endpoint distinctions. Introduce computatio
 context alongside results when needed, without turning the basic interval
 container into an engine-specific object.
 
-A future ordinary-persistence computation record should be able to state:
+Richer Rips calls now return owned computation context; see the
+[construction guide](../guides/rips-construction.md) and
+[approximation guide](../guides/sparse-rips.md). Preserve this separation for
+future filtrations. Their ordinary-persistence records should be able to state:
 
 - Computed dimensions and coefficient field.
 - Filtration family and scale convention, including squared versus unsquared
@@ -249,23 +260,23 @@ new public namespaces or require empty directories.
 
 ### Where future capabilities belong
 
-Create the following files or directories only as their implementations arrive.
-The locations identify ownership; they do not prescribe one file per class.
+Matrix layouts, frozen simplicial storage, prime-field algebra, owned computation
+context and cooperative execution controls are already implemented. Their current
+locations belong in the architecture page. The remaining map identifies future
+ownership; create files only with concrete consumers, not one file per class.
 
 | Concrete addition | Likely home | Boundary to preserve |
 | --- | --- | --- |
-| A second input layout or separate spatial operations | Named files within the existing `geometry/` directory | Re-export existing types; internal storage stays private |
+| Additional input layouts or separate spatial operations | Named files within the existing `geometry/` directory | Re-export existing types; internal storage stays private |
 | Scalar-line persistence | `persistence/line.rs` initially | Borrow samples; keep its ordering and workspace out of Rips |
 | Cubical topology and values | `complex/cubical/` | Grid incidence and validated data are distinct from reduction state |
 | Cubical filtration access, when needed separately | `filtration/cubical.rs` | Adapt the grid; do not duplicate the grid or its incidence implementation |
 | Cubical persistence | `persistence/cubical.rs` or a directory when needed | Select or implement a reducer without routing through simplex storage |
-| Explicit simplicial storage | `complex/simplicial/` | Builders establish closure; frozen access provides documented validity |
-| General ordered boundary reduction | `algebra/{boundary,reduction,column}.rs` | Algebra depends on a precise access contract, not a concrete complex |
-| A production second coefficient field | `algebra/field/` | Oriented coefficients and field operations, not only integer indices |
+| General ordered boundary access for another consumer | Extend existing `algebra/reduction/` with a demonstrated access contract | Preserve independence from any concrete complex |
 | Landscapes or persistence images | Add named operation files to `descriptors/` | Consume diagrams only; share validated feature configurations when semantics agree |
 | Diagram matching distances | `diagram_distances/{mod,bottleneck}.rs` initially | Keep diagram matching separate from geometric point distances |
-| A computation record | Extend `diagram` or introduce an operation-owned result wrapper as needed | Mathematical result ownership remains independent of the engine |
-| Enforceable limits or reusable workspaces | Feature-local first; `execution/` only for actual shared policy | Controls do not alter mathematical input or silently change the algorithm's guarantee |
+| Context for another filtration family | Extend `diagram` or use an operation-owned result wrapper | Preserve engine-independent mathematical interpretation |
+| Hard resource limits or reusable workspaces beyond current cooperative controls | Feature-local first; `execution/` only for actual shared policy | Controls do not alter mathematical input or silently change the algorithm's guarantee |
 
 For example, adding a landscape should not require changes to filtration or
 persistence. Adding a cubical input should not alter Rips internals. Adding a new
@@ -282,8 +293,8 @@ before attempting to share every algorithm's internal representation.
 | Validated point/dissimilarity views | Already shared through `geometry`; no validation copies in each public entry point |
 | Owned intervals and coverage | Shared through `diagram`; interpretation is independent of reducer storage |
 | Ordinary interval assembly | One production normalization path; retain separate contract tests for it |
-| Union-find for current Rips H0/H1 | Shared within `persistence::rips`; preserve allocation/error semantics |
-| Rips ordering and cofacet generation | Owned by `filtration::rips`; algorithm workspaces do not define a second order |
+| Union-find for current Rips H0/H1 | Shared within `persistence::flag`; preserve allocation/error semantics |
+| Flag ordering and cofacet generation | Owned by `filtration::flag`; algorithm workspaces do not define a second order |
 | Combinatorial arithmetic | Extract only if callers agree on domains, overflow behavior, and index convention; similar formulas alone are insufficient |
 | Sparse columns and field arithmetic | Share across production algorithms only when the algebraic/storage contract and measured cost agree |
 | Small allocation/error helpers | Keep local until genuinely shared; do not create a catch-all `utils` module |
@@ -296,20 +307,26 @@ connectivity mechanics must not silently share an invalid pairing policy.
 
 ## Capability sequence and acceptance gates
 
-This is a proposed dependency sequence, not equal priority for every GUDHI module.
+The selected first workstream is the [complete Rips subsystem](rips.md), including
+inputs, explicit and implicit construction/access, higher-dimensional computation,
+prime fields, representatives and sparse approximation. Its
+[delivery sequence](rips.md#delivery-sequence-and-exit-gates) owns the detailed
+order and gates. The broader capability groups below describe subsequent or
+shared work, not a competing instruction to prioritize scalar-line analysis.
 
-| Stage | Deliverable | Gate before claiming support |
+| Capability group | Deliverable | Gate before claiming support |
 | --- | --- | --- |
-| 0. Rips foundation | Clear private boundaries, stable public semantics, reproducible baseline | Existing independent tests and fresh native C++ comparison on pinned configurations; no unexplained regression |
-| 1. Analysis closure | Better diagram-to-feature composition, a scalar-line capability, runnable multi-sample examples | Hand-computable outputs, negative/tied scalar cases, coverage-aware queries, explicit feature settings |
-| 2. Data scale and breadth | Exact filtered-graph input, then a specified cubical input/construction | Dense-versus-sparse parity through cutoff; independently assembled tiny-grid boundaries; memory evidence |
-| 3. Broader algebra | Higher-dimensional Rips, an explicit simplicial path, then prime fields and requested witnesses | Include cells that kill top requested homology; verify boundary squared is zero, field behavior, and witness equations |
-| 4. Controlled approximation and geometry | Selected sampling/sparse approximation/collapse; geometry such as Alpha when infrastructure is ready | Preservation or approximation tests with hypotheses; robust geometric degeneracy cases and native dependency review |
-| 5. Specialized expansion | Zigzag, cover complexes, or reconstruction selected by real demand | Own mathematical/output contract and complete end-to-end example |
+| Complete Rips, selected first | All R1-R10 capabilities in the dedicated design | Every Rips delivery gate, independently validated and documented; H0/H1 construction alone is insufficient |
+| Analysis closure | Better diagram-to-feature composition, a scalar-line capability, runnable multi-sample examples | Hand-computable outputs, negative/tied scalar cases, coverage-aware queries, explicit feature settings |
+| Additional data domains | A specified cubical input/construction and computation | Independently assembled tiny-grid boundaries, scalar conventions and resource evidence |
+| Algebra reuse beyond Rips | Adapt established field/reduction components to another actual consumer | Verify the consumer's boundary, ordering and result contracts independently |
+| Geometry and simplification | Sampling/collapse outside the Rips target; Alpha when geometry infrastructure is ready | Preservation tests with hypotheses, robust degeneracy cases and native dependency review |
+| Specialized expansion | Zigzag, cover complexes, or reconstruction selected by real demand | Own mathematical/output contract and complete end-to-end example |
 
-Stage 1 is a proposal for the next useful capability set, not an instruction to
-implement every listed feature simultaneously. Choose one operation and finish
-its contract, oracle, API, documentation, and example before the next.
+Deliver complete operations within the Rips workstream rather than creating all
+proposed modules simultaneously. Finish each operation's contract, independent
+validation, API, documentation and example without dropping the remaining Rips
+completion requirements. Future library groups do not weaken that target.
 
 Prime fields require oriented boundary coefficients and modular arithmetic;
 replacing an F2 XOR operation alone is not sufficient. Generalized Rips requires
