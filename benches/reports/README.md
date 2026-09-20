@@ -2,16 +2,18 @@
 
 [Benchmarks](../README.md)
 
-This directory contains concise reports tied to a measured commit and, when
-applicable, a PR. It stores neither raw results nor run archives. Follow the
+These maintained comparisons summarize tested capabilities, correctness and
+performance. Each report uses a stable topic-based filename; reruns update the
+same file and Git history preserves prior versions. The report body records the
+actual measured commits, protocols, environment and evidence status. Follow the
 [reporting rules](../reporting.md) and [template](../report-template.md).
 
-There are currently no retained measurement reports. Historical measurements,
-unbound working-tree drafts and their generated artifacts have been removed.
-Fresh comparisons must identify the exact measured source and link evidence held
-outside Git; a future run must not inherit old timings or success claims.
+| Report | Scope |
+| --- | --- |
+| [Cocycle, GUDHI and Ripser: Rips comparison](rips-comparison.md) | Native C++ references, Rips correctness, selected workflow and H0/H1 timings, limitations and reproduction |
 
-Use `pr-<number>-<head12>-<suite>.md` or `commit-<sha12>-<suite>.md`, recording full
-SHAs, comparison scope, a compact result table and external artifact identity.
-Routine CI results belong in the PR and CI job output. Commit a report only when
-it records an enduring conclusion or decision.
+Do not create a report per date, commit, PR or rerun. Related suites share a report
+with separate timing contracts and tables. Keep concise conclusions and selected
+results here; raw samples, fixtures, logs, binaries and archives stay outside Git.
+Local-only evidence is explicitly identified and is not publicly archived.
+Routine CI results belong in PRs and job output, not additional report files.

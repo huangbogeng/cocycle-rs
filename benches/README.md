@@ -30,11 +30,11 @@ comparison scopes and the reporting rules for stronger comparative studies.
 | Location | Responsibility |
 | --- | --- |
 | [reporting.md](reporting.md) | Shared comparability, sampling, claim and evidence rules |
-| [report-template.md](report-template.md) | Reusable PR/commit-bound experiment report structure |
+| [report-template.md](report-template.md) | Template for maintained comparisons with explicit measured revisions |
 | [native/](native/README.md) | H0/H1 workers, shared upstream source pins and setup |
 | [protocol.md](protocol.md) | `cocycle-native-v1` H0/H1 execution contract |
 | [pipeline/](pipeline/README.md) | Complete-workflow workers and their execution contract |
-| [reports/](reports/README.md) | Concise commit/PR-bound conclusions with external evidence links |
+| [reports/](reports/README.md) | Stable comparison pages; measured commits and evidence status in each report |
 | `target/` (repository root) | Ignored local run outputs; CI uploads selected results as artifacts |
 
 Fixture and build helpers are shared where their contracts agree; correctness
@@ -63,11 +63,14 @@ Validate complete outcomes before using any timing. Native CI comparisons upload
 selected outputs as GitHub Actions artifacts with a 14-day retention period;
 archives, logs, generated fixtures and raw results never enter source Git.
 
-A lasting report needs the measured commit, protocol, external artifact URL,
-checksum and retention information. No durable experiment store is configured
-yet. See the [storage policy](reporting.md#storage-and-evidence-lifecycle) and
-[report index](reports/README.md). Historical run outputs and old measurement
-reports have been removed; generate fresh evidence for new comparisons.
+The [Rips comparison](reports/rips-comparison.md) summarizes current measured
+capabilities and selected results. Reruns update that same page; Git history keeps
+previous versions. Every update names the actual measured commits, protocols and
+evidence status. Local-only evidence may support a clearly labeled summary;
+publicly auditable results need external artifact URLs, checksums and retention
+information. No durable experiment store is configured yet. See the
+[storage policy](reporting.md#storage-and-evidence-lifecycle) and
+[report index](reports/README.md).
 
 Benchmarks are not CI speed gates. Smoke checks validate the harness; shared-runner
 timings do not establish a local performance baseline. After staging changes, run

@@ -66,8 +66,9 @@ demonstrated by `cargo run --example rips_representatives`.
 [Sparse Rips approximation](docs/guides/sparse-rips.md), including metric hypotheses
 and sampling provenance, is demonstrated by `cargo run --example sparse_rips`.
 Work and memory depend on the input and reduction fill-in. Current comparisons
-use native GUDHI and upstream Ripser C++; generated measurements and logs stay
-outside source Git.
+use native GUDHI and upstream Ripser C++; see the maintained
+[Rips comparison](benches/reports/rips-comparison.md) for tested scope, correctness
+and performance observations. Generated measurements and logs stay outside source Git.
 
 [Issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) ·
 Code and original artwork are [MIT licensed](LICENSE).

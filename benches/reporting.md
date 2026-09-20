@@ -24,9 +24,12 @@ GUDHI edge collapse and GUDHI's integrated Ripser are different paths.
 
 ## Bind reports to changes and measured commits
 
-A report is identified by the code it evaluates, not its execution date. The PR
-is the review context; an immutable full commit SHA identifies the measured
-revision. A PR number, branch name or current PR head alone is insufficient.
+A report has a stable topic-based path, such as `reports/rips-comparison.md`.
+Update that file after a rerun; Git history preserves previous reports. Do not
+create date-, PR- or commit-named copies, append a growing run diary, or archive
+old reports elsewhere in the repository. The report body identifies the actual
+measured code with an immutable full commit SHA and, when applicable, a PR.
+A filename, report commit, branch name or moving PR head is not a measured revision.
 Record these fields explicitly:
 
 | Identity | Required meaning |
@@ -37,16 +40,19 @@ Record these fields explicitly:
 | Harness | Worker/controller/protocol revision and fingerprint when distinct from the measured Rust revision |
 | Run | Suite and unique attempt ID; UTC start/end are metadata, not the report key |
 
-Use one canonical report per measured candidate and suite. New report filenames
-are `pr-<number>-<head12>-<suite>.md` for a measured PR head, or
-`commit-<sha12>-<suite>.md` without a PR or for a separately tested merge commit.
-Here `head12`/`sha12` are at least twelve hexadecimal characters from the measured
-commit, extended on collision; the report always records the full SHA. A PR report
-must never silently follow a moving head. A new measured revision gets a new
-report; repeated runs of the same revision get distinct attempt IDs and remain
-visible in that report. Use `target/benchmarks/commit-<sha12>/<suite>/run-<NNN>/`
-locally and the same identity in external artifact storage. These directories
-are never committed. Counter values distinguish attempts, not revisions.
+Keep one maintained report per comparison topic. Related suites may share a
+report, but their contracts and tables must remain separate. Reruns replace the
+current results, measured identities, environment, coverage and conclusions
+together. Retain unfavorable outcomes; if a rerun fails, show that outcome and
+label any retained successful baseline with its original revision. When only
+part of a comparison is rerun, label each section's revision and attempt; never
+present mixed revisions as one fresh measurement. Explain invalid attempts for
+the current comparison briefly, without retaining a historical results appendix.
+
+Only artifact directories identify individual revisions and attempts. Use
+`target/benchmarks/commit-<sha12>/<suite>/run-<NNN>/` locally and the same identity
+in external storage. These directories are never committed. New attempts get
+fresh directories; updating the Markdown report must not overwrite raw runs.
 
 For a before/after report, record both candidate and baseline explicitly and link
 each run's artifacts under its own measured revision. The PR target branch is not
@@ -55,10 +61,10 @@ results for the previous head remain evidence for that head. Do not relabel them
 as a measurement of the resulting merge commit.
 
 Commit the implementation and harness before a formal measurement, verify that
-the measured inputs are clean, then add the report/artifacts in a subsequent
-commit. The report's own commit is not the measured commit. A documentation-only
-follow-up can cite the prior measured revision without rerunning it, but must
-not claim that the new revision was measured.
+the measured inputs are clean, then update the report in a subsequent
+commit. Raw artifacts stay outside Git. The report's own commit is not the measured
+commit. A documentation-only follow-up can cite the prior measured revision
+without rerunning it, but must not claim that the new revision was measured.
 
 Uncommitted exploratory runs remain local under `target/`, identified by their
 source fingerprint and dirty state. They are not version-bound performance
@@ -217,12 +223,19 @@ For every selected experiment:
 2. Validate all outcomes, including failures, exclusions and unfavorable cases.
 3. Preserve the full run in external storage when a lasting report needs it.
 4. Commit a concise report with the exact revisions, protocol, outcome, comparison
-   scope and external evidence identity; do not copy the raw run into Git.
+   scope and evidence location/status; update its stable path instead of adding
+   another report. Do not copy the raw run into Git.
 
 Use the [report template](report-template.md). Prefer the PR description and CI
 job output for routine checks; a successful test run does not need a new document.
 Only retain a repository report when it explains an enduring result or decision.
-Do not duplicate full numeric matrices or logs in Markdown to bypass this policy.
+A maintained comparison may summarize local measurements when it records their
+exact identities, reproduction commands and explicitly local-only evidence
+status. An external upload is not a prerequisite for that summary. It must not
+claim that the original evidence is publicly retrievable. Keep selected tables
+and interpretation in the report; full matrices, samples and logs stay outside
+Git. Do not add dead links into ignored `target/`; give local artifact paths as
+code and external URLs only when actually available.
 
 After staging, run `python3 tools/check_artifacts.py`. CI repeats this check. It
 rejects tracked result directories, cache/build paths, log files and archive/
