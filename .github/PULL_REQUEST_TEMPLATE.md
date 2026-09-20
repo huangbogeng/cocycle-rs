@@ -5,7 +5,9 @@ Describe the problem and resulting behavior. Link the relevant issue, if any.
 ## Evidence
 
 List checks actually run. For algorithms, identify the mathematical invariant and
-independent oracle; for performance, link comparable fixtures and measurements.
+independent oracle; for performance, link comparable fixtures and measurements
+under the native protocol (GUDHI/Ripser C++, with matching precision and timing
+boundaries).
 
 ## Compatibility
 

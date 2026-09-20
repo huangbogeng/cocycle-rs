@@ -1,4 +1,5 @@
 use super::*;
+use crate::geometry::DissimilarityView;
 
 #[test]
 fn union_find_matches_reference_reduction_with_ties_and_cutoffs() {

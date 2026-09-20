@@ -1,0 +1,11 @@
+{
+  "gudhi": {
+    "repository": "https://github.com/GUDHI/gudhi-devel.git",
+    "revision": "cba915e3ab8e1f5b1fe26eb44b407285f7af4e78"
+  },
+  "ripser": {
+    "repository": "https://github.com/Ripser/ripser.git",
+    "revision": "01add51ff64aaf40889483260cc5c3b7d0f2a1e7",
+    "source_sha256": "6ef9c828944316974ed62408a55b351cba896c8e548eb7193af733d005585bf0"
+  }
+}

@@ -8,5 +8,14 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-[*.{md,yml,yaml,toml}]
+[*.{md,yml,yaml,toml,json,cpp,hpp}]
 indent_size = 2
+
+# Retained measurements are immutable evidence, not editable source.
+[benches/results/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset

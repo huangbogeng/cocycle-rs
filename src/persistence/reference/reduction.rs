@@ -7,7 +7,7 @@ pub(in crate::persistence) struct Reduction {
     pub(in crate::persistence) unpaired: Vec<usize>,
 }
 
-/// Standard left-to-right reduction; see mathematics.md section 4 and B21, Prop. 3.1.
+/// Standard left-to-right reduction; see docs/reference/mathematics.md section 4 and B21, Prop. 3.1.
 pub(in crate::persistence) fn reduce(input: &impl FilteredBoundary) -> Result<Reduction> {
     let n = input.len();
     let mut columns: Vec<SparseColumn> = Vec::new();

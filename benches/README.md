@@ -1,87 +1,53 @@
 # Benchmarks
 
-Benchmarks are developer tools, not runtime dependencies or CI speed gates.
-Start with the [same-size three-library comparison](scaling-threeway.md) for the
-largest completed study. Reports describe their recorded source hashes; subsequent
-refactors do not turn those timings into fresh measurements.
+The formal cross-library comparison uses Cocycle's Rust API, GUDHI's C++ API,
+and upstream Ripser C++. No Python TDA binding runs in a measured worker.
+Python's standard library only prepares fixtures, starts executables, and checks
+results. Follow the [native protocol](protocol.md) and
+[build/run instructions](native/README.md).
 
-## Reports and retained evidence
+## Layout
 
-| Report | Scope |
+| Location | Responsibility |
 | --- | --- |
-| [Same-size comparison](scaling-threeway.md) | All 23 scaling fixtures scheduled for all four paths, including GUDHI at 512/1024 vertices |
-| [Scaling and difficult inputs](scaling.md) | Original bounded run, circle supplement, and algorithm work counters |
-| [Implementation history](history.md) | Explicit reference baseline, implicit H1 transition, and ablation study |
-| [Project cleanup verification](project-cleanup.md) | Checks after code/documentation reorganization; not a new timing claim |
+| [rips.rs](rips.rs) | Dependency-free Rust-only benchmark, run with `cargo bench --locked --bench rips` |
+| [native/](native/README.md) | Native worker sources, source pins, and setup commands |
+| [protocol.md](protocol.md) | Current input, correctness, timing, memory, and evidence contract |
+| [reports/](reports/README.md) | Dated conclusions, with native and historical wrapper evidence explicitly labeled |
+| `results/` | Retained immutable fixtures, raw measurements, environments, and summaries |
 
-Raw results remain under `results/`, with environment, fixture hashes, diagrams,
-samples, statuses, and CSV summaries. The original dependency-free Rust baseline
-is [linux-x86_64.csv](linux-x86_64.csv). Retained reports and raw records must agree;
-do not edit old outputs when changing source or tools.
+The controller is [tools/benchmark_native.py](../tools/benchmark_native.py).
+Fixture generation is shared by current and historical controllers; worker
+implementations and measurement protocols remain separate.
 
-## Compared paths
+## Compared implementations
 
-| Backend | Path |
+| Backend ID | Native execution path |
 | --- | --- |
-| Cocycle | Release Rust public API: H0 union-find, H1 implicit cohomology |
-| GUDHI direct | `RipsComplex` → `create_simplex_tree(q+1)` → persistence |
-| GUDHI collapse | Graph → one `collapse_edges` iteration → `expansion(q+1)` → persistence |
-| Ripser.py | Python `ripser` API with precomputed distances |
+| `cocycle` | Rust public Rips API: H0 union-find or implicit H1 cohomology |
+| `gudhi_cpp` | C++ `Rips_complex` -> `Simplex_tree` expansion -> CAM persistence |
+| `gudhi_collapse_cpp` | C++ threshold edges -> one flag edge collapse -> `Simplex_tree` expansion -> CAM |
+| `ripser_cpp` | Upstream C++ Ripser; dense unrestricted or sparse threshold path |
 
-Historical reports explicitly label runs made before implicit H1. GUDHI uses
-F2, ordinary homology, closed edge thresholds, and zero-length interval removal.
-The worker enables top-dimensional persistence when required, including a
-triangle-free H1 cutoff. Both GUDHI paths materialize a simplex tree; other GUDHI
-interfaces are outside this comparison. Ripser.py timing is not upstream C++ CLI
-timing. No path uses sampling or sparse-Rips approximation.
+GUDHI's integrated Ripser module is not the upstream Ripser backend. These paths
+do not imply a comparison of every GUDHI engine or feature. Point-cloud distance
+construction and diagram descriptors remain separate Rust benchmarks.
 
-## Input and correctness protocol
+The retained 2026-09-17 GUDHI/Ripser.py studies are
+[historical Python-wrapper measurements](reports/README.md). Their values and
+source identities are preserved; they must not be relabeled as native results.
 
-Generate each fixture once, then send the same file to every backend. Record
-versions, dimensions, scale conventions, cutoff, and precision. Condensed
-Cocycle distances and GUDHI's contiguous square input contain the same values;
-prepare their layouts outside the timed region.
+The [native validation record](reports/native-validation-2026-09-20.md) links the
+first retained C++ baseline and small scaling results, including their exclusions.
 
-GUDHI-only runs retain f64 inputs, including direct point-cloud cases. Three-library
-runs use float32-exact distances and cutoffs because the pinned Ripser.py dense
-path converts to float32. Values are stored losslessly as f64 for Cocycle/GUDHI;
-their kernels remain f64. Do not mix the two experiments or inflate tolerances to
-hide different filtrations. Zero-point Ripser exclusions remain explicit.
+## Evidence lifecycle
 
-Compare diagram multisets, not library-specific ordering or representatives.
-Interpret infinite endpoints according to complete/censored coverage. Record
-failures and skipped cases; never substitute an empty diagram or fabricate timing.
+Use a new directory under `target/` for exploration. Every native run keeps its
+source pins, compiler commands, binary/header hashes, environment, input fixtures,
+raw sample outcomes, diagrams, and validated summary. Review the full result
+before retaining a run under `results/` and adding a dated report.
 
-## Timing and memory
-
-Each backend gets a fresh process, one warmup, then the report's stated number of
-measured calls. Public API construction, reduction, and output destruction are
-included; imports, fixture parsing, and external input-layout preparation are not
-inside the timed call. Point-cloud API timing includes distance construction.
-Python wrapper overhead is included. Run backends serially; pin CPU affinity and
-thread counts for controlled local comparisons.
-
-Whole-worker time limits include startup, imports, warmup, every sample, and
-serialization. A timeout is not a lower bound on one call's runtime. `RLIMIT_AS`
-limits virtual address space, not RSS. The core library has no such automatic cap.
-
-Linux memory records include prepared-input RSS, previous process high-water mark,
-and final peak RSS. Peak growth is not an exact live-allocation measurement.
-Python runtime baselines differ from Rust; do not rank algorithm memory by raw
-cross-language process RSS ratios. Work counters come from instrumented test
-builds and must not be mixed with production timings.
-
-## Running and retaining experiments
-
-Run `cargo bench --locked --bench rips` for the dependency-free benchmark.
-Installation and commands for cross-library runs and profiling are centralized in
-[tools/README.md](../tools/README.md).
-
-Use `target/` for exploratory output; never overwrite a prior run. To retain a
-reviewed experiment, copy its complete directory under `benches/results/`, add a
-dated English report, and link it here. Record unfavorable results, resource
-limits, and exact source/fixture hashes alongside successful comparisons.
-
-Large raw records are repository/research artifacts and are excluded from the
-crate package. The configured manual benchmark workflow uploads CI artifacts;
-shared-runner timings are not directly comparable with pinned local measurements.
+Retain failures, exclusions, and resource limits. A smoke run validates the
+harness; it does not establish broad performance superiority. Benchmarks are not
+CI speed gates, and shared-runner timings are not a local performance baseline.
+Raw experiments, C++ sources and binaries are not part of the Rust crate payload.

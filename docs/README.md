@@ -1,19 +1,68 @@
 # Documentation
 
-Cocycle's documentation describes the current library. Dated measurements live
-under `benches/`; the roadmap contains proposed work, not supported features.
+Cocycle is a native Rust TDA library. It currently computes ordinary Rips H0/H1
+over F2 and derives lifetime statistics and Betti curves from owned diagrams.
+Start with a task below; design proposals and upstream research describe work
+beyond this supported scope.
 
-| Start here | Purpose |
+## Use the library
+
+- [Rips guide](guides/rips.md): choose an input, compute persistence, interpret
+  coverage and endpoints, and derive measurements.
+- [Runnable square example](../examples/square.rs): run
+  `cargo run --locked --example square` from the repository root.
+- [API reference source](../src/lib.rs): build rustdoc with
+  `cargo doc --locked --no-deps --open` for signatures and error contracts.
+
+## Understand and develop the core
+
+| Question | Read |
 | --- | --- |
-| [User guide](guide.md) | Compute and interpret diagrams |
-| [API source](../src/lib.rs) | Public contracts; render with `cargo doc --no-deps --open` |
-| [Mathematics](mathematics.md) | Definitions, derivations, and implementation invariants |
-| [Architecture](architecture.md) | Production, reference, and tooling boundaries |
-| [Testing](testing.md) | Independent oracles, properties, and verification commands |
-| [References](references.md) | Primary mathematical and algorithm sources |
-| [Roadmap](roadmap.md) | Priorities and admission criteria for future features |
-| [Contributing](../CONTRIBUTING.md) | Code, documentation, review, and release rules |
-| [Benchmarks](../benches/README.md) | Measurement protocol and dated evidence |
+| What mathematical and numerical guarantees apply? | [Mathematical specification](reference/mathematics.md) |
+| Which papers justify the definitions and algorithms? | [Bibliography](reference/bibliography.md) |
+| Where does code belong and how do the parts interact? | [Current architecture](development/architecture.md) |
+| How should modules, APIs, errors, and source files be written? | [Code conventions](development/conventions.md) |
+| How do we check correctness independently? | [Testing and validation](development/testing.md) |
+| Which commands, review rules, and release checks apply? | [Contributing](../CONTRIBUTING.md) |
 
-All project documentation is in English. Keep API details in rustdoc, derivations
-in the mathematical specification, and completed experiment logs out of the roadmap.
+For implementation work, read architecture, the relevant mathematical section,
+and its validation obligations together. The specification keeps shared notation
+and numbered derivations in one place; rustdoc owns individual API contracts.
+
+## Plan and compare
+
+| Document | Status and purpose |
+| --- | --- |
+| [Roadmap](design/roadmap.md) | Selected priorities; not a delivery schedule |
+| [Kernel design](design/kernel.md) | Design rationale, extension boundaries, and proposed capability gates |
+| [GUDHI C++ study](research/gudhi-cpp.md) | Pinned upstream source map and reading plan; excludes Python wrappers |
+| [Benchmarks](../benches/README.md) | Measurement protocols and dated experiment evidence |
+| [Changelog](../CHANGELOG.md) | Completed user-visible changes |
+
+For future capabilities, use the GUDHI study as evidence, the kernel design to
+evaluate boundaries, and the roadmap to select the next operation. A source map
+does not establish feature parity, and historical measurements do not describe
+the performance of unmeasured code.
+
+## Organization and maintenance
+
+| Directory | Owns |
+| --- | --- |
+| `guides/` | Task-oriented usage of implemented capabilities |
+| `reference/` | Mathematical contracts, derivations, and bibliography |
+| `development/` | Current architecture, coding conventions, and validation strategy |
+| `design/` | Future direction, decisions, acceptance gates, and priorities |
+| `research/` | Upstream investigations tied to a source revision and scope |
+
+Add a document to the directory matching its purpose and link it from this index.
+Use descriptive capability names such as `guides/rips.md`; add subdirectories
+when a subject has multiple documents that need their own navigation. Do not
+create empty sections for unimplemented capabilities or duplicate the source tree
+outside the architecture document.
+
+Keep current behavior, proposals, and dated observations explicit. Link to the
+document that owns a fact instead of maintaining parallel versions. Project
+documentation is in English. Paths in prose and shell commands are relative to
+the repository root unless stated otherwise; Markdown links resolve relative to
+their document. See [documentation maintenance](../CONTRIBUTING.md#documentation-ownership)
+for checks to run when adding or moving pages.

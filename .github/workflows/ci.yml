@@ -28,13 +28,15 @@ jobs:
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
+      - run: python tools/check_source.py
       - run: python tools/check_docs.py
+      - run: python -m unittest discover -s tools -p 'test_*.py'
       - run: cargo fmt --all -- --check
-      - run: rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs
+      - run: rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       - run: cargo build --locked
       - run: rustdoc --edition 2024 --test README.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
-      - run: rustdoc --edition 2024 --test docs/guide.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+      - run: rustdoc --edition 2024 --test docs/guides/rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
       - run: cargo doc --locked --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
@@ -75,7 +77,7 @@ jobs:
       - run: cargo run --locked --manifest-path target/package/cocycle-0.1.0/Cargo.toml --example square
 
   reference:
-    name: Independent TDA comparisons
+    name: Native C++ reference comparisons
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -84,22 +86,37 @@ jobs:
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
-          cache: pip
-          cache-dependency-path: |
-            tools/requirements-reference.txt
-            tools/requirements-gudhi.txt
-            tools/requirements-benchmark.txt
-      - run: python -m pip install -r tools/requirements-benchmark.txt
-      - run: python tools/compare_ripser.py
-      - run: python -m unittest discover -s tools -p 'test_*.py'
-      - run: python tools/benchmark_gudhi.py --quick --samples 1 --output target/gudhi-smoke
-      - run: python tools/benchmark_gudhi.py --include-ripser --quick --samples 1 --output target/ripser-smoke
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: GUDHI/gudhi-devel
+          ref: cba915e3ab8e1f5b1fe26eb44b407285f7af4e78
+          path: target/native-sources/gudhi
+          sparse-checkout: |
+            src/common
+            src/Simplex_tree
+            src/Persistent_cohomology
+            src/Rips_complex
+            src/Collapse
+            src/Subsampling
+            src/Spatial_searching
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: Ripser/ripser
+          ref: 01add51ff64aaf40889483260cc5c3b7d0f2a1e7
+          path: target/native-sources/ripser
+      - run: sudo apt-get update && sudo apt-get install -y libboost-dev
+      - run: python tools/benchmark_native.py --quick --samples 1 --output target/native-smoke
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: reference-comparisons
+          name: native-reference-comparisons
           if-no-files-found: ignore
           retention-days: 14
           path: |
-            target/gudhi-smoke
-            target/ripser-smoke
+            target/native-smoke/environment.json
+            target/native-smoke/results.json
+            target/native-smoke/summary.csv
+            target/native-smoke/manifest-at-measurement.toml
+            target/native-smoke/fixtures/
+            target/native-smoke/build/build.json
+            target/native-smoke/build/build.log

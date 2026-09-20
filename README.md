@@ -43,19 +43,20 @@ fn main() -> cocycle::Result<()> {
 
 The square's H₁ interval is `[1, sqrt(2))`. Scales are **edge lengths**; a class
 surviving an incomplete cutoff is censored, not dead. Your application's
-`Cargo.lock` pins the resolved Git commit. See the [user guide](docs/guide.md)
+`Cargo.lock` pins the resolved Git commit. See the [user guide](docs/guides/rips.md)
 for cutoffs, input layouts, and result semantics.
 
 ## Explore
 
-[User guide](docs/guide.md) · [Mathematics](docs/mathematics.md) ·
-[Architecture](docs/architecture.md) · [Benchmarks](benches/README.md) ·
-[Contributing](CONTRIBUTING.md) · [Roadmap](docs/roadmap.md)
+[Documentation](docs/README.md) · [Rips guide](docs/guides/rips.md) · [Mathematics](docs/reference/mathematics.md) ·
+[Architecture](docs/development/architecture.md) · [Benchmarks](benches/README.md) ·
+[Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 
 Build the API reference with `cargo doc --no-deps --open`, or run the example with
 `cargo run --locked --example square`. Higher homology dimensions and representative
 cycles are not implemented. Work and memory depend on the input and reduction
-fill-in; the benchmarks include difficult cases and comparisons with GUDHI and Ripser.py.
+fill-in. Current comparisons use native GUDHI and upstream Ripser C++; older
+Python-wrapper measurements remain explicitly labeled historical evidence.
 
 [Issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) ·
 Code and original artwork are [MIT licensed](LICENSE).
