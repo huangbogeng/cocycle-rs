@@ -34,8 +34,8 @@ comparison scopes and the reporting rules for stronger comparative studies.
 | [native/](native/README.md) | H0/H1 workers, shared upstream source pins and setup |
 | [protocol.md](protocol.md) | `cocycle-native-v1` H0/H1 execution contract |
 | [pipeline/](pipeline/README.md) | Complete-workflow workers and their execution contract |
-| [reports/](reports/README.md) | Commit-bound reports, native drafts and source-indexed historical archives |
-| `results/` | Immutable retained fixtures, raw samples, environments and summaries |
+| [reports/](reports/README.md) | Concise commit/PR-bound conclusions with external evidence links |
+| `target/` (repository root) | Ignored local run outputs; CI uploads selected results as artifacts |
 
 Fixture and build helpers are shared where their contracts agree; correctness
 instrumentation and timing adapters remain separate. In particular, the sparse
@@ -58,20 +58,17 @@ but does not remove required native conversions, allocations or copies.
 
 ## Evidence lifecycle
 
-Use a new `target/` directory for each exploratory run. Review correctness,
-comparison scope, failures and the full sample matrix before retaining a uniquely
-named run under `results/` and adding a PR/commit-bound report. Follow the
-[retention rules](reporting.md#retain-and-review-evidence) for measured source,
-fixtures, raw outputs, environments and immutable history.
+Run experiments in a fresh directory under the repository's ignored `target/`.
+Validate complete outcomes before using any timing. Native CI comparisons upload
+selected outputs as GitHub Actions artifacts with a 14-day retention period;
+archives, logs, generated fixtures and raw results never enter source Git.
+
+A lasting report needs the measured commit, protocol, external artifact URL,
+checksum and retention information. No durable experiment store is configured
+yet. See the [storage policy](reporting.md#storage-and-evidence-lifecycle) and
+[report index](reports/README.md). Historical run outputs and old measurement
+reports have been removed; generate fresh evidence for new comparisons.
 
 Benchmarks are not CI speed gates. Smoke checks validate the harness; shared-runner
-timings do not establish a local performance baseline. Raw experiments, native
-sources and binaries are outside the Rust crate payload.
-
-The [Rips acceptance report](reports/draft-9e6000c557ca-rips-pipeline.md) records the
-working-tree resource snapshot `9e6000c557ca` and independent correctness evidence.
-It remains a draft without a verified measured-commit binding. The
-[native validation draft](reports/draft-e1493a10ae91-native-h0h1.md) retains the
-first H0/H1 C++ baseline and small scaling checks. Earlier GUDHI/Ripser.py studies
-remain [historical wrapper evidence](reports/README.md#historical-python-wrapper-evidence),
-with original source identities and measurement meanings.
+timings do not establish a local performance baseline. After staging changes, run
+`python3 tools/check_artifacts.py` to catch accidental generated-file additions.

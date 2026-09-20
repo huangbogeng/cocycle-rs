@@ -1,5 +1,0 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
-     Running `target/debug/examples/square`
-Intervals: [PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }, PersistenceInterval { dimension: 1, birth: 1.0, end: Finite(1.4142135623730951) }]
-H1 summary: LifetimeSummary { finite_count: 1, total_persistence: 0.41421356237309515, max_persistence: Some(0.41421356237309515), entropy: Some(0.0), excluded_essential_count: 0, excluded_censored_count: 0 }
-H1 Betti curve at [0, 1, sqrt(2), 2]: [0, 1, 0, 0]

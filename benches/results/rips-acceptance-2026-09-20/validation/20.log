@@ -1,4 +1,0 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
-     Running `target/debug/examples/rips_sphere`
-56 simplices; triangle boundary: [BoundaryTerm { face: SimplexId(11), coefficient: 1 }, BoundaryTerm { face: SimplexId(13), coefficient: -1 }, BoundaryTerm { face: SimplexId(17), coefficient: 1 }]
-H2 sphere: born at 1, ends at Finite(2.0)

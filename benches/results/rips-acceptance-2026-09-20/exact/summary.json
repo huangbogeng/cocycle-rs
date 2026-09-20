@@ -1,8 +1,0 @@
-{
-  "status": "passed",
-  "protocol_checks": 39,
-  "cases": 588,
-  "comparisons": 1108,
-  "exclusions": 68,
-  "source_sha256": "f43b2dae05083c7d410544c8391922ccb89969f79f8bdba7c10b12a886d53353"
-}

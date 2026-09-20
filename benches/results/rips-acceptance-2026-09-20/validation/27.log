@@ -1,4 +1,0 @@
-   Compiling cocycle v0.1.0 (/home/jzdy/github.com/huangbogeng/cocycle-rs/target/package/cocycle-0.1.0)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
-     Running `target/package/cocycle-0.1.0/target/debug/examples/flag_persistence`
-SuppliedFlag: [PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Finite(1.0) }, PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }, PersistenceInterval { dimension: 0, birth: 0.0, end: Essential }, PersistenceInterval { dimension: 1, birth: 1.0, end: Essential }]

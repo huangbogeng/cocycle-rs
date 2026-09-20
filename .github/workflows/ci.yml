@@ -29,6 +29,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/check_source.py
+      - run: python tools/check_artifacts.py
       - run: python tools/check_docs.py
       - run: python -m unittest discover -s tools -p 'test_*.py'
       - run: cargo fmt --all -- --check
@@ -113,6 +114,14 @@ jobs:
           ref: 01add51ff64aaf40889483260cc5c3b7d0f2a1e7
           path: target/native-sources/ripser
       - run: sudo apt-get update && sudo apt-get install -y libboost-dev
+      - name: Record reference run identity
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          fields = ("GITHUB_SHA", "GITHUB_REF", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_REPOSITORY")
+          Path("target/reference-run.json").write_text(json.dumps({key: os.environ.get(key) for key in fields}, indent=2) + "\n")
+          PY
       - run: python tools/benchmark_native.py --quick --samples 1 --output target/native-smoke
       - run: python tools/compare_rips.py --output target/rips-reference
       - run: python tools/compare_sparse_rips.py --output target/sparse-rips-reference
@@ -120,10 +129,11 @@ jobs:
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: native-reference-comparisons
+          name: native-reference-${{ github.sha }}-${{ github.run_attempt }}
           if-no-files-found: ignore
           retention-days: 14
           path: |
+            target/reference-run.json
             target/native-smoke/environment.json
             target/native-smoke/results.json
             target/native-smoke/summary.csv

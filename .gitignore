@@ -1,3 +1,10 @@
 /target/
+/benches/results/
+/artifacts/
 __pycache__/
 .venv/
+*.log
+*.log.gz
+*.tar.gz
+*.zip
+*.crate

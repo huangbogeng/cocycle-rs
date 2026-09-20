@@ -1,8 +1,0 @@
-
-running 2 tests
-test docs/guides/rips-representatives.md - Prime_fields_and_requested_representatives::Request_a_basis_at_a_scale (line 44) ... ok
-test docs/guides/rips-representatives.md - Prime_fields_and_requested_representatives::Select_a_coefficient_field (line 13) ... ok
-
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-all doctests ran in 0.27s; merged doctests compilation took 0.26s

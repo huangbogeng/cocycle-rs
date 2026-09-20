@@ -20,10 +20,10 @@ before/after evidence; do not imply project-wide superiority.
 | Item | Recorded value |
 | --- | --- |
 | Associated PR | Repository and PR link/number, or not applicable |
-| Measured candidate commit | Full SHA and link; PR head or tested merge commit; explicitly unbound for a draft |
+| Measured candidate commit | Full SHA and link; PR head or tested merge commit; must identify the actual measured code |
 | Measured baseline commit | Full SHA and link for before/after evidence; otherwise not applicable |
 | Harness revision | Full SHA/fingerprint when different from the measured candidate |
-| Source fingerprint and dirty state | Link fingerprint scope and preserved source; a dirty base commit is not a measured commit |
+| Source fingerprint and dirty state | Link fingerprint scope and preserved source; dirty exploratory runs stay local |
 | Suite and attempt ID | Stable run identity under the measured revision |
 | UTC start/end | Execution metadata from artifacts |
 | Native revisions and adapter instrumentation | Link pins, generated header/source hashes and binaries |
@@ -65,7 +65,9 @@ these results justify it.
 
 ## Evidence
 
-Link immutable environment metadata, fixtures, all raw samples, validation
-results, full summaries, build logs and measured source. Describe any lossless
-compression. Record missing artifacts and dated interpretation corrections here;
-never rewrite an old run to describe newer code.
+Link the external run or durable artifact containing environment metadata,
+fixtures, all raw samples, validation results, full matrices and build logs.
+Record the artifact checksum, measured SHA, run/attempt IDs, retention/expiry and
+retrieval instructions. Do not copy the archive, logs or full generated output
+into this repository. State missing or expired evidence explicitly; do not claim
+public reproducibility for a local-only run.

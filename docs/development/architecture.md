@@ -233,8 +233,9 @@ public API workers, never instrumented test builds.
 - `tools/`: optional external comparisons, benchmark controllers, and diagnostics.
 - `docs/`: usage, reference, development, design, and upstream research.
 - `benches/reporting.md`: cross-suite report and evidence rules.
-- `benches/reports/` and `benches/results/`: revision-bound interpretations and immutable raw
-  evidence, outside the crate payload.
+- `benches/reports/`: concise revision-bound interpretations linking external evidence.
+- `target/`: ignored local build and experiment output; generated artifacts never
+  enter the source repository.
 
 ## Extension rules
 

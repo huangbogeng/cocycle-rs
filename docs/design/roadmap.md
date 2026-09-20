@@ -53,11 +53,11 @@ crate has not been published. See the [construction guide](../guides/rips-constr
    end-to-end resource snapshots. Extend those fixtures with each new contract,
    following the [verification matrix](rips.md#verification-and-native-comparison)
    and [reporting rules](../../benches/reporting.md). Stronger performance claims
-   need a comparative study; historical wrapper timings remain separate evidence.
+   need a fresh comparative study with externally retained evidence.
 3. **Retain focused H1 performance work.** The scoped sequence below can improve
-   the existing path while broader capabilities arrive. The
-   [historical comparison](../../benches/reports/archive/source-be652a04dba1-python-threeway.md) motivates
-   nonmetric and bipartite fixtures, but new claims need fresh native evidence.
+   the existing path while broader capabilities arrive. Include nonmetric and
+   bipartite fixtures alongside geometric inputs; performance claims need fresh
+   native evidence.
    Review enumeration/reduction optimizations separately from API and storage
    refactors.
 

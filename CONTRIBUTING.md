@@ -10,7 +10,7 @@ Use Rust 1.91 or later, rustfmt, and Clippy. The core has no external runtime or
 test dependencies. Python's standard library runs documentation checks and tool
 tests. Native comparisons need a C++17 compiler, Boost headers, and pinned GUDHI
 and Ripser sources; see the [native setup](benches/native/README.md). Python TDA
-packages are only needed for [historical wrapper reproduction](tools/legacy-benchmarks.md).
+packages are only needed for [optional wrapper checks](tools/legacy-benchmarks.md).
 Start with `cargo test --locked` and the [architecture](docs/development/architecture.md).
 
 Use the [issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) for
@@ -50,6 +50,7 @@ RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
 python3 tools/check_source.py
+python3 tools/check_artifacts.py
 python3 tools/check_docs.py
 python3 -m unittest discover -s tools -p 'test_*.py'
 cargo build --locked
@@ -72,7 +73,10 @@ Select additional checks by the changed contract:
 | Performance | Comparable before/after measurements under the applicable native suite and reporting rules; keep unfavorable results |
 | File layout or packaging | Relevant checks above, package file-list review, package build and packaged example |
 
-The source and documentation checks need only Python's standard library. For
+Source and documentation checks need only Python's standard library.
+The artifact check also reads the Git index; run it after staging. It rejects
+generated outputs regardless of age, including forced additions. CI checks the
+same index policy. For
 mathematical or algorithm changes, update the [specification](docs/reference/mathematics.md), add an
 independent expected result or property, and run the relevant external comparisons
 in [tools/README.md](tools/README.md). Performance changes need the same fixtures,
@@ -83,7 +87,7 @@ Benchmark changes must follow the [reporting rules](benches/reporting.md) and th
 affected execution contract: [H0/H1 native](benches/protocol.md) or
 [Rips pipeline](benches/pipeline/README.md). Run the affected native smoke suite
 when changing workers, controllers or measurement semantics. GUDHI and Ripser comparisons use C++
-executables; Python TDA wrappers belong only to historical reproduction. Tool
+executables; Python TDA wrappers remain optional interface checks, outside native rankings. Tool
 changes also need `python3 -m unittest discover -s tools -p 'test_*.py'`.
 
 After the native setup, use a new output directory for each run:
@@ -137,7 +141,10 @@ When adding or moving a document:
    Run affected Rust examples using the commands above.
 3. Keep CI's guide doctest path aligned with the guide. If changing the checker,
    run `python3 -m unittest discover -s tools -p 'test_check_docs.py'`.
-4. If changing directories or package inclusion, inspect
+4. Do not stage logs, benchmark outputs, fixture collections or archives. Keep
+   local runs under `target/` and publish selected evidence through CI artifacts
+   or external storage; concise reports link that evidence.
+5. If changing directories or package inclusion, inspect
    `cargo package --locked --allow-dirty --list` and ensure nested docs remain in
    the package. Raw benchmark artifacts remain outside the crate payload.
 

@@ -127,7 +127,7 @@ The native workers do not modify downloaded GUDHI/Ripser checkouts. Reuse source
 pins and fixture conventions from the benchmark infrastructure. Keep the existing
 `tools/compare_ripser.py` behavior until an explicit migration is documented.
 Benchmark worker/controller edits are admitted only when adding measurements for
-a new path; preserve the protocol and historical raw results. A new sparse timing
+a new path; preserve measurement semantics and keep generated outputs outside Git. A new sparse timing
 comparison must include construction and avoid hiding any conversion cost.
 
 ## Later directory and code additions
@@ -183,8 +183,8 @@ the change by responsibilities, compatibility, mathematical coverage and evidenc
 
 The following remain stable during stage 1: current interval/coverage meaning,
 `PersistenceDiagram` as descriptor input, existing point/condensed-input public
-paths, F2 parity and zero-length interval conventions, and immutable retained
-benchmark evidence. Do not add placeholder modules, rewrite descriptor algorithms,
+paths, F2 parity and zero-length interval conventions. Benchmark outputs are
+external evidence, not source files. Do not add placeholder modules, rewrite descriptor algorithms,
 alter package dependencies or publish a release as incidental scope.
 
 ## Stage 2 implementation decisions

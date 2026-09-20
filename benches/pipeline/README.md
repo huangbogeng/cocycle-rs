@@ -109,3 +109,7 @@ peak RSS and comparison scopes, and `summary.json` the overall outcome.
 `build/build.log` preserves compiler diagnostics. A comparison mismatch makes
 all measurements of that case unvalidated; retained timings are not successful
 performance evidence. Source changes during a run also invalidate that run.
+
+Generated outputs belong under ignored `target/` or in external artifact storage.
+They must not be committed as loose files or archives; see the
+[storage policy](../reporting.md#storage-and-evidence-lifecycle).

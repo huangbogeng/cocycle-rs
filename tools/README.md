@@ -60,10 +60,14 @@ Its raw unpaired endpoints are compared along with separately checked Rust cover
 
 ```sh
 python3 tools/check_source.py
+python3 tools/check_artifacts.py
 python3 tools/check_docs.py
 python3 -m unittest discover -s tools -p 'test_*.py'
 rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
 ```
+
+Run the artifact check after staging. It rejects generated paths and log/archive/
+binary files in the Git index, including historical or forcibly added outputs.
 
 Source checks cover maintained text encoding/whitespace and parse Python without
 importing tools. They exclude raw evidence, downloaded sources, and build output.
@@ -88,12 +92,12 @@ adapter for `cocycle-native-v1` results. Its counts are entries and operations,
 not allocated bytes. Detailed commands and counter definitions are retained in
 [diagnostic instructions](legacy-benchmarks.md#private-h1-optimization-profiling).
 
-## Historical reproduction
+## Optional wrapper tools
 
 The [legacy tools guide](legacy-benchmarks.md) documents `compare_ripser.py`,
 `benchmark_gudhi.py`, `benchmark_scaling.py`, their pinned Python environments,
-and retained wrapper experiments. They remain available for reproducing that
-protocol and optional correctness checks. Current native tools include `benchmark_native.py`, `compare_rips.py`,
+and optional correctness checks. Generate fresh inputs under `target/`; historical
+outputs are not shipped. Current native tools include `benchmark_native.py`, `compare_rips.py`,
 `compare_sparse_rips.py` and `benchmark_rips_pipeline.py`, with separate
 correctness and timing responsibilities. Do not mix old wrapper samples into
 native rankings.
@@ -131,4 +135,5 @@ higher-simplex blockers. Continue running the exact native suite separately.
 expansion, public computation and export separately, plus end-to-end time and
 per-process peak RSS. See the [pipeline protocol](../benches/pipeline/README.md)
 for the full scopes, native comparability limits, failure retention and commands.
-The existing H0/H1 timing protocol and historical results are unchanged.
+The existing H0/H1 timing protocol remains separate. Generated results and logs
+are stored outside Git under the shared reporting policy.

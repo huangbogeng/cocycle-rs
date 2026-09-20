@@ -77,7 +77,7 @@ changes and precision are recorded with each run.
 are optional historical development references. Pin versions and record precision, input,
 coefficient field, scale, truncation, and interval conventions for each comparison.
 
-The retained 2026-09-17 wrapper experiments use GUDHI 3.13.0 and Ripser.py 0.6.14. Ripser.py is a
+The optional wrapper tools pin GUDHI 3.13.0 and Ripser.py 0.6.14. Ripser.py is a
 Python binding/fork, distinct from the upstream C++ CLI. Its installed dense
 input path converts distances to float32; the comparison suite uses shared
 float32-exact inputs while retaining Cocycle/GUDHI f64 arithmetic. The

@@ -121,8 +121,9 @@ The [reporting rules](../../benches/reporting.md) distinguish correctness checks
 resource snapshots and comparative studies, with separate execution protocols.
 Its source hashes identify the measured implementation. A directory refactor
 changes those hashes even when behavior is preserved; old measurements must not
-be relabeled as a new run. The [cleanup verification record](../../benches/reports/archive/maintenance/source-977573dab74e-cleanup.md)
-records earlier repository cleanup checks separately.
+be relabeled as a new run. The artifact storage policy replaces historical
+repository-local verification records. All generated results and logs stay
+outside Git; the CI artifact check enforces the tracked-file boundary.
 
 ## Exact graph and matrix paths
 

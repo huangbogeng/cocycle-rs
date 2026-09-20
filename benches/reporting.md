@@ -5,7 +5,8 @@
 This page owns the rules for new performance claims and retained reports. Each
 suite owns its execution contract: [H0/H1 native](protocol.md) or
 [Rips pipeline](pipeline/README.md). Use the [report template](report-template.md)
-for a new experiment. These rules do not retroactively change old measurements.
+for a new experiment. The source repository stores code and concise reports;
+all generated run data lives outside Git.
 
 ## Classify the evidence
 
@@ -17,7 +18,7 @@ for a new experiment. These rules do not retroactively change old measurements.
 
 State the class and question before the numbers. New external performance
 measurements use native GUDHI C++ and upstream Ripser C++. Python may orchestrate
-processes; Python TDA wrappers belong to separately labeled historical evidence.
+processes; optional Python-wrapper tools do not qualify as native comparisons.
 Name the actual engine and adapter, not just the library: GUDHI direct expansion,
 GUDHI edge collapse and GUDHI's integrated Ripser are different paths.
 
@@ -43,8 +44,9 @@ Here `head12`/`sha12` are at least twelve hexadecimal characters from the measur
 commit, extended on collision; the report always records the full SHA. A PR report
 must never silently follow a moving head. A new measured revision gets a new
 report; repeated runs of the same revision get distinct attempt IDs and remain
-visible in that report. Use `benches/results/commit-<sha12>/<suite>/run-<NNN>/`
-for new retained raw runs. Counter values distinguish attempts, not revisions.
+visible in that report. Use `target/benchmarks/commit-<sha12>/<suite>/run-<NNN>/`
+locally and the same identity in external artifact storage. These directories
+are never committed. Counter values distinguish attempts, not revisions.
 
 For a before/after report, record both candidate and baseline explicitly and link
 each run's artifacts under its own measured revision. The PR target branch is not
@@ -58,32 +60,15 @@ commit. The report's own commit is not the measured commit. A documentation-only
 follow-up can cite the prior measured revision without rerunning it, but must
 not claim that the new revision was measured.
 
-Uncommitted exploratory runs remain drafts keyed by their recorded source
-fingerprint: `draft-<fingerprint12>-<suite>.md`. State that the measured commit is
-unbound; record the base commit and dirty state only when known. A base commit is
-not the identity of the modified source. Preserve a source snapshot/patch,
-including untracked measured files, for new retained drafts. Promote a draft only
-by verifying its preserved measured inputs against a commit, documenting that
-mapping and retaining the original run identity, or by making a fresh committed
+Uncommitted exploratory runs remain local under `target/`, identified by their
+source fingerprint and dirty state. They are not version-bound performance
+reports and are not committed as draft archives. A report can cite a run only
+after verifying the measured inputs against a commit or making a fresh committed
 run. A later commit must not be assigned merely because it contains similar work.
 
-Existing date-named raw artifacts remain at their original paths. Migrate report
-filenames, titles and links to their verified revision identity. Native records
-without a verified commit use the draft convention above. Historical wrapper
-experiments and instrumented diagnostics belong in `reports/archive/` as
-`source-<fingerprint12>-<suite>.md`; this `source-` prefix explicitly denotes a
-fingerprint, not a Git commit. Split mixed-version reports into source-specific
-records and name both sources for a before/after comparison.
-
-Keep maintenance verification in `reports/archive/maintenance/` and protocol
-specifications outside report storage. A historical observation lacking even a
-source fingerprint must be labeled `unattributed-<scope>.md` in the archive and
-cannot serve as a revision-bound baseline. Archive indexes and migration audits
-are navigation/provenance documents, not experiment reports. Missing metadata
-must remain explicit; moving a report never upgrades its evidence class.
-Historical naming does not set the convention for new reports. These identity
-fields are report requirements; controllers that do not emit them yet require
-additional recorded provenance, not invented metadata.
+Report only identities actually recorded. Controllers that do not emit all
+required fields need additional run metadata in the external artifact. The
+commit containing the report is distinct from the measured commit.
 
 ## Establish comparability before measuring
 
@@ -195,29 +180,60 @@ Distinguish process timeout and `RLIMIT_AS` address-space caps from the library'
 cooperative cancellation/work limits. Neither process peak RSS nor successful
 completion of a fixture establishes a hard library memory budget.
 
-## Retain and review evidence
+## Storage and evidence lifecycle
 
-Explore in a fresh `target/` directory. Retain reviewed runs and reports under
-the [commit identity rules](#bind-reports-to-changes-and-measured-commits), and
-add their revision/PR mapping to the [report index](reports/README.md). Keep fixtures, every sample/status, validated
-summaries, environment, compiler commands/logs, consumed header and binary hashes,
-dependency pins and the exact source fingerprint. Record the Git revision and
-dirty state as well as the fingerprint; a commit alone does not identify an
-uncommitted build. Formal studies require a preserved measured commit; draft
-exploration requires a source snapshot/patch including untracked inputs. A hash
-detects differences but cannot reconstruct source by itself.
+| Location | What belongs there | Retention |
+| --- | --- | --- |
+| Source Git repository | Library code, tests, benchmark workers/generators, protocols and concise PR/commit-bound reports | Maintained source history |
+| Small test fixtures | Hand-maintained inputs required by a specific regression test | Reviewed as source; no generated benchmark corpus |
+| `target/` | Local measurements, generated fixtures, environments, raw outputs, logs, profiles and archives | Disposable local work; never committed |
+| GitHub Actions artifacts | CI comparison outputs, failure diagnostics and run metadata | Currently 14 days in this repository |
+| Dedicated external artifact storage | Selected reproducible performance experiments needed beyond CI retention | Explicit durable URL, checksum and retention policy |
 
-Retained raw evidence is immutable. Lossless compression may preserve the
-original bytes; document the encoding and links. Never replace source hashes or
-rerun summaries in an old directory after changing code. Add a dated correction
-to a report when its interpretation changes, keeping observed numbers and source
-identity intact. Documentation-only changes need documentation checks, not a
-benchmark rerun; if a fingerprint includes documentation, the old run still names
-its old snapshot. Do not present it as validation of the new fingerprint.
+Do not commit raw results, generated fixture collections, build/test logs, full
+machine/header inventories, binaries, caches or archives. Compressing them into
+one file does not make them source. `benches/results/` is not an artifact store;
+old data and reports have been removed, with no historical exemption.
 
-Before accepting a report, check that its conclusion follows from comparable,
-validated rows; its limits and failures are visible; and its links lead to the
-full evidence. Missing metadata stays explicitly unknown. Separate correctness,
-local build/package checks, hosted CI for an exact commit, and publication status.
-Passing one does not establish the others. These are report review rules; current
-tools enforce only the checks described in their individual protocols.
+GitHub's [workflow artifacts](https://docs.github.com/en/actions/tutorials/store-and-share-data)
+are designed to store run outputs separately from source, with configurable
+retention. They are not permanent evidence: record run ID, attempt, measured SHA,
+artifact URL and expiry. A durable performance claim needs externally preserved
+raw samples, fixtures, validation outcomes, environment/build metadata and hashes.
+Publish an immutable external archive with a member checksum manifest if needed;
+put only its identity, link, checksum and selected conclusions in the report.
+No durable external experiment store is configured yet. Local-only or expired
+evidence cannot be described as publicly reproducible.
+
+The [Rust compiler performance project](https://github.com/rust-lang/rustc-perf)
+separates per-commit collection and performance presentation into dedicated tools.
+[airspeed velocity](https://asv.readthedocs.io/en/stable/using.html) likewise warns
+that result data can grow large and needs an explicit storage plan. These are
+examples of separating benchmark code from data management, not requirements to
+add a database or service to this Rust library.
+
+For every selected experiment:
+
+1. Measure a known source revision into a fresh ignored local directory or CI run.
+2. Validate all outcomes, including failures, exclusions and unfavorable cases.
+3. Preserve the full run in external storage when a lasting report needs it.
+4. Commit a concise report with the exact revisions, protocol, outcome, comparison
+   scope and external evidence identity; do not copy the raw run into Git.
+
+Use the [report template](report-template.md). Prefer the PR description and CI
+job output for routine checks; a successful test run does not need a new document.
+Only retain a repository report when it explains an enduring result or decision.
+Do not duplicate full numeric matrices or logs in Markdown to bypass this policy.
+
+After staging, run `python3 tools/check_artifacts.py`. CI repeats this check. It
+rejects tracked result directories, cache/build paths, log files and archive/
+binary suffixes; forced additions are checked too. The check does not infer
+whether arbitrary JSON or prose is generated, so review still owns that boundary.
+There are no grandfathered artifact blobs. `.gitignore` helps keep local outputs
+out of the index but is not the enforcement mechanism.
+
+Storage changes do not change a measurement's source identity. Documentation-only
+changes need documentation checks, not a benchmark rerun. Missing evidence stays
+explicit. Keep correctness, local package checks, hosted CI for an exact commit
+and publication status distinct. Removing artifacts from a branch does not erase
+objects already present in Git history; history rewriting is a separate operation.

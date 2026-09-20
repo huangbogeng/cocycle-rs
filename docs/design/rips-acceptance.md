@@ -51,8 +51,10 @@ calls over different fields share only immutable input and retain separate state
 
 ## Measurement evidence and interpretation
 
-The [resource snapshot draft](../../benches/reports/draft-9e6000c557ca-rips-pipeline.md)
-retains the local measurements. The [pipeline protocol](../../benches/pipeline/README.md) records phase timing,
+Historical measurement outputs and reports have been removed. Fresh evidence
+belongs in CI artifacts or external storage under the
+[reporting rules](../../benches/reporting.md). The
+[pipeline protocol](../../benches/pipeline/README.md) specifies phase timing,
 end-to-end time, raw samples, process memory and native correctness checks.
 It separates public computation from construction/expansion and interval export;
 Rust's compute phase includes owned result normalization. References do not
@@ -73,8 +75,7 @@ and packaged examples. Native correctness suites compare exact Rips/flags and
 sparse approximation independently of the timed workers. CI runs the portable
 library suite on Linux, macOS and Windows, and the resource smoke on Linux.
 
-Current local results cannot certify the unsubmitted source on hosted operating
-systems. The release gate still requires a committed revision, hosted CI for that
+Local results cannot certify a source revision on hosted operating systems. The release gate still requires a committed revision, hosted CI for that
 revision, review of the package and the [release procedure](../../CONTRIBUTING.md#release-procedure).
 Do not mark this last gate passed by citing an older commit's CI or a local Linux
 success. Capability implementation, resource evidence and release readiness are

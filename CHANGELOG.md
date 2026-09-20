@@ -2,6 +2,10 @@
 
 ## 0.1.0 (unreleased)
 
+- Remove all repository-local historical experiment outputs and reports. Keep
+  generated data in ignored local directories or external artifacts; enforce
+  artifact admission in CI and bind concise future reports to measured commits.
+
 - Add phase-separated native Rips workflow measurements, per-process memory
   evidence, failure retention and an R1-R10 acceptance audit. Cover cancellation
   and work-budget recovery across twelve paths and concurrent prime-field calls.

@@ -74,3 +74,7 @@ Run standard-library tool tests with
 `python3 -m unittest discover -s tools -p 'test_*.py'` and check the Rust adapter
 with `rustfmt --edition 2024 --check benches/native/cocycle.rs`. The native smoke
 suite itself verifies compilation and mathematical output across all four paths.
+
+Generated fixtures, raw results and build logs remain in the selected ignored
+output directory or external CI artifacts. Do not commit them, including as
+compressed archives. See the [storage policy](../reporting.md#storage-and-evidence-lifecycle).
