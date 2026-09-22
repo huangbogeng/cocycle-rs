@@ -43,7 +43,7 @@ For implementation details, see the [Rips guide](../../docs/guides/rips.md),
 
 | Item | Recorded value |
 | --- | --- |
-| Rust kernel | Merge commit `6dbfd4298217158831c8df48a4caefec9730b5e9`, [PR #2](https://github.com/huangbogeng/cocycle-rs/pull/2) |
+| Rust kernel | Merge commit `6dbfd4298217158831c8df48a4caefec9730b5e9`, [PR #2](https://github.com/Aequiludium/cocycle-rs/pull/2) |
 | Performance harness | `f33812f417fd182eaa22eadacfc181dcfa45d753` |
 | Exact/sparse correctness harness | `78203f7721f0ce5bee1c57fcac11f84bfe72779c` |
 | GUDHI revision | `cba915e3ab8e1f5b1fe26eb44b407285f7af4e78` |

@@ -13,7 +13,7 @@ and Ripser sources; see the [native setup](benches/native/README.md). Python TDA
 packages are only needed for [optional wrapper checks](tools/legacy-benchmarks.md).
 Start with `cargo test --locked` and the [architecture](docs/development/architecture.md).
 
-Use the [issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) for
+Use the [issue tracker](https://github.com/Aequiludium/cocycle-rs/issues) for
 reproducible bugs and substantial API or algorithm proposals. Small, focused fixes
 can be reviewed directly through pull requests. Do not add placeholder implementations for future work.
 
@@ -162,7 +162,7 @@ comparability, sampling and artifact retention; use the
 Releases are an explicit maintainer action. A successful local build is not a
 release. Before the first publication, verify registry-name availability and
 establish the publishing identity. The source repository is
-[huangbogeng/cocycle-rs](https://github.com/huangbogeng/cocycle-rs); repository
+[Aequiludium/cocycle-rs](https://github.com/Aequiludium/cocycle-rs); repository
 bootstrap does not publish a crate or reserve its name.
 
 For every release:

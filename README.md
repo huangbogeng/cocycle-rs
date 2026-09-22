@@ -1,6 +1,6 @@
 ![Cocycle — topology, computed in Rust](assets/banner.svg)
 
-[![CI](https://github.com/huangbogeng/cocycle-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/huangbogeng/cocycle-rs/actions/workflows/ci.yml)
+[![CI](https://github.com/Aequiludium/cocycle-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Aequiludium/cocycle-rs/actions/workflows/ci.yml)
 [![Rust 1.91+](https://img.shields.io/badge/Rust-1.91%2B-102D32?style=flat-square)](Cargo.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-087D70?style=flat-square)](LICENSE)
 
@@ -30,7 +30,7 @@ dependencies and no unsafe code.
 
 ```toml
 [dependencies]
-cocycle = { git = "https://github.com/huangbogeng/cocycle-rs", branch = "main" }
+cocycle = { git = "https://github.com/Aequiludium/cocycle-rs", branch = "main" }
 ```
 
 ```rust
@@ -72,5 +72,5 @@ use native GUDHI and upstream Ripser C++; see the maintained
 [Rips comparison](benches/reports/rips-comparison.md) for tested scope, correctness
 and performance observations. Generated measurements and logs stay outside source Git.
 
-[Issue tracker](https://github.com/huangbogeng/cocycle-rs/issues) ·
+[Issue tracker](https://github.com/Aequiludium/cocycle-rs/issues) ·
 Code and original artwork are [MIT licensed](LICENSE).

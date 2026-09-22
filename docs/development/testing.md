@@ -112,7 +112,7 @@ formatting, Clippy, rustdoc, local documentation checks,
 debug/release tests on Linux/macOS/Windows, Rust 1.91 tests/checks, package validation,
 and external comparison smoke checks. Full performance runs are manual, with no
 machine-dependent speed gates. Actual hosted results are available in
-[GitHub Actions](https://github.com/huangbogeng/cocycle-rs/actions/workflows/ci.yml);
+[GitHub Actions](https://github.com/Aequiludium/cocycle-rs/actions/workflows/ci.yml);
 check the exact commit rather than inferring success from the workflow definition.
 
 Performance evidence is indexed by measured revision and associated PR under
