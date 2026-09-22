@@ -46,6 +46,10 @@ struct Stats {
     #[cfg(test)]
     cofacets: usize,
     #[cfg(test)]
+    initial_candidates: usize,
+    #[cfg(test)]
+    reconstruction_candidates: usize,
+    #[cfg(test)]
     column_additions: usize,
     #[cfg(test)]
     shortcuts: usize,
@@ -102,15 +106,9 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
         .try_reserve_exact(edges.len())
         .map_err(|_| allocation("Rips cycle edges"))?;
     let mut raw = Vec::new();
-    // H0 contributes exactly n intervals before removing zero bars. Every
-    // remaining output comes from one of at most m cycle edges.
-    let capacity = rips
-        .vertex_count()
-        .checked_add(edges.len())
-        .ok_or(Error::SizeOverflow {
-            operation: "Rips interval capacity",
-        })?;
-    raw.try_reserve(capacity)
+    // H0 contributes exactly n intervals before removing zero bars. Grow for
+    // actual H1 output rather than reserving space for zero-lifetime pairs.
+    raw.try_reserve(rips.vertex_count())
         .map_err(|_| allocation("Rips intervals"))?;
     for edge in &edges {
         budget.step()?;
@@ -137,11 +135,17 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
         working.clear();
         transform.clear();
         let edge = edges[j];
-        let shortcut = find_shortcut::<SHORTCUTS>(rips, edge, &pivot_owners, stats, budget)?;
+        let shortcut = initialize_coboundary::<SHORTCUTS>(
+            rips,
+            edge,
+            &pivot_owners,
+            &mut working,
+            stats,
+            budget,
+        )?;
         let pivot = if let Some(pivot) = shortcut {
             Some(pivot)
         } else {
-            append_coboundary(rips, edge, &mut working, stats, budget)?;
             loop {
                 budget.step()?;
                 let Some(Reverse(pivot)) = pop_parity(&mut working, budget)? else {
@@ -221,45 +225,87 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
                 #[cfg(test)]
                 reduced,
             });
-            raw.push((1, edge.value, Some(pivot.value)));
+            // Keep the pivot and transformation even when this public bar is
+            // empty: later columns can still need them for cancellation.
+            if edge.value != pivot.value {
+                raw.try_reserve(1)
+                    .map_err(|_| allocation("Rips intervals"))?;
+                raw.push((1, edge.value, Some(pivot.value)));
+            }
         } else if cycle_edges[j] {
+            raw.try_reserve(1)
+                .map_err(|_| allocation("Rips intervals"))?;
             raw.push((1, edge.value, None));
         }
     }
     Ok(raw)
 }
 
-/// Search only the original edge column, before any column additions.
-fn find_shortcut<const SHORTCUTS: u8>(
+/// Initialize the original column in one scan, stopping at a valid shortcut.
+fn initialize_coboundary<const SHORTCUTS: u8>(
     rips: &impl FlagAccess,
     edge: SimplexEntry,
     pivot_owners: &HashMap<usize, ColumnPosition>,
+    working: &mut Coboundary,
     stats: &mut Stats,
     budget: &mut WorkBudget<'_>,
 ) -> Result<Option<SimplexEntry>> {
-    if SHORTCUTS == 0 {
-        return Ok(None);
-    }
+    // Recover the existing heap allocation as an unsorted scratch buffer.
+    let mut rows = std::mem::take(working).into_vec();
+    rows.clear();
     let mut found = None;
+    let mut check_shortcut = SHORTCUTS != 0;
+    #[cfg(test)]
+    let mut candidates = 0;
     // Both access implementations visit triangles in decreasing combinatorial
     // ID order. The first equal-valued cofacet is the original column pivot.
-    rips.visit_cofacets(edge, &mut || budget.step(), |triangle| {
-        count_cofacet(stats);
-        if triangle.value == edge.value {
-            let apparent = SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge;
-            let emergent = SHORTCUTS & 2 != 0;
-            if (apparent || emergent) && !pivot_owners.contains_key(&triangle.id) {
-                #[cfg(test)]
-                {
-                    stats.shortcuts += 1;
-                }
-                found = Some(triangle);
+    rips.visit_cofacets(
+        edge,
+        &mut || {
+            #[cfg(test)]
+            {
+                candidates += 1;
             }
-            // An occupied earliest cofacet requires ordinary reduction.
-            return Ok(false);
-        }
-        Ok(true)
-    })?;
+            budget.step()
+        },
+        |triangle| {
+            count_cofacet(stats);
+            if check_shortcut && triangle.value == edge.value {
+                // An occupied first equal-valued cofacet requires ordinary
+                // reduction; never try a later equal-valued cofacet instead.
+                check_shortcut = false;
+                let eligible = SHORTCUTS & 2 != 0
+                    || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge);
+                if eligible && !pivot_owners.contains_key(&triangle.id) {
+                    #[cfg(test)]
+                    {
+                        stats.shortcuts += 1;
+                    }
+                    found = Some(triangle);
+                    return Ok(false);
+                }
+            }
+            rows.try_reserve(1)
+                .map_err(|_| allocation("Rips working heap"))?;
+            rows.push(Reverse(triangle));
+            Ok(true)
+        },
+    )?;
+    #[cfg(test)]
+    {
+        stats.initial_candidates += candidates;
+    }
+    if found.is_some() {
+        rows.clear();
+    }
+    // Heap construction, like sorting, is checked at its phase boundaries.
+    budget.check()?;
+    *working = BinaryHeap::from(rows);
+    budget.check()?;
+    #[cfg(test)]
+    {
+        stats.peak_heap = stats.peak_heap.max(working.len());
+    }
     Ok(found)
 }
 
@@ -310,13 +356,26 @@ fn append_coboundary(
     stats: &mut Stats,
     budget: &mut WorkBudget<'_>,
 ) -> Result<()> {
-    rips.visit_cofacets(edge, &mut || budget.step(), |row| {
-        count_cofacet(stats);
-        push_heap(heap, Reverse(row))?;
-        Ok(true)
-    })?;
+    #[cfg(test)]
+    let mut candidates = 0;
+    rips.visit_cofacets(
+        edge,
+        &mut || {
+            #[cfg(test)]
+            {
+                candidates += 1;
+            }
+            budget.step()
+        },
+        |row| {
+            count_cofacet(stats);
+            push_heap(heap, Reverse(row))?;
+            Ok(true)
+        },
+    )?;
     #[cfg(test)]
     {
+        stats.reconstruction_candidates += candidates;
         stats.peak_heap = stats.peak_heap.max(heap.len());
     }
     Ok(())

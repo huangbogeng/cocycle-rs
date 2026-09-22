@@ -152,6 +152,159 @@ fn heap_entries_cancel_by_parity_instead_of_set_deduplication() {
     );
 }
 
+#[test]
+fn original_column_initialization_reuses_storage_and_checks_only_the_first_equal_cofacet() {
+    // Edge 01 has cofacets 014 at value 2, then 013 and 012 at value 1.
+    let values = [1., 1., 1., 1., 1., 2., 2., 2., 2., 2.];
+    let input = DissimilarityView::new(&values, 5).unwrap();
+    let access = DenseFlag::new(input.into(), 2.).unwrap();
+    let edge = SimplexEntry { id: 0, value: 1. };
+    let first_equal = SimplexEntry { id: 1, value: 1. };
+    let mut working = Coboundary::with_capacity(16);
+    working.push(Reverse(SimplexEntry { id: 99, value: 9. }));
+    let capacity = working.capacity();
+    let mut stats = Stats::default();
+    let mut budget = WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
+    assert_eq!(
+        initialize_coboundary::<3>(
+            &access,
+            edge,
+            &HashMap::new(),
+            &mut working,
+            &mut stats,
+            &mut budget,
+        )
+        .unwrap(),
+        Some(first_equal)
+    );
+    assert!(working.is_empty());
+    assert_eq!(working.capacity(), capacity);
+    assert_eq!(stats.initial_candidates, 2);
+    assert_eq!(stats.cofacets, 2);
+
+    // The next equal cofacet is unowned, but cannot replace an occupied pivot.
+    let owners = HashMap::from([(first_equal.id, ColumnPosition(0))]);
+    let mut stats = Stats::default();
+    assert_eq!(
+        initialize_coboundary::<3>(
+            &access,
+            edge,
+            &owners,
+            &mut working,
+            &mut stats,
+            &mut budget,
+        )
+        .unwrap(),
+        None
+    );
+    assert_eq!(stats.initial_candidates, 5);
+    assert_eq!(stats.cofacets, 3);
+    assert_eq!(working.pop(), Some(Reverse(first_equal)));
+    assert_eq!(
+        working.pop(),
+        Some(Reverse(SimplexEntry { id: 0, value: 1. }))
+    );
+    assert_eq!(
+        working.pop(),
+        Some(Reverse(SimplexEntry { id: 4, value: 2. }))
+    );
+    assert!(working.is_empty());
+}
+
+#[test]
+fn original_column_fallback_handles_empty_no_equal_and_apparent_only_rejection() {
+    for (values, cutoff, edge, expected_rows) in [
+        (vec![1., 2., 2.], 1., SimplexEntry { id: 0, value: 1. }, 0),
+        (vec![1., 2., 2.], 2., SimplexEntry { id: 0, value: 1. }, 1),
+        (vec![1., 1., 1.], 1., SimplexEntry { id: 1, value: 1. }, 1),
+    ] {
+        let input = DissimilarityView::new(&values, 3).unwrap();
+        let access = DenseFlag::new(input.into(), cutoff).unwrap();
+        let mut working = Coboundary::new();
+        let mut stats = Stats::default();
+        let mut budget = WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
+        assert_eq!(
+            initialize_coboundary::<1>(
+                &access,
+                edge,
+                &HashMap::new(),
+                &mut working,
+                &mut stats,
+                &mut budget,
+            )
+            .unwrap(),
+            None
+        );
+        assert_eq!(working.len(), expected_rows);
+        assert_eq!(stats.initial_candidates, 3);
+    }
+}
+
+#[test]
+fn initial_scan_work_failure_does_not_poison_reused_input_or_heap() {
+    let values = [1., 2., 2.];
+    let input = DissimilarityView::new(&values, 3).unwrap();
+    let access = DenseFlag::new(input.into(), 2.).unwrap();
+    let edge = SimplexEntry { id: 0, value: 1. };
+    let mut working = Coboundary::new();
+    let mut budget =
+        WorkBudget::new(&crate::persistence::ExecutionLimits::new(Some(1), None)).unwrap();
+    assert_eq!(
+        initialize_coboundary::<3>(
+            &access,
+            edge,
+            &HashMap::new(),
+            &mut working,
+            &mut Stats::default(),
+            &mut budget,
+        )
+        .unwrap_err(),
+        Error::WorkLimitExceeded { limit: 1 }
+    );
+    let mut budget = WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
+    assert_eq!(
+        initialize_coboundary::<3>(
+            &access,
+            edge,
+            &HashMap::new(),
+            &mut working,
+            &mut Stats::default(),
+            &mut budget,
+        )
+        .unwrap(),
+        None
+    );
+    assert_eq!(
+        working.pop(),
+        Some(Reverse(SimplexEntry { id: 0, value: 2. }))
+    );
+}
+
+#[test]
+fn raw_h1_output_omits_zero_bars_without_omitting_repeated_positive_bars() {
+    let equal = [1.; 15];
+    let input = DissimilarityView::new(&equal, 6).unwrap();
+    let mut stats = Stats::default();
+    let raw = run::<true, true, false, 3>(input, 1., &mut stats).unwrap();
+    assert!(stats.shortcuts > 0);
+    assert!(raw.iter().all(|&(dimension, _, _)| dimension == 0));
+
+    // K(3,3) has four independent cycles at 1, all dying at 2.
+    let values: Vec<_> = (0..6)
+        .flat_map(|b| (0..b).map(move |a| if a / 3 == b / 3 { 2. } else { 1. }))
+        .collect();
+    let input = DissimilarityView::new(&values, 6).unwrap();
+    let raw = run::<true, true, false, 3>(input, 2., &mut Stats::default()).unwrap();
+    assert_eq!(
+        raw.iter().filter(|&&bar| bar == (1, 1., Some(2.))).count(),
+        4
+    );
+    assert!(
+        raw.iter()
+            .all(|&(dimension, birth, death)| dimension == 0 || death != Some(birth))
+    );
+}
+
 struct Matrix(Vec<Vec<usize>>);
 impl FilteredBoundary for Matrix {
     fn len(&self) -> usize {

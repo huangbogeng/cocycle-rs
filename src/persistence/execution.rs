@@ -15,8 +15,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// exceeding the limit. Counts are algorithm-specific, not comparable runtimes.
 ///
 /// Cancellation is checked at work units and phase boundaries. Allocation,
-/// index-table/vertex initialization, sorting and result normalization are not
-/// interruptible internally; cancellation is checked around those phases.
+/// index-table/vertex initialization, sorting, heap construction from a collected
+/// column and result normalization are not interruptible internally; cancellation
+/// is checked around those phases.
 /// Opt-in representative skeleton materialization is part of computation and
 /// is controlled. Standalone graph/complex construction is not. These controls
 /// do not constrain memory bytes, wall time or RSS.
