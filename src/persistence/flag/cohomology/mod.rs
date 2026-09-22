@@ -62,6 +62,10 @@ struct Stats {
     #[cfg(test)]
     stored_columns: usize,
     #[cfg(test)]
+    verify_transforms: bool,
+    #[cfg(test)]
+    checked_transforms: usize,
+    #[cfg(test)]
     column_additions: usize,
     #[cfg(test)]
     shortcuts: usize,
@@ -244,6 +248,11 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
                     .try_reserve(1)
                     .map_err(|_| allocation("Rips transform column"))?;
                 additions.push(k);
+            }
+            #[cfg(test)]
+            if IMPLICIT && stats.verify_transforms && shortcut.is_none() {
+                tests::check_transform(rips, &edges, edge, &additions, &working, pivot);
+                stats.checked_transforms += 1;
             }
             #[cfg(test)]
             let mut reduced = Vec::new();

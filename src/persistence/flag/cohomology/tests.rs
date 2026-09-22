@@ -313,8 +313,14 @@ fn check_virtual_access(
     coverage: Coverage,
     expected: &crate::diagram::PersistenceDiagram,
 ) -> Stats {
-    let mut ordinary = Stats::default();
-    let mut optimized = Stats::default();
+    let mut ordinary = Stats {
+        verify_transforms: true,
+        ..Stats::default()
+    };
+    let mut optimized = Stats {
+        verify_transforms: true,
+        ..Stats::default()
+    };
     for (shortcuts, stats) in [(3, &mut ordinary), (7, &mut optimized)] {
         let mut budget = WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
         let raw = if shortcuts == 3 {
@@ -332,6 +338,44 @@ fn check_virtual_access(
     optimized
 }
 
+/// Check R = C V with independent set XOR rather than the production heap.
+/// This catches missing virtual terms even when re-eliminating their pivots
+/// happens to leave the final interval multiset unchanged.
+pub(super) fn check_transform(
+    access: &impl FlagAccess,
+    edges: &[SimplexEntry],
+    edge: SimplexEntry,
+    additions: &[EdgePosition],
+    working: &Coboundary,
+    pivot: SimplexEntry,
+) {
+    let mut expected = std::collections::BTreeSet::new();
+    for source in std::iter::once(edge).chain(additions.iter().map(|position| edges[position.0])) {
+        access
+            .visit_cofacets(source, &mut || Ok(()), |row| {
+                if !expected.insert(row) {
+                    expected.remove(&row);
+                }
+                Ok(true)
+            })
+            .unwrap();
+    }
+    let mut actual = std::collections::BTreeSet::new();
+    for row in working
+        .iter()
+        .map(|row| row.0)
+        .chain(std::iter::once(pivot))
+    {
+        if !actual.insert(row) {
+            actual.remove(&row);
+        }
+    }
+    assert_eq!(
+        actual, expected,
+        "stored transformation must reconstruct its full column"
+    );
+}
+
 #[test]
 fn virtual_pairs_cancel_and_reconstruct_on_dense_and_sparse_tied_cycles() {
     use crate::filtration::flag::SparseFlag;
@@ -345,6 +389,7 @@ fn virtual_pairs_cancel_and_reconstruct_on_dense_and_sparse_tied_cycles() {
     let input = DissimilarityView::new(&values, n).unwrap();
     let mut virtual_additions = 0;
     let mut reconstructions = 0;
+    let mut checked_transforms = 0;
     for cutoff in [1., 2., 4., 6.] {
         let options = RipsOptions::new(1, Some(cutoff)).unwrap();
         let expected = reference::compute(input, &options).unwrap();
@@ -358,6 +403,7 @@ fn virtual_pairs_cancel_and_reconstruct_on_dense_and_sparse_tied_cycles() {
         ] {
             virtual_additions += stats.virtual_additions;
             reconstructions += stats.column_additions;
+            checked_transforms += stats.checked_transforms;
         }
     }
     assert!(
@@ -368,6 +414,7 @@ fn virtual_pairs_cancel_and_reconstruct_on_dense_and_sparse_tied_cycles() {
         reconstructions > 0,
         "ordinary reconstructions={reconstructions}"
     );
+    assert!(checked_transforms > 0);
 }
 
 struct CancelAccess<'a, A> {
