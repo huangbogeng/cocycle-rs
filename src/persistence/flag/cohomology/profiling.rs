@@ -34,6 +34,7 @@ fn profile_stage() {
         "cone" => run::<true, true, true, 0>(input, cutoff, stats),
         "apparent" => run::<true, true, true, 1>(input, cutoff, stats),
         "emergent" => run::<true, true, true, 3>(input, cutoff, stats),
+        "virtual" => run::<true, true, true, 7>(input, cutoff, stats),
         _ => panic!("unknown stage"),
     };
     let rss = |field: &str| -> Option<usize> {
@@ -65,10 +66,16 @@ fn profile_stage() {
     );
     let json_number = |x: Option<usize>| x.map_or_else(|| "null".into(), |x| x.to_string());
     println!(
-        "ABLATION {{\"stage\":\"{stage}\",\"samples_ms\":{samples:?},\"hwm_before_kib\":{},\"peak_rss_kib\":{},\"cofacets\":{},\"column_additions\":{},\"shortcuts\":{},\"peak_heap_entries\":{},\"stored_entries\":{}}}",
+        "ABLATION {{\"stage\":\"{stage}\",\"samples_ms\":{samples:?},\"hwm_before_kib\":{},\"peak_rss_kib\":{},\"cofacets\":{},\"initial_candidates\":{},\"reconstruction_candidates\":{},\"apparent_candidates\":{},\"skipped_apparent\":{},\"virtual_additions\":{},\"stored_columns\":{},\"column_additions\":{},\"shortcuts\":{},\"peak_heap_entries\":{},\"stored_entries\":{}}}",
         json_number(before),
         json_number(peak),
         stats.cofacets,
+        stats.initial_candidates,
+        stats.reconstruction_candidates,
+        stats.apparent_candidates,
+        stats.skipped_apparent,
+        stats.virtual_additions,
+        stats.stored_columns,
         stats.column_additions,
         stats.shortcuts,
         stats.peak_heap,
@@ -98,12 +105,18 @@ fn profile_workload() {
     let options = RipsOptions::new(1, (!cutoff.is_nan()).then_some(cutoff)).unwrap();
     let (cutoff, coverage) = resolve_rips_range(input, &options);
     let mut stats = Stats::default();
-    let raw = run::<true, true, true, 3>(input, cutoff, &mut stats).unwrap();
+    let raw = run::<true, true, true, PRODUCTION_SHORTCUTS>(input, cutoff, &mut stats).unwrap();
     let diagram = assemble_diagram(1, coverage, raw).unwrap();
     print!(
-        "WORKLOAD {{\"statistics\":{{\"edges\":{},\"cofacets\":{},\"column_additions\":{},\"shortcuts\":{},\"peak_coboundary_heap\":{},\"stored_transform_entries\":{},\"largest_transform\":{},\"peak_transform_heap\":{}}},",
+        "WORKLOAD {{\"statistics\":{{\"edges\":{},\"cofacets\":{},\"initial_candidates\":{},\"reconstruction_candidates\":{},\"apparent_candidates\":{},\"skipped_apparent\":{},\"virtual_additions\":{},\"stored_columns\":{},\"column_additions\":{},\"shortcuts\":{},\"peak_coboundary_heap\":{},\"stored_transform_entries\":{},\"largest_transform\":{},\"peak_transform_heap\":{}}},",
         stats.edges,
         stats.cofacets,
+        stats.initial_candidates,
+        stats.reconstruction_candidates,
+        stats.apparent_candidates,
+        stats.skipped_apparent,
+        stats.virtual_additions,
+        stats.stored_columns,
         stats.column_additions,
         stats.shortcuts,
         stats.peak_heap,

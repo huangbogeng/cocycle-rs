@@ -21,6 +21,10 @@ use crate::{Error, Result};
 type RawIntervals = Vec<(usize, f64, Option<f64>)>;
 type Coboundary = BinaryHeap<Reverse<SimplexEntry>>;
 
+// Bits 0/1 select original-column apparent/emergent shortcuts. Bit 2 also
+// omits zero apparent columns and reconstructs their pivots during reduction.
+const PRODUCTION_SHORTCUTS: u8 = 7;
+
 /// Position in the forward-ordered edge array, not a combinatorial simplex ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct EdgePosition(usize);
@@ -50,6 +54,14 @@ struct Stats {
     #[cfg(test)]
     reconstruction_candidates: usize,
     #[cfg(test)]
+    apparent_candidates: usize,
+    #[cfg(test)]
+    skipped_apparent: usize,
+    #[cfg(test)]
+    virtual_additions: usize,
+    #[cfg(test)]
+    stored_columns: usize,
+    #[cfg(test)]
     column_additions: usize,
     #[cfg(test)]
     shortcuts: usize,
@@ -64,7 +76,7 @@ struct Stats {
 }
 
 pub(super) fn compute(rips: &impl FlagAccess, budget: &mut WorkBudget<'_>) -> Result<RawIntervals> {
-    run_access::<true, true, 3>(rips, &mut Stats::default(), budget)
+    run_access::<true, true, PRODUCTION_SHORTCUTS>(rips, &mut Stats::default(), budget)
 }
 
 // Retain independent optimization configurations for the dense test oracle.
@@ -135,7 +147,7 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
         working.clear();
         transform.clear();
         let edge = edges[j];
-        let shortcut = initialize_coboundary::<SHORTCUTS>(
+        let (shortcut, apparent_pair) = initialize_coboundary::<SHORTCUTS>(
             rips,
             edge,
             &pivot_owners,
@@ -143,6 +155,18 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
             stats,
             budget,
         )?;
+        if apparent_pair {
+            if !cycle_edges[j] {
+                return Err(Error::InternalInvariant {
+                    reason: "H0 death edge in zero apparent pair",
+                });
+            }
+            #[cfg(test)]
+            {
+                stats.skipped_apparent += 1;
+            }
+            continue;
+        }
         let pivot = if let Some(pivot) = shortcut {
             Some(pivot)
         } else {
@@ -152,6 +176,33 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
                     break None;
                 };
                 let Some(&owner) = pivot_owners.get(&pivot.id) else {
+                    if SHORTCUTS & 4 != 0
+                        && let Some(edge) = zero_apparent_facet(rips, pivot, stats, budget)?
+                    {
+                        let position =
+                            edges
+                                .binary_search(&edge)
+                                .map_err(|_| Error::InternalInvariant {
+                                    reason: "zero apparent facet missing from edges",
+                                })?;
+                        // Its original coboundary has this pivot as its first
+                        // row and its column precedes ours in reverse order.
+                        if position <= j || !cycle_edges[position] {
+                            return Err(Error::InternalInvariant {
+                                reason: "zero apparent facet violates reduction order",
+                            });
+                        }
+                        push_heap(&mut working, Reverse(pivot))?;
+                        append_coboundary(rips, edge, &mut working, stats, budget)?;
+                        push_heap(&mut transform, EdgePosition(position))?;
+                        #[cfg(test)]
+                        {
+                            stats.virtual_additions += 1;
+                            stats.peak_transform_heap =
+                                stats.peak_transform_heap.max(transform.len());
+                        }
+                        continue;
+                    }
                     break Some(pivot);
                 };
                 // Put the pivot back: adding the owner's column cancels it.
@@ -225,6 +276,10 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
                 #[cfg(test)]
                 reduced,
             });
+            #[cfg(test)]
+            {
+                stats.stored_columns += 1;
+            }
             // Keep the pivot and transformation even when this public bar is
             // empty: later columns can still need them for cancellation.
             if edge.value != pivot.value {
@@ -249,14 +304,18 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     working: &mut Coboundary,
     stats: &mut Stats,
     budget: &mut WorkBudget<'_>,
-) -> Result<Option<SimplexEntry>> {
+) -> Result<(Option<SimplexEntry>, bool)> {
     // Recover the existing heap allocation as an unsorted scratch buffer.
     let mut rows = std::mem::take(working).into_vec();
     rows.clear();
     let mut found = None;
+    let mut apparent_pair = false;
     let mut check_shortcut = SHORTCUTS != 0;
     #[cfg(test)]
     let mut candidates = 0;
+    // The access callbacks execute sequentially. An eligible cofacet can
+    // require a nested apparent-facet scan using the same execution budget.
+    let budget = std::cell::RefCell::new(budget);
     // Both access implementations visit triangles in decreasing combinatorial
     // ID order. The first equal-valued cofacet is the original column pivot.
     rips.visit_cofacets(
@@ -266,7 +325,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
             {
                 candidates += 1;
             }
-            budget.step()
+            budget.borrow_mut().step()
         },
         |triangle| {
             count_cofacet(stats);
@@ -274,9 +333,24 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
                 // An occupied first equal-valued cofacet requires ordinary
                 // reduction; never try a later equal-valued cofacet instead.
                 check_shortcut = false;
+                if SHORTCUTS & 4 != 0 && rips.latest_facet(triangle) == edge {
+                    if pivot_owners.contains_key(&triangle.id) {
+                        return Err(Error::InternalInvariant {
+                            reason: "zero apparent pivot has an ordinary owner",
+                        });
+                    }
+                    found = Some(triangle);
+                    apparent_pair = true;
+                    return Ok(false);
+                }
                 let eligible = SHORTCUTS & 2 != 0
                     || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge);
-                if eligible && !pivot_owners.contains_key(&triangle.id) {
+                if eligible
+                    && !pivot_owners.contains_key(&triangle.id)
+                    && (SHORTCUTS & 4 == 0
+                        || zero_apparent_facet(rips, triangle, stats, &mut budget.borrow_mut())?
+                            .is_none())
+                {
                     #[cfg(test)]
                     {
                         stats.shortcuts += 1;
@@ -291,6 +365,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
             Ok(true)
         },
     )?;
+    let budget = budget.into_inner();
     #[cfg(test)]
     {
         stats.initial_candidates += candidates;
@@ -305,6 +380,48 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     #[cfg(test)]
     {
         stats.peak_heap = stats.peak_heap.max(working.len());
+    }
+    Ok((found, apparent_pair))
+}
+
+/// A zero apparent pair is determined by mutual earliest-cofacet/latest-facet
+/// tests, not by equal filtration values alone. No ownership is stored for it.
+fn zero_apparent_facet(
+    rips: &impl FlagAccess,
+    triangle: SimplexEntry,
+    stats: &mut Stats,
+    budget: &mut WorkBudget<'_>,
+) -> Result<Option<SimplexEntry>> {
+    let edge = rips.latest_facet(triangle);
+    if edge.value != triangle.value {
+        return Ok(None);
+    }
+    let mut found = None;
+    #[cfg(test)]
+    let mut candidates = 0;
+    rips.visit_cofacets(
+        edge,
+        &mut || {
+            #[cfg(test)]
+            {
+                candidates += 1;
+            }
+            budget.step()
+        },
+        |row| {
+            count_cofacet(stats);
+            if row.value == edge.value {
+                if row == triangle {
+                    found = Some(edge);
+                }
+                return Ok(false);
+            }
+            Ok(true)
+        },
+    )?;
+    #[cfg(test)]
+    {
+        stats.apparent_candidates += candidates;
     }
     Ok(found)
 }

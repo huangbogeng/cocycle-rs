@@ -2,6 +2,11 @@
 
 ## 0.1.0 (unreleased)
 
+- Initialize F2 H1 coboundaries in one pass with reusable safe buffers, omit
+  discarded zero-lifetime H1 output, and reconstruct zero apparent pairs without
+  retaining their owner columns. Preserve public APIs, f64 ordering and coverage;
+  extend independent-oracle and intermediate resource-failure checks.
+
 - Remove all repository-local historical experiment outputs and reports. Keep
   generated data in ignored local directories or external artifacts; enforce
   artifact admission in CI and bind concise future reports to measured commits.
