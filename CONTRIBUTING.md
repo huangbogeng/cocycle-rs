@@ -11,7 +11,9 @@ test dependencies. Python's standard library runs documentation checks and tool
 tests. Native comparisons need a C++17 compiler, Boost headers, and pinned GUDHI
 and Ripser sources; see the [native setup](benches/native/README.md). Python TDA
 packages are only needed for [optional wrapper checks](tools/legacy-benchmarks.md).
-Start with `cargo test --locked` and the [architecture](docs/development/architecture.md).
+Algorithm authors can start with the [contribution paths](docs/development/algorithm-contributions.md)
+and the focused command below. For wider kernel work, start with
+`cargo test --locked` and the [architecture](docs/development/architecture.md).
 
 Use the [issue tracker](https://github.com/Aequiludium/cocycle-rs/issues) for
 reproducible bugs and substantial API or algorithm proposals. Small, focused fixes
@@ -28,6 +30,29 @@ Public API includes documented numeric, ordering, and error semantics, not only
 Rust signatures. Before publication, describe intentional breaking changes in the
 changelog. After publication, preserve compatibility within a 0.x minor line and
 use a new minor version for incompatible changes. MSRV changes must be explicit.
+
+## Focused algorithm checks
+
+For diagram statistics, curves and features, follow the
+[diagram-analysis tutorial](docs/development/diagram-analysis.md). From a source
+checkout, run:
+
+```sh
+python3 tools/check_algorithm.py diagram-analysis
+```
+
+This checks source/documentation hygiene, diagram/descriptor formatting, Clippy
+for the library and selected targets, contract and descriptor tests, the analysis
+example and tutorial doctest. Rust compiles the library, but these tests do not
+run persistent homology. No native C++ setup is needed. Python invokes the local
+Rust toolchain; generated files remain in Cargo's target directory. New test files
+or tutorial pages in this path must also be added to the focused check.
+
+The author supplies mathematical assumptions, implementation and independent
+tests. Maintainers help with public exports, errors, allocation/execution policies
+and integration. A focused pass is local feedback; maintainers and CI complete
+the applicable full verification before merge. Contributions touching other
+domains use the checks below as well.
 
 ## Verification
 
@@ -46,6 +71,7 @@ cargo run --locked --example flag_persistence
 cargo run --locked --example rips_sphere
 cargo run --locked --example rips_representatives
 cargo run --locked --example sparse_rips
+cargo run --locked --example diagram_analysis
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
@@ -60,6 +86,7 @@ rustdoc --edition 2024 --test docs/guides/rips-construction.md --extern cocycle=
 rustdoc --edition 2024 --test docs/guides/rips-representatives.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/guides/sparse-rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/guides/filtered-complexes.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/development/diagram-analysis.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 ```
 
 Select additional checks by the changed contract:

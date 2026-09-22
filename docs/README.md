@@ -32,6 +32,8 @@ proposed APIs and remaining acceptance gates.
 
 | Question | Read |
 | --- | --- |
+| How do I contribute an algorithm in my research area? | [Algorithm contribution paths](development/algorithm-contributions.md) |
+| How do I implement and test a diagram descriptor? | [Diagram analysis walkthrough](development/diagram-analysis.md) |
 | What mathematical and numerical guarantees apply? | [Mathematical specification](reference/mathematics.md) |
 | Which papers justify the definitions and algorithms? | [Bibliography](reference/bibliography.md) |
 | Where does code belong and how do the parts interact? | [Current architecture](development/architecture.md) |
@@ -39,8 +41,9 @@ proposed APIs and remaining acceptance gates.
 | How do we check correctness independently? | [Testing and validation](development/testing.md) |
 | Which commands, review rules, and release checks apply? | [Contributing](../CONTRIBUTING.md) |
 
-For implementation work, read architecture, the relevant mathematical section,
-and its validation obligations together. The specification keeps shared notation
+For algorithm work, start with the contribution path and relevant mathematical
+section. Maintainers use the architecture and validation obligations for kernel
+integration. The specification keeps shared notation
 and numbered derivations in one place; rustdoc owns individual API contracts.
 
 ## Plan and compare

@@ -62,6 +62,11 @@ for cutoffs, input layouts, and result semantics.
 [Architecture](docs/development/architecture.md) · [Benchmarks](benches/README.md) ·
 [Rips comparison](benches/reports/rips-comparison.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 
+Contributing an algorithm? Start with the [research-area navigation](docs/development/algorithm-contributions.md)
+or the [diagram-analysis walkthrough](docs/development/diagram-analysis.md).
+Run `cargo run --locked --example diagram_analysis` to analyze supplied intervals
+without constructing a complex.
+
 Build the API reference with `cargo doc --no-deps --open`, or run the example with
 `cargo run --locked --example square`. Dimension-generic prime-field persistence and
 explicit complex queries are demonstrated by `cargo run --example rips_sphere`.

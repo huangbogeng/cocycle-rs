@@ -2,6 +2,10 @@
 
 ## 0.1.0 (unreleased)
 
+- Add research-area contribution navigation, an executable diagram-analysis
+  tutorial, an interval-only analysis example and a focused contributor check.
+  Keep full CI verification while separating algorithm work from kernel integration.
+
 - Add the four-method `FilteredComplex` contract and generic prime-field boundary
   analysis through `PersistenceBuilder::from_complex`. Add validated `Simplex`
   and `SimplicialComplex` construction; retain `FilteredSimplicialComplex` as an alias.

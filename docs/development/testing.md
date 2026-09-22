@@ -6,6 +6,14 @@ Tests protect mathematical and public API contracts. Run commands and review
 requirements are in [CONTRIBUTING.md](../../CONTRIBUTING.md#verification); measurement
 protocols belong in the [benchmark guide](../../benches/README.md).
 
+Algorithm authors can start with the
+[focused diagram-analysis check](../../CONTRIBUTING.md#focused-algorithm-checks).
+The [contributor tutorial](diagram-analysis.md) uses manually supplied intervals;
+the example and descriptor tests do not need a complex constructor or a persistence
+calculation. Maintainer/CI checks retain the broader integration coverage below.
+The CI quality job exercises the focused command itself; the platform test jobs
+also run the standalone diagram-analysis example.
+
 ## Test layers
 
 | Location | Purpose |
@@ -19,12 +27,13 @@ protocols belong in the [benchmark guide](../../benches/README.md).
 | `tests/prime_fields.rs` | Full-u32 modular arithmetic, field-sensitive flag RP2, independent ranks, cycle/cocycle closure, nontriviality, duality and interval identity |
 | `tests/rips_resources.rs` | Budget/cancellation recovery across 12 paths and concurrent independent prime-field calls |
 | `tests/sparse_rips.rs` | Metric hypotheses, sampling provenance, blocker topology, original IDs, approximate coverage and computation parity |
-| `tests/descriptors.rs` | Formula, endpoint, exclusion, overflow, and empty-result behavior |
+| `tests/descriptors.rs` | Formula, endpoint, exclusion, overflow, empty-result behavior and translation/rescaling properties |
 | `tests/filtered_complex.rs` | Supplied simplicial/cell inputs, signed scales, unequal vertex births, oriented boundaries, source coverage and invalid contracts |
 | `src/persistence/reference/` | Independent explicit filtration and boundary reducer |
 | `src/filtration/flag/dense.rs` tests | Indexing, overflow, and independent cofacet enumeration |
 | `src/persistence/flag/cohomology/tests.rs` | Seven optimization settings, duality, and difficult numeric cases |
 | `tools/test_*.py` | Source/documentation checks, external comparison, and benchmark protocol behavior |
+| `docs/development/diagram-analysis.md` | Executable contributor example: finite counts, multiplicity, endpoint exclusions and computed dimensions |
 
 The two ignored profiling tests are deliberately invoked only by developer tools.
 They do not represent missing ordinary regression coverage. Instrumented timings

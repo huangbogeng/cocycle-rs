@@ -1,0 +1,172 @@
+# Contributing diagram analysis
+
+[Documentation](../README.md) / [Algorithm contributions](algorithm-contributions.md)
+
+This walkthrough is for researchers implementing statistics, curves or features
+from persistence diagrams. It needs Rust 1.91 or later with rustfmt and Clippy,
+and Python's standard library for the focused checks. It needs no C++ reference installation or Python
+TDA package. Start from intervals; persistent homology is already computed input
+to this part of the library.
+
+## The objects you need
+
+| Object | Meaning |
+| --- | --- |
+| `PersistenceInterval` | One interval, with its homology dimension and birth |
+| `IntervalEnd::Finite(d)` | Finite death; the interval is `[birth, d)` |
+| `IntervalEnd::Essential` | Never dies in the complete supplied filtration |
+| `IntervalEnd::RightCensored { through: t }` | Known alive at the inclusive cutoff `t`; eventual death is unknown |
+| `PersistenceDiagram` | Validated interval multiset, computed dimensions and coverage |
+| `Coverage` | Complete source or a computation known only through a cutoff |
+
+Constructors validate finite scales and endpoint consistency. Signed scales are
+valid, multiplicities are preserved, and finite zero-length intervals are
+rejected. A diagram records every dimension from zero through its declared
+maximum, including empty ones. Querying an uncomputed dimension is an error.
+
+A complete diagram rejects censored intervals. A truncated diagram rejects
+essential intervals: survival at a cutoff alone cannot certify essentiality.
+The library does not verify the mathematical origin of a manually supplied diagram;
+the caller must declare its coverage truthfully.
+
+## Define a small descriptor
+
+As a teaching exercise, count observed finite intervals in dimension `k`:
+
+`N_k = number of intervals in dimension k with a finite death`.
+
+Count repeated intervals separately. Exclude essential and censored intervals;
+do not impute their deaths. An empty computed dimension returns zero; an
+uncomputed dimension returns an error. The scan takes O(m) time and O(1) extra
+space for m selected intervals, following dimension lookup. No lifetime
+subtraction is necessary, so extreme finite endpoints cannot overflow this count.
+
+The following complete example implements that definition and checks its
+endpoint and dimension rules. It is compiled and executed by the focused check.
+
+```rust
+use cocycle::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceInterval};
+use cocycle::{Error, Result};
+
+fn finite_interval_count(diagram: &PersistenceDiagram, dimension: usize) -> Result<usize> {
+    let intervals = diagram.intervals_in_dimension(dimension)?;
+    Ok(intervals
+        .filter(|interval| matches!(interval.end(), IntervalEnd::Finite(_)))
+        .count())
+}
+
+let repeated = PersistenceInterval::new(1, -2.0, IntervalEnd::Finite(1.0))?;
+let diagram = PersistenceDiagram::new(
+    2,
+    Coverage::Complete,
+    vec![
+        PersistenceInterval::new(1, 0.0, IntervalEnd::Essential)?,
+        repeated,
+        repeated,
+    ],
+)?;
+assert_eq!(finite_interval_count(&diagram, 1)?, 2);
+assert_eq!(finite_interval_count(&diagram, 2)?, 0);
+assert!(matches!(
+    finite_interval_count(&diagram, 3),
+    Err(Error::DimensionNotComputed { .. })
+));
+
+let truncated = PersistenceDiagram::new(
+    1,
+    Coverage::Through(1.0),
+    vec![
+        repeated,
+        PersistenceInterval::new(1, -2.0, IntervalEnd::RightCensored { through: 1.0 })?,
+    ],
+)?;
+assert_eq!(finite_interval_count(&truncated, 1)?, 1);
+# Ok::<(), cocycle::Error>(())
+```
+
+`finite_interval_count` is local tutorial code, not an additional public API.
+The production `finite_lifetime_summary` already reports a finite count together
+with other statistics. The local count deliberately does not compute lifetimes;
+the production summary can fail if lifetime arithmetic overflows.
+
+The Rust mechanics here are small: `&` borrows the diagram, `?` propagates a
+structured error, `matches!` selects an endpoint variant, and `Result<usize>`
+returns either a count or an error. An ordinary loop is equally acceptable; no
+custom trait, lifetime parameter or builder is needed.
+
+## Read a production implementation
+
+[Lifetime statistics](../../src/descriptors/lifetime_statistics.rs) extends this
+pattern with sums, maxima and entropy. Read its documented contract, then the
+loop over `intervals_in_dimension`. The summary records excluded endpoint counts
+so users know what was measured. Compensated summation and overflow checks keep
+floating-point behavior explicit; a valid pair of endpoints does not guarantee
+that their difference is representable as `f64`.
+
+[Betti curves](../../src/descriptors/betti_curve.rs) count all live classes instead
+of just finite lifetimes. Births count at their scale, finite deaths do not, and
+censored classes still count at the cutoff. Queries beyond censored coverage
+fail. The sorted-event implementation is an optimization of that definition;
+the definition belongs in [mathematics section 7](../reference/mathematics.md#7-diagram-descriptors).
+
+Run [diagram_analysis.rs](../../examples/diagram_analysis.rs) to see both operations
+on complete and truncated diagrams, without constructing a complex:
+
+```sh
+cargo run --locked --example diagram_analysis
+```
+
+## Turn a new formula into a contribution
+
+1. Specify which dimensions and endpoint kinds participate, the output's units,
+   normalization, empty behavior and numerical limits. State how missing
+   information is excluded or rejected. Do not silently invent finite deaths.
+2. Implement the operation in a named file under `src/descriptors/`, borrowing a
+   diagram and returning an owned result. For a small operation, start with a
+   function. A genuinely different capability, such as diagram matching, should
+   have its placement discussed with a maintainer instead of accumulating here.
+3. Add tests to `tests/descriptors.rs`, starting from hand-built intervals. Update
+   the relevant mathematical specification and write rustdoc beside the function.
+4. Work with a maintainer on the export in `src/descriptors/mod.rs`, error variants
+   if needed, a usage example and changelog. Allocation and execution policies are
+   integration work; numerical assumptions remain part of the algorithm review.
+
+You should normally edit the descriptor, its tests and mathematical description.
+Changing Rips, complex storage or persistence builders is unnecessary for an
+operation that consumes only a diagram. No new public descriptor is introduced
+by this walkthrough itself.
+
+## Choose tests from the definition
+
+Use [the descriptor tests](../../tests/descriptors.rs) as executable examples:
+
+| Case or property | What it detects |
+| --- | --- |
+| Two equal lifetimes | Entropy is `ln(2)` in nats, not a base-two or normalized value |
+| No finite intervals | Zero total and `None` entropy; exclusions remain visible |
+| Repeated intervals and mixed dimensions | Multiplicity and dimension selection are preserved |
+| Birth, death and cutoff queried exactly | Half-open finite intervals and inclusive censoring |
+| Negative scales and translation | No accidental assumption that all births are zero |
+| Positive rescaling | Lifetimes scale; normalized entropy stays unchanged |
+| Extreme finite endpoints | Arithmetic failure is distinct from a valid empty result |
+
+Use exact assertions for integer counts and exactly representable fixtures.
+For logarithms or accumulated floating-point error, justify a small tolerance
+from the operation; never enlarge it merely to make a failure disappear.
+Construct expected values by hand or from an independent property, not by
+calling another production descriptor. Shared test helpers are optional; keep
+the mathematical input visible when a fixture is already short.
+
+## Check and submit
+
+Run the [focused command](../../CONTRIBUTING.md#focused-algorithm-checks) from a
+source checkout. It checks source/documentation hygiene, domain formatting and
+Clippy, public contract and descriptor tests, the runnable example, and this
+tutorial's Rust code. The script stops at the first failure and leaves Cargo
+output in its configured target directory. It does not run Rips computations or
+native benchmark suites.
+
+For a Rust failure, the file and line in the diagnostic identify the first place
+to inspect. Preserve the failing mathematical input when seeking help. The
+maintainer checklist and CI still cover release/MSRV builds, packaging and wider
+regressions before merge; a focused pass is not evidence for those other checks.
