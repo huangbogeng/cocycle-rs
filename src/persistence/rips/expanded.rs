@@ -1,6 +1,6 @@
 //! Persistence from frozen Rips incidence with dimension and range checks.
 use crate::diagram::{ComputationContext, FiltrationKind, PersistenceResult};
-use crate::filtration::{RipsExpansion, RipsInputKind, flag::ExplicitAccess};
+use crate::filtration::{RipsExpansion, RipsInputKind, simplicial::ZeroBornExplicitAccess};
 use crate::persistence::{
     ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, flag,
 };
@@ -60,7 +60,7 @@ pub(in crate::persistence) fn compute_expanded_rips_budget(
         input.max_edge,
         options.max_edge(),
     )?;
-    let access = ExplicitAccess {
+    let access = ZeroBornExplicitAccess {
         complex: &input.complex,
         vertex_count: input.vertex_count,
         cutoff,
@@ -77,17 +77,17 @@ pub(in crate::persistence) fn compute_expanded_rips_budget(
     Ok(PersistenceResult {
         diagram,
         representatives,
-        context: ComputationContext {
-            approximation: None,
-            field: options.field(),
-            kind: match input.kind {
+        context: ComputationContext::new(
+            options.field(),
+            match input.kind {
                 RipsInputKind::Dissimilarities => FiltrationKind::RipsDissimilarities,
                 RipsInputKind::Euclidean => FiltrationKind::RipsEuclidean,
                 RipsInputKind::Custom => FiltrationKind::RipsCustom,
             },
-            vertex_count: input.vertex_count,
-            requested_cutoff: options.max_edge(),
-            construction_cutoff: input.requested_cutoff,
-        },
+            input.vertex_count,
+            options.max_edge(),
+            input.requested_cutoff,
+            None,
+        ),
     })
 }

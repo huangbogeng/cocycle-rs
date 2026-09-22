@@ -13,6 +13,8 @@ dependencies and no unsafe code.
   with a specialized F₂ H₀/H₁ path. Euclidean points or borrowed matrix layouts.
 - **Inspectable construction** — exact threshold graphs, supplied weighted flag
   filtrations, and frozen simplicial complexes with boundary/cofacet queries.
+- **Supplied complexes** — validated simplicial storage and a small filtered-cell
+  trait for boundary reduction, including signed scales and unequal vertex births.
 - **Sparse approximation** — deterministic sampling, modified edges and higher-simplex
   blockers, with explicit metric hypotheses and approximation provenance.
 - **Optional representatives** — owned persistent cycle bases and query-scale dual
@@ -56,7 +58,7 @@ for cutoffs, input layouts, and result semantics.
 
 ## Explore
 
-[Documentation](docs/README.md) · [Rips guide](docs/guides/rips.md) · [Graph construction](docs/guides/rips-construction.md) · [Mathematics](docs/reference/mathematics.md) ·
+[Documentation](docs/README.md) · [Filtered complexes](docs/guides/filtered-complexes.md) · [Rips guide](docs/guides/rips.md) · [Graph construction](docs/guides/rips-construction.md) · [Mathematics](docs/reference/mathematics.md) ·
 [Architecture](docs/development/architecture.md) · [Benchmarks](benches/README.md) ·
 [Rips comparison](benches/reports/rips-comparison.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 

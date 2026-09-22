@@ -1,10 +1,10 @@
 //! Shared exact flag engines and supplied-graph computation.
 mod cohomology;
 mod h0;
-mod representatives;
-pub use representatives::{RepresentativeRequest, RepresentativeSelection};
-mod union_find;
-pub(super) use cohomology::dimensions::compute as compute_simplicial;
+use super::RepresentativeRequest;
+use super::simplicial::representatives;
+
+pub(super) use super::simplicial::cohomology::compute as compute_simplicial;
 
 use super::execution::WorkBudget;
 use super::{ExecutionLimits, PersistenceOptions, assemble_diagram};
@@ -18,7 +18,7 @@ use crate::filtration::{
 };
 use crate::geometry::DissimilarityMatrixView;
 
-type RawIntervals = Vec<(usize, f64, Option<f64>)>;
+use super::RawIntervals;
 
 pub(super) fn compute_dense(
     input: DissimilarityMatrixView<'_>,
@@ -150,20 +150,20 @@ pub(in crate::persistence) fn compute_flag_budget(
     Ok(PersistenceResult {
         diagram,
         representatives,
-        context: ComputationContext {
-            approximation: None,
-            field: options.field(),
-            kind: FiltrationKind::SuppliedFlag,
-            vertex_count: graph.vertex_count(),
-            requested_cutoff: options.max_edge(),
-            construction_cutoff: None,
-        },
+        context: ComputationContext::new(
+            options.field(),
+            FiltrationKind::SuppliedFlag,
+            graph.vertex_count(),
+            options.max_edge(),
+            None,
+            None,
+        ),
     })
 }
 
 /// Shared dispatch for optional representatives; ordinary calls keep their implicit engine.
 pub(super) fn finish(
-    access: &impl crate::filtration::flag::SimplicialAccess,
+    access: &impl crate::filtration::simplicial::ZeroBornSimplicialAccess,
     options: &PersistenceOptions,
     requests: &[RepresentativeRequest],
     coverage: Coverage,

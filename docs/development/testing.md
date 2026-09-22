@@ -20,6 +20,7 @@ protocols belong in the [benchmark guide](../../benches/README.md).
 | `tests/rips_resources.rs` | Budget/cancellation recovery across 12 paths and concurrent independent prime-field calls |
 | `tests/sparse_rips.rs` | Metric hypotheses, sampling provenance, blocker topology, original IDs, approximate coverage and computation parity |
 | `tests/descriptors.rs` | Formula, endpoint, exclusion, overflow, and empty-result behavior |
+| `tests/filtered_complex.rs` | Supplied simplicial/cell inputs, signed scales, unequal vertex births, oriented boundaries, source coverage and invalid contracts |
 | `src/persistence/reference/` | Independent explicit filtration and boundary reducer |
 | `src/filtration/flag/dense.rs` tests | Indexing, overflow, and independent cofacet enumeration |
 | `src/persistence/flag/cohomology/tests.rs` | Seven optimization settings, duality, and difficult numeric cases |

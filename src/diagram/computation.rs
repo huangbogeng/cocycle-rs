@@ -3,45 +3,68 @@ use super::PersistenceDiagram;
 
 use crate::filtration::FiltrationKind;
 
-/// Owned context interpreting an ordinary persistence computation.
-///
-/// All currently supported paths use edge-length scales, zero vertex births,
-/// prime-field coefficients and exact reduction of the declared filtration.
-/// Approximate constructions additionally record their parameters and vertex mapping.
+/// Owned source context and ordinary persistence analysis settings.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComputationContext {
-    pub(crate) approximation: Option<super::RipsApproximation>,
+    pub(crate) filtration: crate::filtration::FiltrationContext,
     pub(crate) field: crate::algebra::PrimeField,
-    pub(crate) kind: FiltrationKind,
-    pub(crate) vertex_count: usize,
     pub(crate) requested_cutoff: Option<f64>,
-    pub(crate) construction_cutoff: Option<f64>,
 }
 impl ComputationContext {
-    /// Sparse Rips provenance, or `None` for an exact construction.
+    /// Reusable source facts, including scale convention and construction metadata.
+    pub fn filtration(&self) -> &crate::filtration::FiltrationContext {
+        &self.filtration
+    }
+    /// Sparse Rips provenance, when applicable.
     pub fn approximation(&self) -> Option<&super::RipsApproximation> {
-        self.approximation.as_ref()
+        self.filtration.approximation()
     }
-    /// The mathematical object computed.
+    /// Compatibility classification of the mathematical source.
     pub fn filtration_kind(&self) -> FiltrationKind {
-        self.kind
+        self.filtration.filtration_kind()
     }
-    /// Number of vertices in the computed filtration, including isolated ones.
-    /// For sparse approximations the original count is the permutation length.
+    /// Source vertices, including vertices outside a smaller analysis cutoff.
     pub fn vertex_count(&self) -> usize {
-        self.vertex_count
+        self.filtration.vertex_count()
     }
-    /// Requested computation cutoff, before internal stopping optimizations.
+    /// Requested computation cutoff before internal stopping optimizations.
     pub fn requested_cutoff(&self) -> Option<f64> {
         self.requested_cutoff
     }
-    /// Source construction cutoff, if a threshold graph was constructed.
+    /// Requested construction cutoff in the source's declared units.
     pub fn construction_cutoff(&self) -> Option<f64> {
-        self.construction_cutoff
+        self.filtration.construction_cutoff()
     }
     /// Coefficient field characteristic.
     pub fn characteristic(&self) -> u32 {
         self.field.characteristic()
+    }
+    pub(crate) fn new(
+        field: crate::algebra::PrimeField,
+        kind: FiltrationKind,
+        vertex_count: usize,
+        requested_cutoff: Option<f64>,
+        construction_cutoff: Option<f64>,
+        approximation: Option<super::RipsApproximation>,
+    ) -> Self {
+        Self {
+            filtration: crate::filtration::FiltrationContext::new(
+                kind,
+                vertex_count,
+                construction_cutoff,
+                approximation,
+            ),
+            field,
+            requested_cutoff,
+        }
+    }
+    pub(crate) fn set_kind(&mut self, kind: FiltrationKind) {
+        self.filtration = crate::filtration::FiltrationContext::new(
+            kind,
+            self.vertex_count(),
+            self.construction_cutoff(),
+            self.approximation().cloned(),
+        );
     }
 }
 

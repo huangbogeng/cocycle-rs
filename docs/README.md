@@ -12,6 +12,9 @@ proposed APIs and remaining acceptance gates.
 
 ## Use the library
 
+- [Supplied filtered complexes](guides/filtered-complexes.md): validated simplicial
+  storage, the filtered-cell contract, signed scales and generic boundary reduction.
+
 - [Rips guide](guides/rips.md): choose an input, compute persistence, interpret
   coverage and endpoints, and derive measurements.
 - [Rips construction guide](guides/rips-construction.md): matrix layouts, custom

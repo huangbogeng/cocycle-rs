@@ -32,6 +32,11 @@ entry points. An independent explicit boundary implementation remains a test ora
 production representative path owns a separate reducer. The
 crate has not been published. See the [construction guide](../guides/rips-construction.md).
 
+The [filtered-complex boundary](../guides/filtered-complexes.md) is implemented:
+validated supplied simplices, a four-method cell trait, signed-scale boundary
+reduction and shared source context. This supplies an integration boundary for
+future Alpha geometry; it does not implement triangulation or Alpha construction.
+
 ## Next priorities
 
 The [API design](rips-api.md) is implemented with a compatibility stage:

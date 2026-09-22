@@ -7,6 +7,13 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
+    /// A supplied simplex or filtered-complex contract is invalid.
+    InvalidComplex {
+        /// Input simplex or traversal position, when available.
+        cell: Option<usize>,
+        /// Violated constraint.
+        reason: &'static str,
+    },
     /// Stored distances violate at least one triangle inequality.
     InvalidMetric {
         /// Original vertex IDs of the offending triple, in increasing order.
@@ -49,7 +56,7 @@ pub enum Error {
         /// Maximum permitted work units.
         limit: u64,
     },
-    /// A Betti-curve grid is not finite, nonnegative and strictly increasing.
+    /// A Betti-curve grid is not finite and strictly increasing.
     InvalidGrid {
         /// Position of the first invalid grid value.
         index: usize,
@@ -146,6 +153,9 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidComplex { cell, reason } => {
+                write!(f, "invalid complex at {cell:?}: {reason}")
+            }
             Self::InvalidMetric { vertices } => {
                 write!(f, "triangle inequality violated at {vertices:?}")
             }

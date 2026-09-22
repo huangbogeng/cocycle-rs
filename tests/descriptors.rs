@@ -127,7 +127,6 @@ fn grid_validation_rejects_invalid_order_values_and_uncomputed_dimensions() {
     for grid in [
         vec![f64::NAN],
         vec![f64::INFINITY],
-        vec![-1.],
         vec![1., 1.],
         vec![2., 1.],
         vec![-0., 0.],

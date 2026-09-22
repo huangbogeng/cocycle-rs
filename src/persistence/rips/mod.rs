@@ -162,14 +162,14 @@ pub(in crate::persistence) fn compute_rips_from_distances_budget(
     Ok(PersistenceResult {
         diagram,
         representatives,
-        context: ComputationContext {
-            approximation: None,
-            field: options.field(),
-            kind: FiltrationKind::RipsDissimilarities,
-            vertex_count: input.len(),
-            requested_cutoff: options.max_edge(),
-            construction_cutoff: None,
-        },
+        context: ComputationContext::new(
+            options.field(),
+            FiltrationKind::RipsDissimilarities,
+            input.len(),
+            options.max_edge(),
+            None,
+            None,
+        ),
     })
 }
 
@@ -248,14 +248,14 @@ pub(in crate::persistence) fn compute_threshold_rips_budget(
     Ok(PersistenceResult {
         diagram,
         representatives,
-        context: ComputationContext {
-            approximation: None,
-            field: options.field(),
+        context: ComputationContext::new(
+            options.field(),
             kind,
-            vertex_count: input.graph().vertex_count(),
-            requested_cutoff: options.max_edge(),
-            construction_cutoff: input.requested_cutoff(),
-        },
+            input.graph().vertex_count(),
+            options.max_edge(),
+            input.requested_cutoff(),
+            None,
+        ),
     })
 }
 
@@ -306,7 +306,9 @@ pub fn compute_rips_from_points_with_representatives(
             requests,
             limits,
         )?;
-        result.context.kind = crate::diagram::FiltrationKind::RipsEuclidean;
+        result
+            .context
+            .set_kind(crate::diagram::FiltrationKind::RipsEuclidean);
         Ok(result)
     }
 }

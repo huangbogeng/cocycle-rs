@@ -2,6 +2,18 @@
 
 ## 0.1.0 (unreleased)
 
+- Add the four-method `FilteredComplex` contract and generic prime-field boundary
+  analysis through `PersistenceBuilder::from_complex`. Add validated `Simplex`
+  and `SimplicialComplex` construction; retain `FilteredSimplicialComplex` as an alias.
+- Remove maximum-edge and zero-vertex-birth assumptions from explicit builder
+  analysis. Support signed filtration cutoffs, representative queries and Betti
+  grids. Generic cell analysis returns diagrams; vertex-labelled representatives
+  remain specific to simplicial sources. Rips distance controls retain their contract.
+- Separate contextual source certificates from simplicial storage, share typed
+  source metadata between construction/results, and move general simplicial
+  representatives out of the flag domain. Preserve legacy Rips paths and certificate
+  checks. No Alpha/cubical constructor or new performance parity is claimed.
+
 - Add reusable exact/approximate Rips builders with explicit `build_complex`
   construction and a shared `.persistence().compute()` analysis workflow. Preserve
   implicit engines, fields, representatives, callback ownership and source coverage.

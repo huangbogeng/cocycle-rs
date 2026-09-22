@@ -11,8 +11,9 @@ types; removing old names/functions requires a separate declared breaking revisi
 
 The Rust blocks illustrate the implemented interface; the runnable guides and
 rustdoc provide complete checked examples. This document supersedes earlier
-entry-point sketches in the [Rips subsystem design](rips.md). Algorithm semantics
-and previously measured benchmark conclusions remain unchanged by this record.
+entry-point sketches in the [Rips subsystem design](rips.md). Rips mathematical semantics remain unchanged. Explicit builder analysis now uses
+the public filtered-cell boundary contract; existing timing reports describe their
+measured commits and are not evidence about the new explicit engine.
 The public analysis builder carries separate source and representative-request
 lifetimes (`PersistenceBuilder<'s, 'r, S>`), normally inferred at the call site.
 
@@ -82,7 +83,7 @@ let result = filtration
 `build_complex(2)` performs preparation and expansion through simplex dimension
 two under one budget. It returns `SimplicialFiltration`, owning explicit topology
 and its construction context. `complex()` borrows the existing
-`FilteredSimplicialComplex`, with lookup, filtration-ordered traversal, oriented
+`SimplicialComplex`, with lookup, filtration-ordered traversal, oriented
 boundary and stored codimension-one cofaces. Lookup uses strictly increasing
 vertex IDs, as today. It is not a mutable simplex tree or a claim of full GUDHI
 container parity. No topology is cloned for inspection.
@@ -135,9 +136,10 @@ requiring users to construct every type explicitly.
 | `FlagFiltration` | `filtration` | Existing supplied-graph source with permanently absent missing edges |
 | `Execution<'c>` | `execution` | Optional immutable work/cancellation settings; counters remain private |
 
-`FilteredSimplicialComplex` and `WeightedGraph` remain storage types. A bare complex
+`SimplicialComplex` and `WeightedGraph` remain storage types. A bare complex
 is not proof of original Rips completeness and is not accepted as an exact-Rips
-analysis source. `SimplicialFiltration` adds that mathematical context without
+analysis source. Its own `.persistence()` analyzes only the supplied topology;
+see [filtered complexes](../guides/filtered-complexes.md). `SimplicialFiltration` adds that mathematical context without
 copying the stored topology. Its constructors remain controlled by construction;
 callers cannot manufacture coverage or exhaustion certificates.
 

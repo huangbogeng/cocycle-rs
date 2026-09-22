@@ -1,8 +1,8 @@
 //! Consumer-owned source support; engine dispatch stays out of public traits.
 use super::{PersistenceBuilder, PersistenceOptions, RepresentativeRequest, flag, rips};
+use crate::complex::SimplicialComplex;
 use crate::diagram::{ComputationContext, PersistenceResult};
 use crate::execution::WorkBudget;
-use crate::filtration::flag::ExplicitAccess;
 use crate::filtration::rips::builder::Input;
 use crate::filtration::{
     ApproximateRipsBuilder, FlagFiltration, RipsBuilder, RipsExpansion, SimplicialFiltration,
@@ -65,7 +65,18 @@ source!(
     SparseRipsExpansion,
     rips::approximation::compute_expanded_sparse_rips_budget
 );
-source!(SimplicialFiltration, explicit);
+impl Sealed for SimplicialFiltration {}
+impl PersistenceExt for SimplicialFiltration {
+    fn persistence(&self) -> PersistenceBuilder<'_, 'static, Self> {
+        PersistenceBuilder::new_filtered(self, explicit)
+    }
+}
+impl Sealed for SimplicialComplex {}
+impl PersistenceExt for SimplicialComplex {
+    fn persistence(&self) -> PersistenceBuilder<'_, 'static, Self> {
+        PersistenceBuilder::new_filtered(self, supplied)
+    }
+}
 
 fn exact(
     input: &RipsBuilder<'_>,
@@ -109,9 +120,12 @@ fn exact(
             rips::compute_rips_from_distances_budget(matrix, options, requests, budget)?
         }
     };
-    result.context.kind = crate::filtration::expansion::kind(input.input.kind(), false);
+    result.context.set_kind(crate::filtration::expansion::kind(
+        input.input.kind(),
+        false,
+    ));
     result.context.requested_cutoff = options.max_edge();
-    result.context.construction_cutoff = input.max_edge;
+    result.context.filtration.construction_cutoff = input.max_edge;
     budget.check()?;
     Ok(result)
 }
@@ -137,35 +151,49 @@ fn explicit(
             constructed_simplex_dimension: input.dimension,
         });
     }
-    let (cutoff, coverage) = crate::persistence::options::source_range(
+    let (cutoff, coverage) = super::simplicial::source_range(
         input.coverage,
-        input.max_edge,
+        input.complex.max_filtration_value(),
         options.max_edge(),
     )?;
-    let access = ExplicitAccess {
-        complex: &input.complex,
-        vertex_count: input.context.vertex_count,
-        cutoff,
-    };
+    let effective = PersistenceOptions::for_filtration(options.max_homology_dimension(), cutoff)?
+        .with_field(options.field());
     let (diagram, representatives) =
-        flag::finish(&access, options, requests, coverage, budget, |budget| {
-            flag::compute_simplicial(
-                &access,
-                options.max_homology_dimension(),
-                options.field(),
-                budget,
-            )
-        })?;
+        super::simplicial::compute(&input.complex, &effective, requests, coverage, budget)?;
     Ok(PersistenceResult {
         diagram,
         representatives,
         context: ComputationContext {
+            filtration: input.context.clone(),
             field: options.field(),
-            kind: input.context.kind,
-            vertex_count: input.context.vertex_count,
-            approximation: input.context.approximation.clone(),
-            construction_cutoff: input.context.construction_cutoff,
             requested_cutoff: options.max_edge(),
         },
+    })
+}
+
+fn supplied(
+    input: &SimplicialComplex,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    budget: &mut WorkBudget<'_>,
+) -> Result<PersistenceResult> {
+    let (_, coverage) = super::simplicial::source_range(
+        crate::filtration::Coverage::Complete,
+        input.max_filtration_value(),
+        options.max_edge(),
+    )?;
+    let (diagram, representatives) =
+        super::simplicial::compute(input, options, requests, coverage, budget)?;
+    Ok(PersistenceResult {
+        diagram,
+        representatives,
+        context: ComputationContext::new(
+            options.field(),
+            crate::filtration::FiltrationKind::SuppliedSimplicial,
+            input.vertex_count(),
+            options.max_edge(),
+            None,
+            None,
+        ),
     })
 }

@@ -8,20 +8,47 @@ pub(crate) use simplex::compare_filtration;
 pub use simplex::{Simplex, SimplexId};
 use std::collections::HashMap;
 
-/// An immutable filtered complex produced by explicit filtration expansion.
+/// An immutable simplicial complex storing finite filtration values.
 ///
 /// Simplices are face-closed and ordered by value, dimension, then decreasing
 /// colexicographic order. Incidence is stored in both directions. Storage is
 /// proportional to the simplices and their codimension-one incidences; clique
 /// expansion can be exponential in the number of input vertices.
 #[derive(Clone, Debug)]
-pub struct FilteredSimplicialComplex {
+pub struct SimplicialComplex {
     simplices: Vec<Simplex>,
     lookup: HashMap<Vec<usize>, SimplexId>,
     boundaries: Vec<Vec<BoundaryTerm>>,
     cofacets: Vec<Vec<SimplexId>>,
 }
-impl FilteredSimplicialComplex {
+impl SimplicialComplex {
+    /// Validate and own a face-closed collection of filtered simplices.
+    /// Input order is arbitrary; output is in filtration order. All faces must
+    /// be provided, with values no larger than their cofaces. No faces are inferred.
+    /// # Errors
+    /// Rejects duplicate simplices, missing faces, invalid filtrations and allocation failure.
+    pub fn new(simplices: Vec<Simplex>) -> Result<Self> {
+        Self::new_with(simplices, &crate::execution::Execution::default())
+    }
+    /// Construct under one cooperative validation and incidence budget.
+    /// # Errors
+    /// Includes [`Self::new`] errors, cancellation and work exhaustion.
+    pub fn new_with(
+        simplices: Vec<Simplex>,
+        execution: &crate::execution::Execution<'_>,
+    ) -> Result<Self> {
+        let mut budget = crate::execution::WorkBudget::new(execution)?;
+        Self::from_simplices(simplices, &mut || budget.step())
+    }
+    /// Largest stored filtration value, or `None` for an empty complex.
+    pub fn max_filtration_value(&self) -> Option<f64> {
+        self.simplices.last().map(Simplex::value)
+    }
+    /// Number of stored vertices, independent of their original IDs and birth order.
+    pub fn vertex_count(&self) -> usize {
+        self.simplices.iter().filter(|s| s.dimension() == 0).count()
+    }
+
     pub(crate) fn from_simplices(
         mut simplices: Vec<Simplex>,
         checkpoint: &mut impl FnMut() -> Result<()>,
@@ -52,7 +79,8 @@ impl FilteredSimplicialComplex {
                     checkpoint()?;
                     let mut vertices = simplex.vertices.clone();
                     vertices.remove(omitted);
-                    let &face = lookup.get(&vertices).ok_or(Error::InternalInvariant {
+                    let &face = lookup.get(&vertices).ok_or(Error::InvalidComplex {
+                        cell: Some(position),
                         reason: "simplex face missing or later in filtration",
                     })?;
                     boundary.push(BoundaryTerm {
@@ -64,8 +92,9 @@ impl FilteredSimplicialComplex {
                 }
             }
             if lookup.insert(simplex.vertices.clone(), id).is_some() {
-                return Err(Error::InternalInvariant {
-                    reason: "duplicate expanded simplex",
+                return Err(Error::InvalidComplex {
+                    cell: Some(position),
+                    reason: "duplicate simplex",
                 });
             }
             boundaries.push(boundary);

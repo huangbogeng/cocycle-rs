@@ -16,6 +16,8 @@ limited to F2 H0/H1. Optional cycle and cocycle bases are described in section 1
 Reduced homology, non-prime coefficient rings, zigzag and multiparameter
 persistence are not implemented. Nonnegative scales and zero H0 births are Rips-specific; the general
 interval representation is not restricted to these dimensions or scales.
+Supplied `SimplicialComplex` and `FilteredComplex` analysis also supports signed
+filtrations and unequal vertex births; see [the guide](../guides/filtered-complexes.md).
 
 | Symbol | Meaning |
 | --- | --- |
@@ -232,7 +234,7 @@ $$\beta_k(t)=\#\{[b,d)\in\mathcal D_k:b\le t<d\}.$$
 
 Essential intervals count for $t\ge b$. Censored intervals count throughout the
 known range $b\le t\le T$; truncated diagrams reject queries beyond T. Caller-supplied
-grid values must be finite, nonnegative, and strictly increasing. Omitting
+grid values must be finite and strictly increasing; negative values are valid. Omitting
 zero-length pairs does not change Betti numbers at any scale.
 
 ## 8. Stability assumptions
@@ -432,8 +434,10 @@ extension of the reversed-transpose duality in section 9 and [B21](bibliography.
 
 Only the current dimension, transformations, pivot ownership and a working
 coboundary are needed on the implicit path. These can still be exponentially
-large. The explicit path uses the same reducer over stored incidence and thus
-also pays for the already materialized skeleton. H0/H1-only implicit requests
+large. Legacy explicit Rips entry points adapt stored incidence to this reducer.
+Explicit builder results instead use the filtered-cell boundary reduction in
+section 16, including for zero-born Rips sources. Both explicit paths also pay
+for the already materialized skeleton. H0/H1-only implicit requests
 retain the specialized compact-index engine and its pair shortcuts.
 
 As an independent high-dimensional fixture, partition 2r vertices into r pairs.
@@ -570,3 +574,19 @@ expansion certified exhaustion. All public simplex/representative vertex labels
 refer to original input IDs, while the exposed graph uses a documented compact
 map. Representative bases describe this approximate filtration and do not claim
 a chain map into original Rips at the same scale.
+
+## 16. Supplied filtered-cell boundary contract
+
+For ordered cells c_i, let D[j,i] be the integer incidence coefficient of c_j in
+the boundary of c_i. Nonzero entries require j < i, dimension(c_j) =
+dimension(c_i)-1 and f(c_j) <= f(c_i). The mathematical source must satisfy D^2=0
+over the integers. Reduction maps coefficients to the selected prime field and
+checks this chain identity on the retained q+1 skeleton in that field. This
+field-specific check does not prove integer validity of a custom adapter.
+
+Unpaired zero reduced columns represent essential classes of the supplied complex,
+or censored classes when an analysis cutoff truncates its filtration. Vertex birth
+values are read from the source. Maximum edge value is not used to bound general
+filtrations: an Alpha triangle can enter after all its edges. Certified Rips
+expansions additionally preserve original scale coverage and skeleton sufficiency;
+a bare supplied complex does not assert that relationship to a larger source.
