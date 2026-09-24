@@ -62,6 +62,11 @@ The library tests separately exercise censored coverage, uncomputed dimensions,
 invalid endpoints and provenance rejection. Performance fixtures are strictly
 finite and off-diagonal.
 
+The pinned GUDHI weighted wrapper fixes POT's network-simplex limit at 2,000,000
+iterations. An iteration-limit warning is retained as an unavailable reference,
+even if POT returned a scalar. Such a cell remains incomplete and is never
+ranked; no automatic budget increase or tolerance relaxation is performed.
+
 Each process receives `fixture metric variant`. Metrics are `bottleneck`
 (L-infinity), `w1` (order 1, L-infinity), and `w2` (order 2, Euclidean, final square
 root included). JSON identifies protocol/backend/metric/variant and retains the
@@ -142,7 +147,7 @@ tuning and holdout fixture hashes for the same family and size.
 | `scratch` | Rust forced refinement with/without scratch reuse |
 | `matching` | Rust forced refinement with/without matching reuse |
 | `clipping` | Forced quickselect with/without candidate clipping in both languages |
-| `arena` | Forced sparse vectors/arena in both languages, plus Rust `adaptive_arena` under its ordinary default routing |
+| `arena` | Forced sparse vectors versus the arena plus scratch/heap-reuse candidate in both languages, plus Rust `adaptive_arena` under its ordinary default routing |
 
 Topp has no corresponding exposed scratch/matching-reuse controls or adaptive
 arena layout switch; these missing counterparts are limitations, never invented
@@ -150,9 +155,30 @@ equivalent experiments. Local sparse variants disable duplicate/component/greedy
 shortcuts and keep those settings fixed within their pair. They cannot select an
 adaptive default alone: `adaptive_arena` tests the actual candidate integration.
 Route/counter records show whether the intended path ran. Rust
-`direct_cost_fallbacks > 0` or `sparse_solves == 0` does not test arena layout.
+`direct_cost_fallbacks > 0`, `sparse_solves == 0`, no positive edges, or zero
+residual-storage capacity does not test arena layout. Empty sparse calls can
+return before constructing a network. The weighted arena contrast includes
+scratch/heap reuse across augmentations; it does not isolate that reuse from
+contiguous storage. Bottleneck scratch reuse has its own separate control.
 Per-language retained/disabled ratios answer whether an optimization survives
 migration; cross-language absolute times answer a different question.
+
+## Optional kernel diagnostics
+
+The benchmark-only `--profile-rust` flag copies the private Rust distance sources
+and worker into the fresh artifact build directory, then inserts safe RAII
+timing scopes at uniquely checked function markers. Production files and the
+ordinary worker build stay unchanged. Generated sources retain `forbid(unsafe_code)`,
+and build metadata records every original/generated source hash and hook.
+
+Each Rust sample retains calls and integer `elapsed_ns` by phase alongside raw
+stderr. Scopes include their nested calls and hook overhead; they must not be
+summed as disjoint phases. Early returns close their scopes through `Drop`.
+Preparation, candidate generation, KD construction/decisions, weighted graph
+generation/components and dense/sparse/direct-cost solves can be inspected.
+Public-library correctness references remain uninstrumented. A profiling run
+always has evidence class `kernel_diagnostics` and cannot select an algorithm,
+even with 12 samples. C++ is a numerical control here, not a timing comparator.
 
 ## Memory, selection and artifacts
 

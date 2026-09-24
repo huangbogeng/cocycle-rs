@@ -201,8 +201,148 @@ def identity():
             'source_sha256': source_hash()}
 
 
+PHASE_HOOKS = {
+    'bottleneck.rs': [
+        ('fn new(points:', 'bottleneck.prepare'),
+        ('fn new(first:', 'bottleneck.pair'),
+        ('fn candidates(', 'bottleneck.candidates'),
+        ('fn distance_with_options(', 'bottleneck.total'),
+    ],
+    'bottleneck/geometry.rs': [
+        ('fn new(points:', 'bottleneck.kd_build'),
+        ('fn within(', 'bottleneck.geometry_decision'),
+        ('fn distance(', 'bottleneck.refinement'),
+    ],
+    'bottleneck/matching.rs': [('fn within(', 'bottleneck.graph_decision')],
+    'bottleneck/flow.rs': [('fn within(', 'bottleneck.flow_decision')],
+    'wasserstein.rs': [
+        ('fn prepare(', 'wasserstein.prepare'),
+        ('fn groups(', 'wasserstein.duplicates'),
+        ('fn generate(', 'wasserstein.generate'),
+        ('fn components(', 'wasserstein.components'),
+        ('fn dense_sap(', 'wasserstein.dense_sap'),
+        ('fn tiny(', 'wasserstein.tiny'),
+        ('fn from_flows(', 'wasserstein.reconstruct'),
+        ('fn distance_with_options(', 'wasserstein.total'),
+    ],
+    'wasserstein/sparse.rs': [('fn solve(', 'wasserstein.sparse_sap')],
+    'wasserstein/direct.rs': [('fn matching(', 'wasserstein.direct_cost_sap')],
+}
+
+PROFILE_SUPPORT = r'''
+// Diagnostic-only safe scopes, generated outside the production source tree.
+std::thread_local! {
+    static DISTANCE_PHASES: std::cell::RefCell<
+        std::collections::BTreeMap<&'static str, (u64, u128)>
+    > = std::cell::RefCell::new(std::collections::BTreeMap::new());
+}
+
+pub(crate) struct DistancePhase {
+    label: &'static str,
+    started: std::time::Instant,
+}
+
+impl DistancePhase {
+    pub(crate) fn new(label: &'static str) -> Self {
+        Self { label, started: std::time::Instant::now() }
+    }
+}
+
+impl Drop for DistancePhase {
+    fn drop(&mut self) {
+        let elapsed = self.started.elapsed().as_nanos();
+        DISTANCE_PHASES.with(|phases| {
+            let mut phases = phases.borrow_mut();
+            let entry = phases.entry(self.label).or_default();
+            entry.0 = entry.0.saturating_add(1);
+            entry.1 = entry.1.saturating_add(elapsed);
+        });
+    }
+}
+
+fn emit_distance_phases() {
+    DISTANCE_PHASES.with(|phases| {
+        for (label, (calls, elapsed_ns)) in phases.borrow().iter() {
+            eprintln!("COCYCLE_DISTANCE_PHASE\t{label}\t{calls}\t{elapsed_ns}");
+        }
+    });
+}
+'''
+
+
+def instrument_phase(source, marker, label):
+    """Fail closed if a private function was renamed or its marker is ambiguous."""
+    if source.count(marker) != 1:
+        raise ValueError(f'expected one Rust profile marker: {marker}')
+    start = source.index(marker)
+    brace = source.index('{', start) + 1
+    line = source[source.rfind('\n', 0, start) + 1:start]
+    indentation = ' ' * (len(line) - len(line.lstrip()) + 4)
+    scope = f'\n{indentation}let _distance_phase = crate::DistancePhase::new("{label}");'
+    return source[:brace] + scope + source[brace:]
+
+
+def profile_worker(directory):
+    """Copy source and add safe inclusive scopes; never rewrite production Rust."""
+    kernel = ROOT / 'src/diagram_distances'
+    for name in PHASE_HOOKS:
+        if not (kernel / name).is_file():
+            raise ValueError(f'missing Rust profile source: {name}')
+    destination = Path(directory) / 'profile-source'
+    destination.mkdir()
+    originals, generated = {}, {}
+    for path in sorted(kernel.rglob('*.rs')):
+        relative = path.relative_to(ROOT)
+        output = destination / relative
+        output.parent.mkdir(parents=True, exist_ok=True)
+        source = path.read_text(encoding='utf-8')
+        for marker, label in PHASE_HOOKS.get(path.relative_to(kernel).as_posix(), []):
+            source = instrument_phase(source, marker, label)
+        output.write_text(source, encoding='utf-8', newline='\n')
+        originals[relative.as_posix()] = sha256(path)
+        generated[relative.as_posix()] = sha256(output)
+    original_worker = WORKERS / 'cocycle.rs'
+    worker = destination / 'benches/distances/cocycle.rs'
+    worker.parent.mkdir(parents=True)
+    source = original_worker.read_text(encoding='utf-8')
+    trailer = '    Ok(())\n}\n\nfn main()'
+    if source.count(trailer) != 1:
+        raise ValueError('expected one Rust worker completion point')
+    source = source.replace(trailer, '    emit_distance_phases();\n' + trailer)
+    worker.write_text(source + PROFILE_SUPPORT, encoding='utf-8', newline='\n')
+    originals['benches/distances/cocycle.rs'] = sha256(original_worker)
+    generated['benches/distances/cocycle.rs'] = sha256(worker)
+    return worker, {
+        'kind': 'inclusive Rust function scopes; nested durations must not be summed',
+        'includes_hook_overhead': True, 'algorithm_selection_eligible': False,
+        'original_source_sha256': originals, 'generated_source_sha256': generated,
+        'hooks': PHASE_HOOKS,
+    }
+
+
+def phase_timings(stderr):
+    """Parse diagnostic scopes without rounding integer nanoseconds."""
+    labels = {label for hooks in PHASE_HOOKS.values() for _, label in hooks}
+    phases = {}
+    for line in stderr.splitlines():
+        if not line.startswith('COCYCLE_DISTANCE_PHASE'):
+            continue
+        parts = line.split('\t')
+        if len(parts) != 4 or parts[0] != 'COCYCLE_DISTANCE_PHASE':
+            raise ValueError('malformed Rust phase record')
+        _, label, calls, elapsed = parts
+        if label not in labels or label in phases:
+            raise ValueError('unknown or duplicate Rust phase label')
+        if not calls.isascii() or not calls.isdecimal() or int(calls) < 1:
+            raise ValueError('invalid Rust phase call count')
+        if not elapsed.isascii() or not elapsed.isdecimal():
+            raise ValueError('invalid Rust phase elapsed nanoseconds')
+        phases[label] = {'calls': int(calls), 'elapsed_ns': int(elapsed)}
+    return phases
+
+
 def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
-                  gudhi_source=None, cgal_include=None, boost_include=None):
+                  gudhi_source=None, cgal_include=None, boost_include=None, profile_rust=False):
     """Build into a fresh directory; read but never modify the external checkout."""
     directory = Path(output) / 'build'
     directory.mkdir()
@@ -232,8 +372,9 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
     suffix = '.exe' if os.name == 'nt' else ''
     target = directory / 'cargo'
     run([cargo, 'build', '--release', '--locked', '--offline', '--lib', '--target-dir', target])
+    worker, profile = profile_worker(directory) if profile_rust else (WORKERS / 'cocycle.rs', None)
     rust_binary = directory / ('cocycle' + suffix)
-    run([rustc, '--edition=2024', '-C', 'opt-level=3', '-D', 'warnings', WORKERS / 'cocycle.rs',
+    run([rustc, '--edition=2024', '-C', 'opt-level=3', '-D', 'warnings', worker,
          '--extern', f'cocycle={target}/release/libcocycle.rlib', '-L',
          f'dependency={target}/release/deps', '-o', rust_binary])
     topp_binary = directory / ('topp' + suffix)
@@ -272,6 +413,8 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
                 'rustflags': os.environ.get('RUSTFLAGS'),
                 'cxx_arithmetic': 'Topp compiler-dependent long double in weighted matching; Rust f64',
                 'source_sha256': before}
+    if profile is not None:
+        metadata['rust_profile'] = profile
     save(directory / 'build.json', metadata)
     return {'cocycle': [str(rust_binary)], 'topp': [str(topp_binary)],
             'gudhi_bottleneck': [str(gudhi_binary)]}, metadata
@@ -338,4 +481,5 @@ def build_from_args(args):
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
     return build_workers(args.output, args.topp_source, args.cxx, args.cargo, args.rustc,
-                         args.gudhi_source, args.cgal_include, args.boost_include)
+                         args.gudhi_source, args.cgal_include, args.boost_include,
+                         profile_rust=getattr(args, 'profile_rust', False))

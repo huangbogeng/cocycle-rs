@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import sys
 import time
+import warnings
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
 from distance_common import PINS, PROTOCOL, number, read_fixture
@@ -44,16 +45,23 @@ def main():
             result['settings'] = PINS['bottleneck_reference']
         elif metric in ('w1', 'w2'):
             order, norm = (1, math.inf) if metric == 'w1' else (2, 2)
-            value = wasserstein_distance(*arrays, order=order, internal_p=norm,
-                                         keep_essential_parts=True, enable_autodiff=False,
-                                         matching=False)
             result['settings'] = {'order': order, 'internal_p': 'infinity' if metric == 'w1' else 2,
-                                  'keep_essential_parts': True,
+                                  'keep_essential_parts': True, 'numItermax': 2000000,
                                   'backend': 'gudhi.wasserstein/POT emd'}
+            # POT can return a scalar after exhausting GUDHI's fixed iteration
+            # budget. Such a value is not an accepted exact reference.
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error', message='numItermax reached before optimality.*',
+                                        category=UserWarning)
+                value = wasserstein_distance(*arrays, order=order, internal_p=norm,
+                                             keep_essential_parts=True, enable_autodiff=False,
+                                             matching=False)
         else:
             raise ValueError('unknown metric')
         result.update(status='completed', elapsed_ms=(time.perf_counter() - start) * 1000,
                       **number(float(value)))
+    except UserWarning as error:
+        result.update(status='unavailable', error=f'GUDHI/POT did not converge: {error}')
     except (ValueError, OverflowError) as error:
         result.update(status='rejected', error=str(error))
     print(json.dumps(result, allow_nan=False))

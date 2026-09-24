@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 from distance_common import (METRICS, PROTOCOL, WORKERS, add_build_arguments, agrees,
-                             build_from_args, identity, invoke, number, save,
+                             build_from_args, identity, invoke, number, phase_timings, save,
                              sha256, tiny_oracle, unpack_number, write_fixture)
 
 FAMILIES = ('uniform', 'clustered', 'near_diagonal', 'duplicates', 'imbalanced',
@@ -106,6 +106,13 @@ def variants(metric, groups=GROUPS):
     return list(dict.fromkeys(result))
 
 
+def exercised_sparse_layout(stats):
+    """An empty sparse call returns before constructing the residual layout."""
+    return (stats.get('sparse_solves', 0) > 0 and stats.get('positive_edges', 0) > 0
+            and stats.get('peak_residual_storage_bytes', 0) > 0
+            and stats.get('direct_cost_fallbacks', 0) == 0)
+
+
 def summarize(samples, expected_count):
     measured = [sample for sample in samples if not sample['warmup']]
     if len(measured) != expected_count or any(sample['status'] != 'completed' or
@@ -167,7 +174,9 @@ def run(args):
     fixtures_dir = args.output / 'fixtures'
     fixtures_dir.mkdir()
     environment = {**initial, 'protocol_id': PROTOCOL,
-                   'evidence_class': 'resource_snapshot' if args.quick or args.exploratory else 'comparative_performance',
+                   'evidence_class': ('kernel_diagnostics' if args.profile_rust else
+                                      'resource_snapshot' if args.quick or args.exploratory else
+                                      'comparative_performance'),
                    'started_utc': started, 'build': build, 'platform': platform.platform(),
                    'processor': platform.processor(), 'python': sys.version,
                    'cpu_info': open('/proc/cpuinfo', encoding='utf-8').read(),
@@ -235,6 +244,14 @@ def run(args):
                             sample['comparison_error'] = 'missing Linux memory counters'
                         elif expected is None or not agrees(unpack_number(sample), expected, case, metric):
                             sample['comparison_error'] = 'unverified or unequal distance'
+                    if args.profile_rust and backend == 'cocycle' and sample['status'] == 'completed':
+                        try:
+                            sample['phases'] = phase_timings(sample['stderr'])
+                            total = 'bottleneck.total' if metric == 'bottleneck' else 'wasserstein.total'
+                            if total not in sample['phases']:
+                                raise ValueError('missing Rust total phase')
+                        except ValueError as error:
+                            sample['comparison_error'] = str(error)
                     if sample['status'] != 'completed' or sample.get('comparison_error'):
                         stopped.add(key)
                         record['validation'] = 'failed'
@@ -245,9 +262,8 @@ def run(args):
                 if metric != 'bottleneck' and key.startswith('cocycle:'):
                     record['applicability'][key] = {
                         'sparse_layout_exercised': bool(valid) and all(
-                            sample['stats'].get('sparse_solves', 0) > 0 and
-                            sample['stats'].get('direct_cost_fallbacks', 0) == 0 for sample in valid),
-                        'note': 'zero sparse solves or direct-cost fallback does not test arena storage',
+                            exercised_sparse_layout(sample['stats']) for sample in valid),
+                        'note': 'requires positive edges and residual storage; empty calls and direct-cost fallbacks do not test arena storage',
                     }
                 elif metric == 'bottleneck' and key.startswith('cocycle:'):
                     record['applicability'][key] = {
@@ -289,6 +305,8 @@ def main():
     add_build_arguments(parser)
     parser.add_argument('--quick', action='store_true', help='small resource snapshot; never select an algorithm')
     parser.add_argument('--exploratory', action='store_true', help='allow dirty exploratory runs; never select an algorithm')
+    parser.add_argument('--profile-rust', action='store_true',
+                        help='generated safe Rust phase scopes; diagnostics only, never selection')
     parser.add_argument('--samples', type=int, default=12)
     parser.add_argument('--cpu', type=int)
     parser.add_argument('--order-seed', type=int, default=0)

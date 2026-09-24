@@ -1,17 +1,93 @@
 """Distance transport, independent expectations and failure-retention regressions."""
 
+import contextlib
+import io
+import json
 import math
 from pathlib import Path
+import runpy
 import struct
 import sys
 import tempfile
+import types
 import unittest
+from unittest import mock
+import warnings
 
-from distance_common import (MAGIC, agrees, invoke, read_fixture, tiny_oracle,
+from distance_common import (MAGIC, PHASE_HOOKS, ROOT, agrees, instrument_phase, invoke,
+                             phase_timings, profile_worker, read_fixture, sha256, tiny_oracle,
                              tolerance, unpack_number, write_fixture)
 
 
 class DistanceProtocolTests(unittest.TestCase):
+    def test_gudhi_iteration_limit_cannot_become_a_completed_reference(self):
+        import distance_common
+
+        def unconverged(*args, **kwargs):
+            warnings.warn('numItermax reached before optimality. Try to increase numItermax.', UserWarning)
+            return 123.0
+
+        numpy = types.ModuleType('numpy')
+        numpy.float64 = float
+        numpy.asarray = lambda points, dtype: types.SimpleNamespace(reshape=lambda shape: points)
+        gudhi = types.ModuleType('gudhi')
+        wasserstein = types.ModuleType('gudhi.wasserstein')
+        wasserstein.wasserstein_distance = unconverged
+        with mock.patch.object(sys, 'path', sys.path.copy()):
+            worker = runpy.run_path(str(distance_common.WORKERS / 'gudhi_worker.py'))
+        output = io.StringIO()
+        with (
+            mock.patch.dict(sys.modules, {'numpy': numpy, 'gudhi': gudhi,
+                                         'gudhi.wasserstein': wasserstein}),
+            mock.patch('importlib.metadata.version', side_effect=distance_common.PINS['gudhi_python'].__getitem__),
+            mock.patch.object(sys, 'argv', ['worker', 'unused.bin', 'w2', 'baseline']),
+            mock.patch.dict(worker['main'].__globals__, {'read_fixture': lambda _: ([], [])}),
+            mock.patch.dict('os.environ'),
+            contextlib.redirect_stdout(output),
+        ):
+            worker['main']()
+        result = json.loads(output.getvalue())
+        self.assertEqual(result['status'], 'unavailable')
+        self.assertIn('did not converge', result['error'])
+        self.assertEqual(result['settings']['numItermax'], 2000000)
+        self.assertNotIn('value', result)
+
+    def test_profile_generation_preserves_bodies_and_fails_on_marker_drift(self):
+        labels = [label for hooks in PHASE_HOOKS.values() for _, label in hooks]
+        self.assertEqual(len(labels), len(set(labels)))
+        with tempfile.TemporaryDirectory() as directory:
+            worker, metadata = profile_worker(directory)
+            self.assertIn('#![forbid(unsafe_code)]', worker.read_text())
+            self.assertFalse(metadata['algorithm_selection_eligible'])
+            for name, expected in metadata['original_source_sha256'].items():
+                self.assertEqual(sha256(ROOT / name), expected)
+                if not name.startswith('src/'):
+                    continue
+                original = (ROOT / name).read_text()
+                generated = (Path(directory) / 'profile-source' / name).read_text()
+                restored = '\n'.join(line for line in generated.split('\n')
+                                     if 'let _distance_phase = crate::DistancePhase::new(' not in line)
+                self.assertEqual(restored, original)
+            self.assertEqual(sum((Path(directory) / 'profile-source' / name).read_text().count(
+                'let _distance_phase = crate::DistancePhase::new(')
+                for name in metadata['generated_source_sha256']), len(labels))
+        for source in ('fn renamed() {}', 'fn target() {} fn target() {}'):
+            with self.assertRaises(ValueError):
+                instrument_phase(source, 'fn target(', 'bottleneck.total')
+
+    def test_phase_records_preserve_nanoseconds_and_reject_ambiguity(self):
+        record = 'COCYCLE_DISTANCE_PHASE\tbottleneck.total\t1\t9007199254740993'
+        self.assertEqual(phase_timings('unrelated stderr\n' + record), {
+            'bottleneck.total': {'calls': 1, 'elapsed_ns': 9007199254740993}})
+        self.assertEqual(phase_timings(''), {})
+        for malformed in (record + '\n' + record, record.replace('total', 'unknown'),
+                          record + '\textra', record.replace('\t1\t', '\t0\t'),
+                          record.replace('\t1\t', '\t-1\t'),
+                          record.rsplit('\t', 1)[0] + '\t-1',
+                          record.rsplit('\t', 1)[0] + '\t1.0'):
+            with self.assertRaises(ValueError):
+                phase_timings(malformed)
+
     def test_round_trip_preserves_multiplicity_and_essential_points(self):
         first = [(-0.0, 1.0), (0.0, 1.0), (2.0, math.inf)]
         second = []

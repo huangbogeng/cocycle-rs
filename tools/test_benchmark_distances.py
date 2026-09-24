@@ -3,7 +3,7 @@
 from collections import Counter
 import unittest
 
-from benchmark_distances import DEVELOPMENT_SEED, FAMILIES, HOLDOUT_SEED, fixtures, schedule, select, summarize, variants
+from benchmark_distances import DEVELOPMENT_SEED, FAMILIES, HOLDOUT_SEED, exercised_sparse_layout, fixtures, schedule, select, summarize, variants
 
 
 class DistanceBenchmarkTests(unittest.TestCase):
@@ -71,6 +71,16 @@ class DistanceBenchmarkTests(unittest.TestCase):
         wasserstein = variants('w1', ['arena'])
         self.assertIn(('cocycle', 'adaptive_arena'), wasserstein)
         self.assertNotIn(('topp', 'adaptive_arena'), wasserstein)
+
+    def test_empty_sparse_call_does_not_exercise_residual_layout(self):
+        # Separated diagrams enter sparse::solve, then return before Network::new.
+        empty_call = {'sparse_solves': 1, 'positive_edges': 0,
+                      'peak_residual_storage_bytes': 0, 'direct_cost_fallbacks': 0}
+        self.assertFalse(exercised_sparse_layout(empty_call))
+        self.assertFalse(exercised_sparse_layout({**empty_call, 'positive_edges': 1}))
+        active = {**empty_call, 'positive_edges': 1, 'peak_residual_storage_bytes': 128}
+        self.assertTrue(exercised_sparse_layout(active))
+        self.assertFalse(exercised_sparse_layout({**active, 'direct_cost_fallbacks': 1}))
 
 
 if __name__ == '__main__':
