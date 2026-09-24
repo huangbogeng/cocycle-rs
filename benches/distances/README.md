@@ -2,18 +2,22 @@
 
 [Benchmarks](../README.md) / [Reporting rules](../reporting.md)
 
-Protocol: `cocycle-distance-v1`. This suite is independent of both VR protocols.
-Workers execute real Rust code and pinned Topp C++20. Python's standard library
-controls processes; an isolated GUDHI/POT Python worker provides correctness
-evidence and never qualifies as a native timing reference.
+Use this suite to check bottleneck, W1 and W2 against independent references,
+then compare memory and search choices within Rust and C++. Protocol
+`cocycle-distance-v1` preserves f64 inputs and has its own timing boundary;
+do not pool its samples with either Rips suite. For library usage, start with
+the [distance example](../../examples/diagram_distances.rs) and
+[matching contract](../../docs/reference/mathematics.md#16-diagram-matching-distances).
 
-## Setup and commands
+## Prepare the reference environment
 
 Requirements are Rust 1.91+, Python 3.10+, a GCC-compatible C++20 compiler, Git,
 CGAL and Boost headers for the independent fixed GUDHI bottleneck oracle.
 The pinned NumPy oracle environment requires Python 3.11 or later; the standard-
 library controller itself supports Python 3.10.
-Linux is required for formal resource measurements; Windows supports correctness.
+The benchmark controller requires Linux, including for resource smoke checks.
+Windows can run correctness checks with a GCC-compatible toolchain; this builder
+does not support MSVC.
 The library gains no dependencies. [sources.json](sources.json) pins Topp and the
 exact GUDHI/POT/NumPy versions. Use a dedicated clean external source checkout:
 
@@ -24,20 +28,54 @@ git clone https://github.com/GUDHI/gudhi-devel.git target/native-sources/gudhi-d
 git -C target/native-sources/gudhi-distance checkout --detach 4ec34ac55e6d2e8cfd7c322e84c1b0a56d516d51
 python3 -m venv target/distance-oracle-venv
 target/distance-oracle-venv/bin/python -m pip install gudhi==3.11.0 numpy==2.4.6 POT==0.9.6.post1
-python3 tools/compare_distances.py --quick --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-correctness-001
-python3 tools/compare_distances.py --suite stress --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-stress-001
-python3 tools/benchmark_distances.py --quick --samples 1 --exploratory --groups baseline arena --families uniform sparse --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-smoke-001
 ```
 
-Every output directory must be new. `--topp-source`, `--cargo`, `--rustc`, `--cxx`
+These commands use Linux virtual-environment paths; on Windows the interpreter
+is `target/distance-oracle-venv/Scripts/python.exe`.
+`--topp-source`, `--cargo`, `--rustc`, `--cxx`
 and `--gudhi-python` accept explicit paths. The builder rejects wrong/dirty Topp
 and GUDHI sources. `--gudhi-source`, `--cgal-include` and `--boost-include` locate
 the fixed native oracle and non-system headers. The builder reads external
 sources and never installs packages, resets, or modifies an external checkout.
-It fingerprints source, native binaries, commands and toolchains. Topp uses its
-portable scalar build: MSVC-only AVX2 dispatch is disabled. Weighted Topp matching
-uses compiler-dependent `long double`; Rust uses f64. Preserve these representation
-differences when interpreting results. This builder does not claim MSVC support.
+It fingerprints source, native binaries, commands and toolchains.
+
+## Check correctness and the harness
+
+Run from the repository root. Every output directory must be new; change the
+attempt suffix when repeating a command.
+
+```sh
+python3 tools/compare_distances.py --quick --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-correctness-001
+```
+
+This checks the small supported suite. Success prints `Distance correctness:
+passed (...)` and writes `summary.json` with `status: "passed"`. Omit `--quick`
+for the full supported suite. Missing references and numerical disagreements
+return a nonzero exit status. Once workers run, their failures and comparison
+results are retained in `results.json`; build failures remain in `build/build.log`.
+
+On Linux, check benchmark workers with a small resource snapshot:
+
+```sh
+python3 tools/benchmark_distances.py --quick --samples 1 --exploratory --groups baseline arena --families uniform sparse --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-smoke-001
+```
+
+Success prints `Distance benchmark: passed (...)`. Both `--quick` and
+`--exploratory` exclude the run from algorithm selection; `--exploratory` also
+allows uncommitted sources. Numerical stress is a separate diagnostic:
+
+```sh
+python3 tools/compare_distances.py --suite stress --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-stress-001
+```
+
+The pinned references have [known stress disagreements](#reference-backends-and-numerical-limits),
+so a nonzero stress exit must be inspected separately from supported acceptance.
+
+## Native build and routing controls
+
+Topp uses a portable scalar build with MSVC-only AVX2 dispatch disabled. Weighted
+Topp matching uses compiler-dependent `long double`; Rust uses f64. Preserve
+these representation differences when interpreting results.
 The correctness `default` variant keeps Topp's unrestricted adaptive defaults.
 Its `dense_parallel` candidate route can spawn threads at 262144 pairs. Measured
 C++ variants instead use a serial configuration: the same pinned four-row density
@@ -80,6 +118,8 @@ empty, repeated, unequal-size, near-diagonal, negative-scale, tied and essential
 examples supplement deterministic random inputs. Every supported backend is
 checked against independent expectations, not merely Rust/Topp mutual agreement.
 
+## Reference backends and numerical limits
+
 The primary GUDHI bottleneck reference is the native `e=0` implementation at the
 fixed head of [merged PR #1367](https://github.com/GUDHI/gudhi-devel/pull/1367),
 which corrects the premature matching shortcut. It uses double-coordinate KD
@@ -94,7 +134,9 @@ wheel's default `gudhi.bottleneck_distance(e=0)` returned 2 instead of the indep
 oracle's 1.375 on an ordinary tiny fixture, even before POT was loaded. Its failed
 attempt is retained separately; it is not counted as agreement. Hera's zero-delta
 mode is independently checked on supported inputs and retains its own extreme-
-value limitations in stress results. Backend identities are fixed in `sources.json`.
+value limitations in stress results. GUDHI/POT Python workers run in isolated
+processes for correctness and never qualify as native timing references.
+Backend identities are fixed in `sources.json`.
 GUDHI 3.11.0 predates PR #1367 (merged 2026-08-27 and labeled 3.14.0); its default
 backend is not the acceptance reference. Do not treat that known old-version
 failure as a new Rust defect or silently call Hera the repaired implementation.
@@ -111,7 +153,7 @@ retains the real disagreement and returns nonzero, rather than labeling it as
 agreement or broadening tolerance. Rust correctness and reference disagreement
 remain separate evidence.
 
-## Timing, sampling and ablations
+## Timing and sampling
 
 One fresh native process computes one pair. Parsing and initial raw-pair layout
 finish before timing. Validation, diagonal projection, preparation, solve and
@@ -139,6 +181,8 @@ shell and sparse/dense adversarial cases. Default sizes are 8/32/128/512; reques
 Each family varies its actual geometry across the two seeds, including repeated
 templates and regular sparse/threshold cases. The controller rejects identical
 tuning and holdout fixture hashes for the same family and size.
+
+## Controlled optimization contrasts
 
 | Group | Controlled contrast |
 | --- | --- |
@@ -180,7 +224,7 @@ Public-library correctness references remain uninstrumented. A profiling run
 always has evidence class `kernel_diagnostics` and cannot select an algorithm,
 even with 12 samples. C++ is a numerical control here, not a timing comparator.
 
-## Memory, selection and artifacts
+## Memory metrics
 
 Workers read pre-call `VmRSS`/`VmHWM` and final `VmHWM` after cleanup, before JSON.
 Report absolute peak and high-water growth separately; zero growth does not mean
@@ -196,6 +240,8 @@ categories and representation sizes; C++ long-double edges can be larger.
 limits whole-process wall time. Neither is a library budget; timeout is censored
 evidence, not a measured runtime equal to the limit.
 
+## Selection gates and repeat procedure
+
 `results.json` retains every sample, warmup, order, exit and mismatch. After a
 worker fails, its remaining attempts are `not_run` while others continue. No
 mismatched/incomplete case is ranked. Valid summaries include median/min/max and
@@ -203,7 +249,9 @@ RSS. Changed sources invalidate a run. `--quick` and `--exploratory` are resourc
 snapshots and never select algorithms; formal measurements reject dirty sources.
 
 Selection compares candidate/R0 time and peak-RSS ratios, with equal size weight
-within each family and equal family weight. Holdout composite
+within each family and equal family weight. R0 is the Rust adaptive baseline
+(`cocycle:baseline`). Ratios use per-case medians, then geometric means across
+sizes and families. The held-out composite
 `sqrt(time_ratio * peak_rss_ratio)` must be at most 0.95; neither metric may exceed
 1.10 in any default-applicable family. A first qualifying result is only
 `eligible_pending_independent_repeat`: repeat the same gates in a second fresh
@@ -211,11 +259,42 @@ run on identical sources/fixtures before deciding. Noise and fixed process
 overhead are inconclusive; retain the simpler safe baseline on ties. Forced
 local ablations are not automatically global default candidates.
 
-Commit implementation/harness before formal measurements. Use fresh
-`target/benchmarks/commit-<sha12>/distance/run-<NNN>/` artifacts; preserve raw
-fixtures, JSON, logs and metadata outside Git. A later concise report identifies
-the measured commit separately from the report commit. No external storage or
-publicly accessible evidence is implied by a local artifact path.
+Commit implementation and harness before formal measurement, then record the
+full commit SHA. On Linux, the following runs all default families, metrics and
+ablation groups at sizes 8/32/128/512 with development and held-out inputs:
+
+```sh
+distance_revision=$(git rev-parse --short=12 HEAD)
+python3 tools/benchmark_distances.py --samples 12 --order-seed 2401 --gudhi-python target/distance-oracle-venv/bin/python --output "target/benchmarks/commit-${distance_revision}/distance/run-001"
+```
+
+For selection, repeat on the same committed sources and fixture hashes in a new
+output directory with a different order seed. Apply the gates to both rounds;
+the controller reports only eligibility and never changes the library default.
+Specify `--families`, `--sizes`, `--metrics` and `--groups` before execution if
+limiting the study. Formal commands are reproduction instructions, not evidence
+that a run has completed. Shared-host load and fixed RSS overhead can leave
+differences inconclusive.
+
+## Inspect and retain artifacts
+
+| Artifact | Interpretation |
+| --- | --- |
+| `summary.json` | Overall validation, source consistency, and benchmark selection eligibility |
+| `results.json` | Raw reference results, samples, warmups, execution order, failures and route counters |
+| `measurements.json` | Benchmark summaries in milliseconds and KiB; empty if overall validation fails |
+| `environment.json` | Commit, source fingerprint, toolchains, protocol and evidence class |
+| `fixtures/` | Shared binary inputs; SHA-256 hashes are recorded in results |
+| `build/build.json`, `build/build.log` | Build commands, source/binary hashes and compiler output |
+
+Keep formal artifacts under fresh
+`target/benchmarks/commit-<sha12>/distance/run-<NNN>/` directories. Preserve raw
+fixtures, JSON, logs and metadata outside Git. A report identifies its measured
+commit separately from its documentation commit and links any published evidence.
+A local artifact path does not provide public access.
+
+For changes to this suite, run the applicable [contribution checks](../../CONTRIBUTING.md#verification),
+including the focused controller tests and worker formatting:
 
 ```sh
 python3 -m unittest discover -s tools -p 'test_*distances.py'

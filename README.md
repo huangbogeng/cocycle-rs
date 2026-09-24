@@ -67,7 +67,13 @@ explicit complex queries are demonstrated by `cargo run --example rips_sphere`.
 demonstrated by `cargo run --example rips_representatives`.
 [Sparse Rips approximation](docs/guides/sparse-rips.md), including metric hypotheses
 and sampling provenance, is demonstrated by `cargo run --example sparse_rips`.
-Work and memory depend on the input and reduction fill-in. Current comparisons
+
+To compare two complete diagrams, run
+`cargo run --locked --example diagram_distances`. The [distance example](examples/diagram_distances.rs)
+demonstrates all three metrics; see the [matching contract](docs/reference/mathematics.md#16-diagram-matching-distances)
+for ground costs, essential intervals and error semantics.
+
+Work and memory depend on the input and reduction fill-in. Rips comparisons
 use native GUDHI and upstream Ripser C++; see the maintained
 [Rips comparison](benches/reports/rips-comparison.md) for tested scope, correctness
 and performance observations. Generated measurements and logs stay outside source Git.
