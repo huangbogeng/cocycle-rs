@@ -2,6 +2,10 @@
 
 ## 0.1.0 (unreleased)
 
+- Add native safe Rust bottleneck (L-infinity), W1 (L-infinity) and W2
+  (Euclidean) diagram distances, with complete-coverage and context validation,
+  essential multiplicity, independent matching tests and native comparison tools.
+
 - Remove all repository-local historical experiment outputs and reports. Keep
   generated data in ignored local directories or external artifacts; enforce
   artifact admission in CI and bind concise future reports to measured commits.

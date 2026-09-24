@@ -1,0 +1,12 @@
+{
+  "topp": {
+    "repository": "https://github.com/proffitteoy/Topp.git",
+    "revision": "ffa1da051ca7ac5e313c74cc9fb92a2bcb20c234",
+    "version": "1.0.1"
+  },
+  "gudhi_python": {
+    "gudhi": "3.11.0",
+    "numpy": "2.4.6",
+    "POT": "0.9.6.post1"
+  }
+}

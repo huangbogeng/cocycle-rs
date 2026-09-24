@@ -87,6 +87,7 @@ src/
     computation.rs               owned PersistenceResult and source context
     representative.rs            owned chain/cochain terms and local interval IDs
   descriptors/                   diagram-only lifetimes and Betti curves
+  diagram_distances/              complete-diagram bottleneck, W1 and W2 matching
 ```
 
 Each domain has a documenting/exporting `mod.rs`; the tree lists the substantive

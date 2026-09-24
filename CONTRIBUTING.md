@@ -36,7 +36,7 @@ quality, test, and MSRV jobs:
 
 ```sh
 cargo fmt --all -- --check
-rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
+rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs benches/distances/cocycle.rs
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked --all-features
 cargo test --locked --release --all-features
@@ -46,6 +46,7 @@ cargo run --locked --example flag_persistence
 cargo run --locked --example rips_sphere
 cargo run --locked --example rips_representatives
 cargo run --locked --example sparse_rips
+cargo run --locked --example diagram_distances
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
@@ -68,6 +69,7 @@ Select additional checks by the changed contract:
 | Documentation only | Source and Markdown checks; run affected Rust examples/doctests |
 | Rust implementation or public API | Commands above; update contract tests and relevant rustdoc |
 | Mathematical algorithm | Independent expectation/property and relevant native comparisons, in addition to Rust checks |
+| Diagram-distance algorithm | Independent tiny matching oracle, pinned Topp and GUDHI comparisons under the [distance protocol](benches/distances/README.md) |
 | Python checks or controllers | Source and Markdown checks, all `test_*.py`; exercise the changed command on a small case |
 | Native adapters, builder, or benchmark protocol | Tool tests, standalone Rust formatting when affected, and the native smoke command below |
 | Performance | Comparable before/after measurements under the applicable native suite and reporting rules; keep unfavorable results |

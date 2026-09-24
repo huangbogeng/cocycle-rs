@@ -21,6 +21,8 @@ dependencies and no unsafe code.
   finite deaths, essential classes, and right-censored intervals.
 - **Useful summaries** — finite lifetimes, persistence entropy in nats, and Betti
   curves, computed directly from a diagram.
+- **Diagram distances** — exact bottleneck (L-infinity), W1 (L-infinity) and
+  W2 (Euclidean) matching of complete diagrams, preserving essential multiplicity.
 
 ![A square's Rips filtration: points, a loop at edge length 1, and filled triangles at sqrt(2).](assets/filtration.svg)
 
