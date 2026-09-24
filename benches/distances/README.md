@@ -11,6 +11,8 @@ evidence and never qualifies as a native timing reference.
 
 Requirements are Rust 1.91+, Python 3.10+, a GCC-compatible C++20 compiler, Git,
 CGAL and Boost headers for the independent fixed GUDHI bottleneck oracle.
+The pinned NumPy oracle environment requires Python 3.11 or later; the standard-
+library controller itself supports Python 3.10.
 Linux is required for formal resource measurements; Windows supports correctness.
 The library gains no dependencies. [sources.json](sources.json) pins Topp and the
 exact GUDHI/POT/NumPy versions. Use a dedicated clean external source checkout:
@@ -128,6 +130,10 @@ uniform, clustered, near-diagonal, duplicates, imbalance, separated, threshold
 shell and sparse/dense adversarial cases. Default sizes are 8/32/128/512; request
 2048/4096 explicitly where limits permit. `--families`, `--sizes`, `--metrics` and
 `--groups` preregister a smaller study; its conclusions remain scoped to that set.
+
+Each family varies its actual geometry across the two seeds, including repeated
+templates and regular sparse/threshold cases. The controller rejects identical
+tuning and holdout fixture hashes for the same family and size.
 
 | Group | Controlled contrast |
 | --- | --- |

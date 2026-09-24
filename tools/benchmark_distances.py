@@ -45,6 +45,15 @@ def fixtures(families, sizes, quick):
             for family in families:
                 for size in sizes:
                     rng = random.Random(seed * 1_000_003 + size)
+                    # Regular families must still produce independent held-out
+                    # instances; changing only the seed label is insufficient.
+                    duplicate_templates = []
+                    if family == 'duplicates':
+                        duplicate_templates = [(group + rng.randrange(5) / 16,
+                                                1.5 + rng.randrange(9) / 8,
+                                                rng.randrange(1, 9) / 64)
+                                               for group in range(8)]
+                    threshold_offset = rng.randrange(1, 9) / 4096 if family == 'threshold_shell' else 0
                     diagrams = []
                     for side in range(2):
                         points = []
@@ -57,19 +66,19 @@ def fixtures(families, sizes, quick):
                             elif family == 'near_diagonal':
                                 lifetime = rng.randrange(1, 9) / 4096
                             elif family == 'duplicates':
-                                birth = float(index % 8) + side / 8
-                                lifetime = 2.0
+                                center, lifetime, offset = duplicate_templates[index % 8]
+                                birth = center + side * offset
                             elif family == 'separated':
                                 birth += side * 1024
                             elif family == 'dense':
                                 birth /= 16
                                 lifetime += 32
                             elif family == 'sparse':
-                                birth = index * 8 + side / 8
-                                lifetime = 1.0
+                                birth = index * 8 + side / 8 + rng.randrange(-4, 5) / 64
+                                lifetime = rng.randrange(4, 9) / 8
                             elif family == 'threshold_shell':
-                                birth = index / (2 ** 20)
-                                lifetime = 2.0 + side / 1024 - birth
+                                birth = index / (2 ** 20) + rng.randrange(16) / (2 ** 26)
+                                lifetime = 2.0 + side * threshold_offset - birth
                             points.append((birth, birth + lifetime))
                         diagrams.append(points)
                     yield {'name': f'{split}-{family}-{size}-{seed}', 'family': family,
@@ -172,15 +181,22 @@ def run(args):
                    'selection': 'holdout family/size-equal geometric ratios; sqrt(T*M)<=0.95, each family T<=1.10 and M<=1.10; independent second run required'}
     save(args.output / 'environment.json', environment)
     records, rows = [], []
+    tuning_hashes = {}
     for case_index, case in enumerate(fixtures(args.families, args.sizes, args.quick)):
         path = fixtures_dir / (case['name'] + '.bin')
         write_fixture(path, case['first'], case['second'])
+        fixture_hash = sha256(path)
+        fixture_key = (case['family'], case['size'])
+        if case['split'] == 'tuning':
+            tuning_hashes[fixture_key] = fixture_hash
+        elif tuning_hashes.get(fixture_key) == fixture_hash:
+            raise ValueError(f"holdout fixture repeats tuning geometry: {case['name']}")
         for metric in args.metrics:
             active = variants(metric, args.groups)
             keys = [f'{backend}:{variant}' for backend, variant in active]
             count = args.samples if args.quick else math.ceil(args.samples / len(keys)) * len(keys)
             record = {key: value for key, value in case.items() if key not in ('first', 'second')}
-            record.update(metric=metric, fixture_sha256=sha256(path), planned_samples=count,
+            record.update(metric=metric, fixture_sha256=fixture_hash, planned_samples=count,
                           workers={key: [] for key in keys}, validation='passed')
             references = {
                 'public': invoke(commands['cocycle'], path, metric, 'public', args.timeout),

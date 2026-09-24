@@ -3,7 +3,7 @@
 from collections import Counter
 import unittest
 
-from benchmark_distances import DEVELOPMENT_SEED, HOLDOUT_SEED, fixtures, schedule, select, summarize, variants
+from benchmark_distances import DEVELOPMENT_SEED, FAMILIES, HOLDOUT_SEED, fixtures, schedule, select, summarize, variants
 
 
 class DistanceBenchmarkTests(unittest.TestCase):
@@ -19,13 +19,20 @@ class DistanceBenchmarkTests(unittest.TestCase):
             self.assertEqual(counts, {0: 3, 1: 3, 2: 3, 3: 3})
 
     def test_tuning_and_holdout_use_disjoint_reproducible_seeds(self):
-        cases = list(fixtures(['uniform', 'duplicates'], [8], True))
-        self.assertEqual(cases, list(fixtures(['uniform', 'duplicates'], [8], True)))
+        cases = list(fixtures(FAMILIES, [8, 32, 128, 512], False))
+        self.assertEqual(cases, list(fixtures(FAMILIES, [8, 32, 128, 512], False)))
         tuning = {case['seed'] for case in cases if case['split'] == 'tuning'}
         holdout = {case['seed'] for case in cases if case['split'] == 'holdout'}
         self.assertFalse(tuning & holdout)
         self.assertEqual(tuning, {20260922})
         self.assertEqual(holdout, {20260923})
+        pairs = {}
+        for case in cases:
+            pairs.setdefault((case['family'], case['size']), {})[case['split']] = (
+                case['first'], case['second'])
+        for key, pair in pairs.items():
+            with self.subTest(family=key[0], size=key[1]):
+                self.assertNotEqual(pair['tuning'], pair['holdout'])
 
     def test_incomplete_failed_or_mismatched_group_has_no_statistics(self):
         sample = {'status': 'completed', 'warmup': False, 'elapsed_ms': 2,
