@@ -21,11 +21,13 @@ def main():
         result['versions'] = versions
         if versions != PINS['gudhi_python']:
             raise RuntimeError('GUDHI oracle environment differs from sources.json pins')
-        import gudhi
         import numpy as np
-        for name in ('PYTORCH', 'JAX', 'CUPY', 'TENSORFLOW'):
-            os.environ['POT_BACKEND_DISABLE_' + name] = '1'
-        from gudhi.wasserstein import wasserstein_distance
+        if metric == 'bottleneck':
+            from gudhi.hera import bottleneck_distance
+        else:
+            for name in ('PYTORCH', 'JAX', 'CUPY', 'TENSORFLOW'):
+                os.environ['POT_BACKEND_DISABLE_' + name] = '1'
+            from gudhi.wasserstein import wasserstein_distance
     except (ImportError, RuntimeError) as error:
         result.update(status='unavailable', error=str(error))
         print(json.dumps(result, allow_nan=False))
@@ -35,8 +37,11 @@ def main():
         arrays = [np.asarray(points, dtype=np.float64).reshape((-1, 2)) for points in (first, second)]
         start = time.perf_counter()
         if metric == 'bottleneck':
-            value = gudhi.bottleneck_distance(*arrays, e=0.0)
-            result['settings'] = {'e': 0.0, 'backend': 'gudhi.bottleneck_distance'}
+            # Hera excludes diagonal points; removing them preserves this raw
+            # distance contract. Zero delta requests no relative approximation.
+            arrays = [array[array[:, 0] != array[:, 1]] for array in arrays]
+            value = bottleneck_distance(*arrays, delta=PINS['bottleneck_reference']['delta'])
+            result['settings'] = PINS['bottleneck_reference']
         elif metric in ('w1', 'w2'):
             order, norm = (1, math.inf) if metric == 'w1' else (2, 2)
             value = wasserstein_distance(*arrays, order=order, internal_p=norm,

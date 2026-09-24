@@ -68,9 +68,16 @@ empty, repeated, unequal-size, near-diagonal, negative-scale, tied and essential
 examples supplement deterministic random inputs. Every supported backend is
 checked against independent expectations, not merely Rust/Topp mutual agreement.
 
-GUDHI uses bottleneck `e=0`, or explicit Wasserstein order/internal norm with
+GUDHI uses Hera bottleneck `delta=0`, or explicit Wasserstein order/internal norm with
 `keep_essential_parts=True`, no autodiff and POT's exact transport solver. The
-isolated worker uses NumPy and disables optional POT GPU/autodiff imports.
+isolated worker uses NumPy and loads only the requested metric's native backend;
+Wasserstein disables optional POT GPU/autodiff imports. Hera requires removal of
+diagonal points, which does not change the raw diagram distance. The pinned Linux
+wheel's default `gudhi.bottleneck_distance(e=0)` returned 2 instead of the independent
+oracle's 1.375 on an ordinary tiny fixture, even before POT was loaded. Its failed
+attempt is retained separately; it is not counted as agreement. Hera's zero-delta
+mode is independently checked on supported inputs and retains its own extreme-
+value limitations in stress results. Backend identity is fixed in `sources.json`.
 Versions/settings are retained; a missing reference makes validation fail.
 Small dyadic bottleneck/W1 cases use zero tolerance. Other cases use the fixed
 bound `64 * f64_epsilon * (n+m+1) * max(cost_scale, |expected|)`, with scale from

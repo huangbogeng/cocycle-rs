@@ -161,6 +161,8 @@ def correctness_cases(quick=False):
         ('essential_repeated', [(0.0, math.inf)] * 2, [(1.0, math.inf), (2.0, math.inf)]),
         ('unequal_size', [(0.0, 3.0), (2.0, 4.0), (4.0, 8.0)], [(1.0, 4.0)]),
         ('threshold_ties', [(0.0, 2.0), (2.0, 4.0)], [(1.0, 3.0), (3.0, 5.0)]),
+        ('diagonal_upper_bound', [(0.0, 0.5), (-4.0, -3.25), (2.25, 2.5)],
+         [(3.75, 6.5), (-0.25, 2.5), (-3.0, -1.25), (-0.5, 1.5)]),
         ('large_finite', [(2.0 ** 400, 2.0 ** 401)], [(2.0 ** 399, 2.0 ** 400)]),
         ('small_finite', [(0.0, 2.0 ** -400)], [(0.0, 2.0 ** -399)]),
         ('adjacent_float_diagonal', [(1.0, math.nextafter(1.0, math.inf))], []),

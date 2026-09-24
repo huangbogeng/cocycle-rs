@@ -4,6 +4,10 @@
     "revision": "ffa1da051ca7ac5e313c74cc9fb92a2bcb20c234",
     "version": "1.0.1"
   },
+  "bottleneck_reference": {
+    "backend": "gudhi.hera.bottleneck_distance",
+    "delta": 0.0
+  },
   "gudhi_python": {
     "gudhi": "3.11.0",
     "numpy": "2.4.6",
