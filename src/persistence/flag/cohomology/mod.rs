@@ -46,6 +46,8 @@ struct TransformColumn {
 #[derive(Default, Debug)]
 struct Stats {
     #[cfg(test)]
+    two_pass_initialization: bool,
+    #[cfg(test)]
     edges: usize,
     #[cfg(test)]
     cofacets: usize,
@@ -314,6 +316,17 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     stats: &mut Stats,
     budget: &mut WorkBudget<'_>,
 ) -> Result<(Option<SimplexEntry>, bool)> {
+    #[cfg(test)]
+    if stats.two_pass_initialization {
+        return tests::initialize_two_pass::<SHORTCUTS>(
+            rips,
+            edge,
+            pivot_owners,
+            working,
+            stats,
+            budget,
+        );
+    }
     // Recover the existing heap allocation as an unsorted scratch buffer.
     let mut rows = std::mem::take(working).into_vec();
     rows.clear();

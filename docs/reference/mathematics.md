@@ -356,6 +356,8 @@ zero-lifetime emergent pairs that are
 not apparent retain their pivot/transform entries. Positive-lifetime, essential,
 and right-censored intervals retain their multiplicities. Test ordinary,
 apparent, emergent, and combined configurations against the independent oracle.
+Test-only two-pass initialization also checks storage omission independently of
+single-pass caching, including the invariant $R=CV$ on dense and sparse inputs.
 
 ### Cone stopping bound
 

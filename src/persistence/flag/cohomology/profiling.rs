@@ -27,15 +27,18 @@ fn profile_stage() {
     let options = RipsOptions::new(1, (!cutoff.is_nan()).then_some(cutoff)).unwrap();
     let (cutoff, coverage) = resolve_rips_range(input, &options);
     let stage = std::env::var("COCYCLE_ABLATION_STAGE").unwrap();
-    let execute = |stats: &mut Stats| match stage.as_str() {
-        "explicit" => run::<false, false, false, 0>(input, cutoff, stats),
-        "clearing" => run::<false, true, false, 0>(input, cutoff, stats),
-        "implicit" => run::<true, true, false, 0>(input, cutoff, stats),
-        "cone" => run::<true, true, true, 0>(input, cutoff, stats),
-        "apparent" => run::<true, true, true, 1>(input, cutoff, stats),
-        "emergent" => run::<true, true, true, 3>(input, cutoff, stats),
-        "virtual" => run::<true, true, true, 7>(input, cutoff, stats),
-        _ => panic!("unknown stage"),
+    let execute = |stats: &mut Stats| {
+        stats.two_pass_initialization = matches!(stage.as_str(), "two-pass" | "virtual-two-pass");
+        match stage.as_str() {
+            "explicit" => run::<false, false, false, 0>(input, cutoff, stats),
+            "clearing" => run::<false, true, false, 0>(input, cutoff, stats),
+            "implicit" => run::<true, true, false, 0>(input, cutoff, stats),
+            "cone" => run::<true, true, true, 0>(input, cutoff, stats),
+            "apparent" => run::<true, true, true, 1>(input, cutoff, stats),
+            "emergent" | "two-pass" => run::<true, true, true, 3>(input, cutoff, stats),
+            "virtual" | "virtual-two-pass" => run::<true, true, true, 7>(input, cutoff, stats),
+            _ => panic!("unknown stage"),
+        }
     };
     let rss = |field: &str| -> Option<usize> {
         std::fs::read_to_string("/proc/self/status")

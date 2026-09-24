@@ -10,17 +10,24 @@ fn compare_all(values: &[f64], n: usize, cutoff: Option<f64>) {
     let expected = reference::compute(input, &options).unwrap();
     let (cutoff, coverage) = resolve_rips_range(input, &options);
     macro_rules! check {
-        ($implicit:literal, $clear:literal, $cone:literal, $short:literal) => {{
-            let raw = run::<$implicit, $clear, $cone, $short>(input, cutoff, &mut Stats::default())
-                .unwrap();
+        ($implicit:literal, $clear:literal, $cone:literal, $short:literal) => {
+            check!($implicit, $clear, $cone, $short, false)
+        };
+        ($implicit:literal, $clear:literal, $cone:literal, $short:literal, $two_pass:literal) => {{
+            let mut stats = Stats {
+                two_pass_initialization: $two_pass,
+                ..Stats::default()
+            };
+            let raw = run::<$implicit, $clear, $cone, $short>(input, cutoff, &mut stats).unwrap();
             assert_eq!(
                 assemble_diagram(1, coverage, raw).unwrap(),
                 expected,
-                "n={n} cutoff={cutoff} implicit={} clear={} cone={} shortcuts={} values={values:?}",
+                "n={n} cutoff={cutoff} implicit={} clear={} cone={} shortcuts={} two_pass={} values={values:?}",
                 $implicit,
                 $clear,
                 $cone,
-                $short
+                $short,
+                $two_pass
             );
         }};
     }
@@ -31,9 +38,78 @@ fn compare_all(values: &[f64], n: usize, cutoff: Option<f64>) {
     check!(true, true, true, 1);
     check!(true, true, true, 2);
     check!(true, true, true, 3);
+    check!(true, true, true, 3, true);
     check!(true, true, true, 4);
     check!(true, true, true, 7);
+    check!(true, true, true, 7, true);
     check!(false, true, false, 7);
+}
+
+/// Retain the probe-then-reenumerate path independently of single-pass caching.
+/// The omission bit is orthogonal, so all four stage combinations stay testable.
+pub(super) fn initialize_two_pass<const SHORTCUTS: u8>(
+    rips: &impl FlagAccess,
+    edge: SimplexEntry,
+    owners: &HashMap<usize, ColumnPosition>,
+    working: &mut Coboundary,
+    stats: &mut Stats,
+    budget: &mut WorkBudget<'_>,
+) -> Result<(Option<SimplexEntry>, bool)> {
+    working.clear();
+    let mut found = None;
+    let mut omitted = false;
+    let mut candidates = 0;
+    let budget = std::cell::RefCell::new(budget);
+    if SHORTCUTS != 0 {
+        rips.visit_cofacets(
+            edge,
+            &mut || {
+                candidates += 1;
+                budget.borrow_mut().step()
+            },
+            |triangle| {
+                count_cofacet(stats);
+                if triangle.value != edge.value {
+                    return Ok(true);
+                }
+                if SHORTCUTS & 4 != 0 && rips.latest_facet(triangle) == edge {
+                    assert!(!owners.contains_key(&triangle.id));
+                    found = Some(triangle);
+                    omitted = true;
+                } else if !owners.contains_key(&triangle.id)
+                    && (SHORTCUTS & 2 != 0
+                        || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge))
+                    && (SHORTCUTS & 4 == 0
+                        || zero_apparent_facet(rips, triangle, stats, &mut budget.borrow_mut())?
+                            .is_none())
+                {
+                    found = Some(triangle);
+                    stats.shortcuts += 1;
+                }
+                // Stop the probe even when the first equal candidate is owned.
+                Ok(false)
+            },
+        )?;
+    }
+    let budget = budget.into_inner();
+    if found.is_none() {
+        rips.visit_cofacets(
+            edge,
+            &mut || {
+                candidates += 1;
+                budget.step()
+            },
+            |triangle| {
+                count_cofacet(stats);
+                push_heap(working, Reverse(triangle))?;
+                Ok(true)
+            },
+        )?;
+    }
+    stats.initial_candidates += candidates;
+    stats.peak_heap = stats.peak_heap.max(working.len());
+    budget.check()?;
+    Ok((found, omitted))
 }
 
 #[test]
@@ -244,6 +320,64 @@ fn original_column_fallback_handles_empty_no_equal_and_apparent_only_rejection()
 }
 
 #[test]
+fn single_pass_visits_failed_prefixes_once_and_reuses_alternating_buffers() {
+    let mut working = Coboundary::with_capacity(128);
+    let capacity = working.capacity();
+    let mut large = vec![2.; 64 * 63 / 2];
+    large[0] = 1.;
+    // Alternate a large column, a rejected and a successful shortcut after a
+    // high prefix, an empty column, and a column without an equal cofacet.
+    for (n, values, cutoff, occupied, visits) in [
+        (64, large, 2., false, [128, 64]),
+        (
+            5,
+            vec![1., 1., 1., 1., 1., 2., 2., 2., 2., 2.],
+            2.,
+            true,
+            [7, 5],
+        ),
+        (
+            5,
+            vec![1., 1., 1., 1., 1., 2., 2., 2., 2., 2.],
+            2.,
+            false,
+            [2, 2],
+        ),
+        (3, vec![1., 2., 2.], 1., false, [6, 3]),
+        (3, vec![1., 2., 2.], 2., false, [6, 3]),
+    ] {
+        let input = DissimilarityView::new(&values, n).unwrap();
+        let access = DenseFlag::new(input.into(), cutoff).unwrap();
+        let mut owners = HashMap::new();
+        if occupied {
+            owners.insert(1, ColumnPosition(0));
+        }
+        let mut outcomes = Vec::new();
+        for (two_pass, expected_visits) in [true, false].into_iter().zip(visits) {
+            let mut stats = Stats {
+                two_pass_initialization: two_pass,
+                ..Stats::default()
+            };
+            let mut budget =
+                WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
+            let result = initialize_coboundary::<3>(
+                &access,
+                SimplexEntry { id: 0, value: 1. },
+                &owners,
+                &mut working,
+                &mut stats,
+                &mut budget,
+            )
+            .unwrap();
+            assert_eq!(stats.initial_candidates, expected_visits);
+            assert_eq!(working.capacity(), capacity);
+            outcomes.push((result, working.clone().into_sorted_vec()));
+        }
+        assert_eq!(outcomes[0], outcomes[1]);
+    }
+}
+
+#[test]
 fn initial_scan_work_failure_does_not_poison_reused_input_or_heap() {
     let values = [1., 2., 2.];
     let input = DissimilarityView::new(&values, 3).unwrap();
@@ -313,29 +447,36 @@ fn check_virtual_access(
     coverage: Coverage,
     expected: &crate::diagram::PersistenceDiagram,
 ) -> Stats {
-    let mut ordinary = Stats {
-        verify_transforms: true,
-        ..Stats::default()
-    };
-    let mut optimized = Stats {
-        verify_transforms: true,
-        ..Stats::default()
-    };
-    for (shortcuts, stats) in [(3, &mut ordinary), (7, &mut optimized)] {
-        let mut budget = WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
-        let raw = if shortcuts == 3 {
-            run_access::<true, true, 3>(access, stats, &mut budget)
-        } else {
-            run_access::<true, true, 7>(access, stats, &mut budget)
+    let mut single_pass = Stats::default();
+    for two_pass in [true, false] {
+        let mut ordinary = Stats {
+            two_pass_initialization: two_pass,
+            verify_transforms: true,
+            ..Stats::default()
+        };
+        let mut optimized = Stats {
+            two_pass_initialization: two_pass,
+            verify_transforms: true,
+            ..Stats::default()
+        };
+        for (shortcuts, stats) in [(3, &mut ordinary), (7, &mut optimized)] {
+            let mut budget =
+                WorkBudget::new(&crate::persistence::ExecutionLimits::default()).unwrap();
+            let raw = if shortcuts == 3 {
+                run_access::<true, true, 3>(access, stats, &mut budget)
+            } else {
+                run_access::<true, true, 7>(access, stats, &mut budget)
+            }
+            .unwrap();
+            assert_eq!(&assemble_diagram(1, coverage, raw).unwrap(), expected);
         }
-        .unwrap();
-        assert_eq!(&assemble_diagram(1, coverage, raw).unwrap(), expected);
+        assert!(optimized.stored_columns <= ordinary.stored_columns);
+        if optimized.skipped_apparent > 0 {
+            assert!(optimized.stored_columns < ordinary.stored_columns);
+        }
+        single_pass = optimized;
     }
-    assert!(optimized.stored_columns <= ordinary.stored_columns);
-    if optimized.skipped_apparent > 0 {
-        assert!(optimized.stored_columns < ordinary.stored_columns);
-    }
-    optimized
+    single_pass
 }
 
 /// Check R = C V with independent set XOR rather than the production heap.
