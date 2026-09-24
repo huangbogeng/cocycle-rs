@@ -33,68 +33,34 @@ mod matching;
 
 use crate::{Error, Result};
 
+#[cfg(any(test, cocycle_distance_bench))]
+#[path = "bottleneck/instrumentation.rs"]
+mod instrumentation;
+#[cfg(any(test, cocycle_distance_bench))]
+pub(crate) use instrumentation::{Diagnostics, Options, Search};
+#[cfg(not(any(test, cocycle_distance_bench)))]
+#[derive(Clone, Copy, Default)]
+struct Options {}
+#[cfg(not(any(test, cocycle_distance_bench)))]
+#[derive(Default)]
+struct Diagnostics {}
+
 const NONE: usize = usize::MAX;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-#[allow(dead_code)] // Explicit configurations are consumed by standalone experiment workers.
-pub(crate) enum Search {
-    #[default]
-    Adaptive,
-    Quickselect,
-    Binary,
-    Refinement,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Options {
-    pub(crate) search: Search,
-    pub(crate) clip_candidates: bool,
-    pub(crate) reuse_matching: bool,
-    pub(crate) reuse_scratch: bool,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            search: Search::Adaptive,
-            clip_candidates: true,
-            reuse_matching: true,
-            reuse_scratch: true,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(any(test, cocycle_distance_bench), derive(Default))]
 pub(crate) enum Route {
     #[default]
+    #[cfg(any(test, cocycle_distance_bench))]
     Empty,
+    #[cfg(any(test, cocycle_distance_bench))]
     Identity,
     Multiplicity,
+    #[cfg(any(test, cocycle_distance_bench))]
     NoCross,
     MandatorySparse,
     Quickselect,
     Refinement,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct Diagnostics {
-    pub(crate) route: Route,
-    pub(crate) threshold_decisions: usize,
-    pub(crate) candidate_count: usize,
-    pub(crate) adjacency_checks: usize,
-    pub(crate) augment_searches: usize,
-    pub(crate) kd_nodes_visited: usize,
-    pub(crate) matching_reuses: usize,
-    pub(crate) scratch_reuses: usize,
-    pub(crate) capacity_edges: usize,
-    /// Largest explicitly accounted kernel buffer footprint, not process RSS.
-    pub(crate) peak_workspace_bytes: usize,
-}
-
-impl Diagnostics {
-    fn workspace(&mut self, bytes: usize) {
-        self.peak_workspace_bytes = self.peak_workspace_bytes.max(bytes);
-    }
 }
 
 fn allocation() -> Error {
@@ -126,6 +92,7 @@ fn push<T>(values: &mut Vec<T>, value: T) -> Result<()> {
     Ok(())
 }
 
+#[cfg(any(test, cocycle_distance_bench))]
 fn bytes<T>(values: &Vec<T>) -> usize {
     values.capacity().saturating_mul(std::mem::size_of::<T>())
 }
@@ -220,6 +187,7 @@ impl<'a> Prepared<'a> {
         begin..end
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn bytes(&self) -> usize {
         bytes(&self.diagonals)
             .saturating_add(bytes(&self.order))
@@ -296,6 +264,7 @@ impl<'a, 'p> Pair<'a, 'p> {
         }
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn bytes(&self) -> usize {
         self.first
             .bytes()
@@ -358,7 +327,7 @@ fn prefer_mandatory(first: &Prepared<'_>, second: &Prepared<'_>, total: usize, u
 }
 
 pub(crate) fn distance(first: &[[f64; 2]], second: &[[f64; 2]]) -> Result<f64> {
-    distance_with_options(
+    solve(
         first,
         second,
         Options::default(),
@@ -366,13 +335,23 @@ pub(crate) fn distance(first: &[[f64; 2]], second: &[[f64; 2]]) -> Result<f64> {
     )
 }
 
+#[cfg(any(test, cocycle_distance_bench))]
 pub(crate) fn distance_with_options(
     first: &[[f64; 2]],
     second: &[[f64; 2]],
-    options: Options,
-    stats: &mut Diagnostics,
+    _options: Options,
+    _stats: &mut Diagnostics,
 ) -> Result<f64> {
-    *stats = Diagnostics::default();
+    solve(first, second, _options, _stats)
+}
+
+fn solve(
+    first: &[[f64; 2]],
+    second: &[[f64; 2]],
+    _options: Options,
+    _stats: &mut Diagnostics,
+) -> Result<f64> {
+    record! { *_stats = Diagnostics::default(); }
     let first = Prepared::new(first)?;
     let second = Prepared::new(second)?;
     let total = first
@@ -380,13 +359,13 @@ pub(crate) fn distance_with_options(
         .len()
         .checked_add(second.points.len())
         .ok_or_else(size_overflow)?;
-    stats.workspace(first.bytes().saturating_add(second.bytes()));
+    record! { _stats.workspace(first.bytes().saturating_add(second.bytes())); }
     if first.points.is_empty() || second.points.is_empty() {
         return Ok(first.max_diagonal.max(second.max_diagonal));
     }
     let duplicates = prefer_multiplicity(&first, &second, total);
     if duplicates && identical(&first, &second) {
-        stats.route = Route::Identity;
+        record! { _stats.route = Route::Identity; }
         return Ok(0.0);
     }
     let (first, second) = if total >= 128 && first.points.len() > second.points.len() {
@@ -396,7 +375,7 @@ pub(crate) fn distance_with_options(
     };
     let upper = first.max_diagonal.max(second.max_diagonal);
     let mut route = Route::Quickselect;
-    if options.search == Search::Adaptive {
+    if experiment!(_options.search == Search::Adaptive, true) {
         if duplicates {
             route = Route::Multiplicity;
         } else if total >= 128 {
@@ -407,7 +386,7 @@ pub(crate) fn distance_with_options(
                     .ok_or_else(size_overflow)?;
             }
             if window_pairs == 0 {
-                stats.route = Route::NoCross;
+                record! { _stats.route = Route::NoCross; }
                 return Ok(upper);
             }
             if prefer_mandatory(first, second, total, upper) {
@@ -419,37 +398,37 @@ pub(crate) fn distance_with_options(
                 route = Route::Refinement;
             }
         }
-    } else if options.search == Search::Refinement {
+    } else if experiment!(_options.search == Search::Refinement, false) {
         route = Route::Refinement;
     }
-    stats.route = route;
+    record! { _stats.route = route; }
     let pair = Pair::new(first, second, route == Route::Quickselect)?;
     if route == Route::Refinement {
-        return geometry::distance(&pair, options, stats);
+        return geometry::distance(&pair, _options, _stats);
     }
     let mut radii = candidates(
         &pair,
         route,
-        options.clip_candidates,
+        experiment!(_options.clip_candidates, true),
         0.0,
         pair.upper(),
-        stats,
+        _stats,
     )?;
-    let extra_bytes = pair.bytes().saturating_add(bytes(&radii));
-    stats.workspace(extra_bytes);
+    let extra_bytes = experiment!(pair.bytes().saturating_add(bytes(&radii)), 0);
+    record! { _stats.workspace(extra_bytes); }
     let mut workspace = if route == Route::Quickselect {
         Some(matching::Workspace::new(pair.size)?)
     } else {
         None
     };
     let mut decide = |radius| -> Result<bool> {
-        stats.threshold_decisions += 1;
+        record! { _stats.threshold_decisions += 1; }
         if radius < pair.lower() {
             return Ok(false);
         }
         match route {
-            Route::Multiplicity => flow::within(&pair, radius, true, stats, extra_bytes),
-            Route::MandatorySparse => flow::within(&pair, radius, false, stats, extra_bytes),
+            Route::Multiplicity => flow::within(&pair, radius, true, _stats, extra_bytes),
+            Route::MandatorySparse => flow::within(&pair, radius, false, _stats, extra_bytes),
             _ => {
                 if pair.size >= 384 {
                     let optional_first = pair
@@ -478,7 +457,7 @@ pub(crate) fn distance_with_options(
                         // Quotient/remainder form avoids overflowing sample * count.
                         let flat =
                             sample * (count / samples) + sample * (count % samples) / samples;
-                        stats.adjacency_checks += 1;
+                        record! { _stats.adjacency_checks += 1; }
                         allowed += usize::from(
                             pair.cross(
                                 flat / pair.second.points.len(),
@@ -487,13 +466,16 @@ pub(crate) fn distance_with_options(
                         );
                     }
                     if allowed as f64 / samples as f64 <= 0.03 || fraction >= 0.75 {
-                        let allocated = extra_bytes.saturating_add(
-                            workspace.as_ref().map_or(0, matching::Workspace::bytes),
+                        let allocated = experiment!(
+                            extra_bytes.saturating_add(
+                                workspace.as_ref().map_or(0, matching::Workspace::bytes),
+                            ),
+                            0
                         );
-                        return flow::within(&pair, radius, false, stats, allocated);
+                        return flow::within(&pair, radius, false, _stats, allocated);
                     }
                 }
-                if !options.reuse_scratch {
+                if !experiment!(_options.reuse_scratch, true) {
                     workspace = Some(matching::Workspace::new(pair.size)?);
                 }
                 workspace
@@ -501,11 +483,12 @@ pub(crate) fn distance_with_options(
                     .ok_or(Error::InternalInvariant {
                         reason: "quickselect matcher workspace is missing",
                     })?
-                    .within(&pair, radius, stats, extra_bytes)
+                    .within(&pair, radius, _stats, extra_bytes)
             }
         }
     };
-    if options.search == Search::Binary {
+    #[cfg(any(test, cocycle_distance_bench))]
+    if _options.search == Search::Binary {
         radii.sort_unstable_by(f64::total_cmp);
         radii.dedup();
         let mut lower = radii.partition_point(|&value| value < pair.lower());
@@ -559,7 +542,7 @@ fn candidates(
     clip: bool,
     lower: f64,
     upper: f64,
-    stats: &mut Diagnostics,
+    _stats: &mut Diagnostics,
 ) -> Result<Vec<f64>> {
     let grouped = route == Route::Multiplicity;
     let first_indices = if grouped {
@@ -586,7 +569,7 @@ fn candidates(
         if clip && matches!(route, Route::MandatorySparse | Route::Refinement) {
             for position in pair.second.window(pair.first.points[left][0], upper) {
                 let right = pair.second.order[position];
-                stats.adjacency_checks += 1;
+                record! { _stats.adjacency_checks += 1; }
                 let value = pair.cross(left, right);
                 if value > lower && value <= upper {
                     push(&mut values, value)?;
@@ -601,7 +584,7 @@ fn candidates(
             }
         }
     }
-    stats.candidate_count = stats.candidate_count.saturating_add(values.len());
+    record! { _stats.candidate_count = _stats.candidate_count.saturating_add(values.len()); }
     Ok(values)
 }
 

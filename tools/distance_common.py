@@ -206,7 +206,7 @@ PHASE_HOOKS = {
         ('fn new(points:', 'bottleneck.prepare'),
         ('fn new(first:', 'bottleneck.pair'),
         ('fn candidates(', 'bottleneck.candidates'),
-        ('fn distance_with_options(', 'bottleneck.total'),
+        ('fn solve(', 'bottleneck.total'),
     ],
     'bottleneck/geometry.rs': [
         ('fn new(points:', 'bottleneck.kd_build'),
@@ -215,16 +215,20 @@ PHASE_HOOKS = {
     ],
     'bottleneck/matching.rs': [('fn within(', 'bottleneck.graph_decision')],
     'bottleneck/flow.rs': [('fn within(', 'bottleneck.flow_decision')],
-    'wasserstein.rs': [
+    'wasserstein/numeric.rs': [
         ('fn prepare(', 'wasserstein.prepare'),
+        ('fn from_flows(', 'wasserstein.reconstruct'),
+    ],
+    'wasserstein/graph.rs': [
         ('fn groups(', 'wasserstein.duplicates'),
         ('fn generate(', 'wasserstein.generate'),
         ('fn components(', 'wasserstein.components'),
+    ],
+    'wasserstein/dense.rs': [
         ('fn dense_sap(', 'wasserstein.dense_sap'),
         ('fn tiny(', 'wasserstein.tiny'),
-        ('fn from_flows(', 'wasserstein.reconstruct'),
-        ('fn distance_with_options(', 'wasserstein.total'),
     ],
+    'wasserstein.rs': [('fn solve(', 'wasserstein.total')],
     'wasserstein/sparse.rs': [('fn solve(', 'wasserstein.sparse_sap')],
     'wasserstein/direct.rs': [('fn matching(', 'wasserstein.direct_cost_sap')],
 }
@@ -374,7 +378,8 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
     run([cargo, 'build', '--release', '--locked', '--offline', '--lib', '--target-dir', target])
     worker, profile = profile_worker(directory) if profile_rust else (WORKERS / 'cocycle.rs', None)
     rust_binary = directory / ('cocycle' + suffix)
-    run([rustc, '--edition=2024', '-C', 'opt-level=3', '-D', 'warnings', worker,
+    run([rustc, '--edition=2024', '--cfg', 'cocycle_distance_bench',
+         '-C', 'opt-level=3', '-D', 'warnings', worker,
          '--extern', f'cocycle={target}/release/libcocycle.rlib', '-L',
          f'dependency={target}/release/deps', '-o', rust_binary])
     topp_binary = directory / ('topp' + suffix)
@@ -411,6 +416,7 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
                 'cxx': subprocess.check_output([cxx, '--version'], text=True),
                 'avx2': 'not enabled; pinned Topp portable scalar build',
                 'rustflags': os.environ.get('RUSTFLAGS'),
+                'rust_distance_instrumentation': 'cocycle_distance_bench in standalone worker only; public crate built without this cfg',
                 'cxx_arithmetic': 'Topp compiler-dependent long double in weighted matching; Rust f64',
                 'source_sha256': before}
     if profile is not None:

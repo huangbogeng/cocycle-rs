@@ -73,6 +73,15 @@ so a nonzero stress exit must be inspected separately from supported acceptance.
 
 ## Native build and routing controls
 
+The builder compiles the ordinary public crate without instrumentation, then
+compiles the standalone Rust worker with `--cfg cocycle_distance_bench`. This
+private cfg enables the counter schemas and forced policies also used by kernel
+tests. Conditional compilation removes counter statements, capacity traversals,
+binary-search ablation and experimental arena storage from ordinary library
+builds, including debug. The worker's `public` variant calls the separately
+linked ordinary crate; native ablations call the instrumented private kernels.
+Build metadata records this boundary. There is no public Cargo experiment feature.
+
 Topp uses a portable scalar build with MSVC-only AVX2 dispatch disabled. Weighted
 Topp matching uses compiler-dependent `long double`; Rust uses f64. Preserve
 these representation differences when interpreting results.

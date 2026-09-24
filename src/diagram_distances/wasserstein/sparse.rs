@@ -6,10 +6,9 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use super::{
-    Graph, SparseLayout, Stats, allocation, buffer, capacity_bytes, finite, numerical, push,
-    sum_size,
-};
+#[cfg(any(test, cocycle_distance_bench))]
+use super::capacity_bytes;
+use super::{Graph, SparseLayout, Stats, allocation, buffer, finite, numerical, push, sum_size};
 use crate::{Error, Result};
 
 #[derive(Clone, Copy, Default)]
@@ -22,6 +21,7 @@ struct Residual {
 
 enum Network {
     Vectors(Vec<Vec<Residual>>),
+    #[cfg(any(test, cocycle_distance_bench))]
     Arena {
         offsets: Vec<usize>,
         edges: Vec<Residual>,
@@ -29,28 +29,31 @@ enum Network {
 }
 
 impl Network {
+    #[cfg(any(test, cocycle_distance_bench))]
     fn capacity_bytes(&self) -> usize {
         match self {
             Self::Vectors(rows) => rows.iter().fold(capacity_bytes(rows), |bytes, row| {
                 bytes.saturating_add(capacity_bytes(row))
             }),
+            #[cfg(any(test, cocycle_distance_bench))]
             Self::Arena { offsets, edges } => {
                 capacity_bytes(offsets).saturating_add(capacity_bytes(edges))
             }
         }
     }
 
-    fn new(nodes: usize, degree: &[usize], layout: SparseLayout) -> Result<Self> {
+    fn new(nodes: usize, _degree: &[usize], layout: SparseLayout) -> Result<Self> {
         match layout {
             SparseLayout::Vectors => Ok(Self::Vectors(buffer(nodes, Vec::new())?)),
+            #[cfg(any(test, cocycle_distance_bench))]
             SparseLayout::Arena => {
                 let mut offsets = Vec::new();
                 offsets
-                    .try_reserve_exact(sum_size(degree.len(), 1)?)
+                    .try_reserve_exact(sum_size(_degree.len(), 1)?)
                     .map_err(|_| allocation())?;
                 let mut total = 0;
                 offsets.push(0);
-                for &count in degree {
+                for &count in _degree {
                     total = sum_size(total, count)?;
                     offsets.push(total);
                 }
@@ -87,6 +90,7 @@ impl Network {
                 push(&mut rows[source], forward)?;
                 push(&mut rows[destination], backward)?;
             }
+            #[cfg(any(test, cocycle_distance_bench))]
             Self::Arena { offsets, edges } => {
                 edges[offsets[source] + cursor[source]] = forward;
                 edges[offsets[destination] + cursor[destination]] = backward;
@@ -100,6 +104,7 @@ impl Network {
     fn edges(&self, node: usize) -> &[Residual] {
         match self {
             Self::Vectors(rows) => &rows[node],
+            #[cfg(any(test, cocycle_distance_bench))]
             Self::Arena { offsets, edges } => &edges[offsets[node]..offsets[node + 1]],
         }
     }
@@ -107,6 +112,7 @@ impl Network {
     fn edge_mut(&mut self, node: usize, edge: usize) -> &mut Residual {
         match self {
             Self::Vectors(rows) => &mut rows[node][edge],
+            #[cfg(any(test, cocycle_distance_bench))]
             Self::Arena { offsets, edges } => &mut edges[offsets[node] + edge],
         }
     }
@@ -146,6 +152,7 @@ struct Scratch {
 }
 
 impl Scratch {
+    #[cfg(any(test, cocycle_distance_bench))]
     fn capacity_bytes(&self) -> usize {
         capacity_bytes(&self.distance)
             .saturating_add(capacity_bytes(&self.previous_node))
@@ -166,6 +173,7 @@ impl Scratch {
         })
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn reset(&mut self) {
         self.distance.fill(f64::INFINITY);
         self.previous_node.fill(usize::MAX);
@@ -184,9 +192,9 @@ pub(super) fn solve(
     graph: &Graph,
     capacities: Option<(&[usize], &[usize])>,
     layout: SparseLayout,
-    stats: &mut Stats,
+    _stats: &mut Stats,
 ) -> Result<Vec<(usize, usize, usize)>> {
-    stats.sparse_solves += 1;
+    record! { _stats.sparse_solves += 1; }
     let (rows, columns) = graph.active()?;
     if rows.is_empty() || columns.is_empty() {
         return Ok(Vec::new());
@@ -205,9 +213,10 @@ pub(super) fn solve(
     for (i, &column) in columns.iter().enumerate() {
         column_map[column] = i;
     }
-    let mut degree = Vec::new();
-    if layout == SparseLayout::Arena {
-        degree = buffer(nodes, 0_usize)?;
+    let degree = Vec::new();
+    #[cfg(any(test, cocycle_distance_bench))]
+    let degree = if layout == SparseLayout::Arena {
+        let mut degree = buffer(nodes, 0_usize)?;
         degree[0] = rows.len();
         degree[sink] = columns.len();
         for &row in &rows {
@@ -222,7 +231,10 @@ pub(super) fn solve(
         for i in 0..columns.len() {
             degree[column_base + i] = sum_size(degree[column_base + i], 1)?;
         }
-    }
+        degree
+    } else {
+        degree
+    };
     let mut network = Network::new(nodes, &degree, layout)?;
     let mut cursor = buffer(nodes, 0)?;
     for (i, &row) in rows.iter().enumerate() {
@@ -256,12 +268,13 @@ pub(super) fn solve(
         .iter()
         .copied()
         .fold(0.0, f64::min);
-    stats.peak_residual_storage_bytes = stats
-        .peak_residual_storage_bytes
-        .max(network.capacity_bytes());
+    record! { _stats.peak_residual_storage_bytes = _stats
+    .peak_residual_storage_bytes
+    .max(network.capacity_bytes()); }
     // The baseline allocates search buffers per augmentation. Arena mode keeps
     // their capacities, including the heap, throughout this one matching call.
     let mut scratch = Scratch::new(nodes)?;
+    #[cfg(any(test, cocycle_distance_bench))]
     if let Network::Arena { edges, .. } = &network {
         // Match the pinned arena experiment's bounded initial heap reservation.
         // Both capacity and reuse belong to this layout ablation, not R0.
@@ -276,9 +289,9 @@ pub(super) fn solve(
     let mut iteration = 0;
     loop {
         if iteration != 0 {
-            if layout == SparseLayout::Arena {
-                scratch.reset();
-                stats.scratch_reuses += 1;
+            if experiment!(layout == SparseLayout::Arena, false) {
+                record! { scratch.reset(); }
+                record! { _stats.scratch_reuses += 1; }
             } else {
                 scratch = Scratch::new(nodes)?;
             }
@@ -315,9 +328,9 @@ pub(super) fn solve(
                 scratch.enqueue(candidate, edge.destination)?;
             }
         }
-        stats.peak_sparse_scratch_bytes = stats
-            .peak_sparse_scratch_bytes
-            .max(scratch.capacity_bytes());
+        record! { _stats.peak_sparse_scratch_bytes = _stats
+        .peak_sparse_scratch_bytes
+        .max(scratch.capacity_bytes()); }
         if scratch.previous_node[sink] == usize::MAX {
             break;
         }
@@ -355,7 +368,7 @@ pub(super) fn solve(
             other.capacity = sum_size(other.capacity, amount)?;
             node = parent;
         }
-        stats.augmentations += 1;
+        record! { _stats.augmentations += 1; }
     }
     let mut flows = Vec::new();
     for (local, &row) in rows.iter().enumerate() {

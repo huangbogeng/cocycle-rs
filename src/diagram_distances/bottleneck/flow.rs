@@ -1,6 +1,8 @@
 //! Lower-bounded circulation for mandatory points and exact multiplicities.
 
-use super::{Diagnostics, NONE, Pair, bytes, filled, reserve, size_overflow};
+#[cfg(any(test, cocycle_distance_bench))]
+use super::bytes;
+use super::{Diagnostics, NONE, Pair, filled, reserve, size_overflow};
 use crate::Result;
 
 #[derive(Clone, Copy)]
@@ -57,7 +59,7 @@ impl Dinic {
         source: usize,
         sink: usize,
         required: usize,
-        stats: &mut Diagnostics,
+        _stats: &mut Diagnostics,
     ) -> Result<usize> {
         let mut total = 0_usize;
         while total < required {
@@ -92,7 +94,7 @@ impl Dinic {
                     let mut found = false;
                     while self.cursors[node] < self.edges[node].len() {
                         let edge = self.edges[node][self.cursors[node]];
-                        stats.adjacency_checks += 1;
+                        record! { _stats.adjacency_checks += 1; }
                         if edge.capacity > 0 && self.levels[edge.target] == self.levels[node] + 1 {
                             self.path.push((node, self.cursors[node]));
                             node = edge.target;
@@ -130,7 +132,7 @@ impl Dinic {
                         .ok_or_else(size_overflow)?;
                 }
                 total = total.checked_add(amount).ok_or_else(size_overflow)?;
-                stats.augment_searches += 1;
+                record! { _stats.augment_searches += 1; }
                 if total == required {
                     break;
                 }
@@ -139,6 +141,7 @@ impl Dinic {
         Ok(total)
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn bytes(&self) -> usize {
         self.edges
             .iter()
@@ -156,8 +159,8 @@ pub(super) fn within(
     pair: &Pair<'_, '_>,
     radius: f64,
     grouped: bool,
-    stats: &mut Diagnostics,
-    outer_bytes: usize,
+    _stats: &mut Diagnostics,
+    _outer_bytes: usize,
 ) -> Result<bool> {
     let first_indices = if grouped {
         &pair.first.representatives
@@ -222,7 +225,7 @@ pub(super) fn within(
             if !grouped && !first_required[left] && !second_required[right] {
                 continue;
             }
-            stats.adjacency_checks += 1;
+            record! { _stats.adjacency_checks += 1; }
             if pair.cross(index, second_indices[right]) <= radius {
                 let capacity = if grouped {
                     pair.first.multiplicities[left].min(pair.second.multiplicities[right])
@@ -230,7 +233,7 @@ pub(super) fn within(
                     1
                 };
                 flow.edge(left, n + right, capacity)?;
-                stats.capacity_edges += 1;
+                record! { _stats.capacity_edges += 1; }
             }
         }
     }
@@ -245,16 +248,16 @@ pub(super) fn within(
             flow.edge(node, super_sink, outgoing[node] - incoming[node])?;
         }
     }
-    stats.workspace(
-        outer_bytes
+    record! { _stats.workspace(
+        _outer_bytes
             .max(pair.bytes())
             .saturating_add(flow.bytes())
             .saturating_add(bytes(&incoming))
             .saturating_add(bytes(&outgoing))
             .saturating_add(bytes(&first_required))
             .saturating_add(bytes(&second_required)),
-    );
-    Ok(flow.max_flow(super_source, super_sink, required, stats)? == required)
+    ); }
+    Ok(flow.max_flow(super_source, super_sink, required, _stats)? == required)
 }
 
 #[cfg(test)]

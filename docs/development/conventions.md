@@ -36,8 +36,11 @@ the [kernel design gates](../design/kernel.md), not create empty module trees.
   establish from conditions callers check. Similar formulas alone do not
   establish compatible overflow, ordering, or storage semantics.
 - Co-locate private invariant tests; put public usage contracts in `tests/` and
-  runnable workflows in `examples/`. Diagnostics remain test-only. Split crates
-  only for an actual dependency, release, or integration boundary.
+  runnable workflows in `examples/`. Diagnostics and forced experiment controls
+  compile only in tests or explicitly opted-in standalone workers. Ordinary
+  library builds, including debug, must exclude counter updates and capacity
+  accounting before optimization. Split crates only for an actual dependency,
+  release, or integration boundary.
 
 ## Public contracts and ownership
 
@@ -91,7 +94,7 @@ well-scoped mathematical indices.
 | --- | --- |
 | Rust | Edition 2024; `cargo fmt`, standalone `rustfmt` for tool drivers, and Clippy with warnings denied |
 | Python tools | Four spaces, standard library for default checks/native orchestration, `snake_case` functions/modules; parse all tools and run unit tests |
-| Native C++ adapters | C++17, two spaces, explicit standard includes and small protocol-focused adapters; compile and run native smoke comparisons |
+| Native C++ adapters | C++17 by default; pinned upstream adapters may require C++20 (Topp). Use two spaces, explicit standard includes and small protocol-focused adapters; compile and run native smoke comparisons |
 | Markdown, TOML, YAML, JSON | Two-space indentation; descriptive headings and local relative links |
 | Maintained text | UTF-8 without BOM, LF, final newline, no trailing whitespace or indentation tabs |
 

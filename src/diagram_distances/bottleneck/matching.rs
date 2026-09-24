@@ -1,6 +1,8 @@
 //! Degree-ordered greedy Kuhn with the C0 small-bitset / x-sweep CSR layout.
 
-use super::{Diagnostics, NONE, Pair, bytes, filled, push, reserve, size_overflow};
+#[cfg(any(test, cocycle_distance_bench))]
+use super::bytes;
+use super::{Diagnostics, NONE, Pair, filled, push, reserve, size_overflow};
 use crate::Result;
 
 struct Graph {
@@ -20,7 +22,7 @@ struct Cursor {
 }
 
 impl Graph {
-    fn new(pair: &Pair<'_, '_>, radius: f64, stats: &mut Diagnostics) -> Result<Self> {
+    fn new(pair: &Pair<'_, '_>, radius: f64, _stats: &mut Diagnostics) -> Result<Self> {
         let size = pair.size;
         let words = if size < 128 { size.div_ceil(64) } else { 0 };
         let mut result = Self {
@@ -46,14 +48,14 @@ impl Graph {
                 if words == 0 {
                     for position in pair.second.window(pair.first.points[left][0], radius) {
                         let right = pair.second.order[position];
-                        stats.adjacency_checks += 1;
+                        record! { _stats.adjacency_checks += 1; }
                         if pair.cross(left, right) <= radius {
                             result.add(left, right)?;
                         }
                     }
                 } else {
                     for right in 0..m {
-                        stats.adjacency_checks += 1;
+                        record! { _stats.adjacency_checks += 1; }
                         if pair.cross(left, right) <= radius {
                             result.add(left, right)?;
                         }
@@ -139,6 +141,7 @@ impl Graph {
         }
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn bytes(&self) -> usize {
         bytes(&self.bits)
             .saturating_add(bytes(&self.offsets))
@@ -159,6 +162,7 @@ pub(super) struct Workspace {
     degrees: Vec<usize>,
     seen: Vec<usize>,
     stack: Vec<Frame>,
+    #[cfg(any(test, cocycle_distance_bench))]
     used: bool,
 }
 
@@ -173,6 +177,7 @@ impl Workspace {
             degrees: filled(size, 0)?,
             seen: filled(size, 0)?,
             stack,
+            #[cfg(any(test, cocycle_distance_bench))]
             used: false,
         })
     }
@@ -181,19 +186,21 @@ impl Workspace {
         &mut self,
         pair: &Pair<'_, '_>,
         radius: f64,
-        stats: &mut Diagnostics,
-        outer_bytes: usize,
+        _stats: &mut Diagnostics,
+        _outer_bytes: usize,
     ) -> Result<bool> {
-        let graph = Graph::new(pair, radius, stats)?;
-        stats.workspace(
-            outer_bytes
+        let graph = Graph::new(pair, radius, _stats)?;
+        record! { _stats.workspace(
+            _outer_bytes
                 .saturating_add(graph.bytes())
                 .saturating_add(self.bytes()),
-        );
-        if self.used {
-            stats.scratch_reuses += 1;
+        ); }
+        record! {
+            if self.used {
+                _stats.scratch_reuses += 1;
+            }
+            self.used = true;
         }
-        self.used = true;
         self.left.fill(NONE);
         self.right.fill(NONE);
         self.seen.fill(0);
@@ -218,7 +225,7 @@ impl Workspace {
             if self.left[left] != NONE {
                 continue;
             }
-            stats.augment_searches += 1;
+            record! { _stats.augment_searches += 1; }
             // position + 1 is bounded by graph.size, whose buffers were allocated.
             let generation = position + 1;
             self.stack.clear();
@@ -261,6 +268,7 @@ impl Workspace {
         Ok(true)
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     pub(super) fn bytes(&self) -> usize {
         bytes(&self.left)
             .saturating_add(bytes(&self.right))

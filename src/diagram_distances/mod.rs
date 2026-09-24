@@ -32,6 +32,30 @@
 use crate::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceResult};
 use crate::{Error, Result};
 
+// The standalone worker opts in with --cfg cocycle_distance_bench. Neither
+// counter updates nor their argument evaluation exist in ordinary crate builds.
+macro_rules! record {
+    ($($body:tt)*) => {
+        #[cfg(any(test, cocycle_distance_bench))]
+        { $($body)* }
+    };
+}
+
+// Keep ablation controls out of the normal build; the second expression is the
+// selected production policy. This is compile-time selection, including debug.
+macro_rules! experiment {
+    ($value:expr, $production:expr) => {{
+        #[cfg(any(test, cocycle_distance_bench))]
+        {
+            $value
+        }
+        #[cfg(not(any(test, cocycle_distance_bench)))]
+        {
+            $production
+        }
+    }};
+}
+
 pub(crate) mod bottleneck;
 pub(crate) mod wasserstein;
 

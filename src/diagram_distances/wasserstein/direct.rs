@@ -13,10 +13,10 @@ pub(super) fn matching(
     first: &[Point],
     second: &[Point],
     metric: Metric,
-    stats: &mut Stats,
+    _stats: &mut Stats,
 ) -> Result<Vec<Option<usize>>> {
-    stats.direct_cost_fallbacks += 1;
-    stats.dense_solves += 1;
+    record! { _stats.direct_cost_fallbacks += 1; }
+    record! { _stats.dense_solves += 1; }
     let size = sum_size(first.len(), second.len())?;
     let length = sum_size(size, 1)?;
     let cost = |row: usize, column: usize| -> Result<f64> {
@@ -91,7 +91,7 @@ pub(super) fn matching(
                 break;
             }
         }
-        stats.augmentations += 1;
+        record! { _stats.augmentations += 1; }
     }
     let mut matching = buffer(first.len(), None)?;
     for (column, &row) in matched_row

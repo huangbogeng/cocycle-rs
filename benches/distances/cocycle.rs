@@ -2,6 +2,9 @@
 #![forbid(unsafe_code)]
 #![allow(dead_code)]
 
+#[cfg(not(cocycle_distance_bench))]
+compile_error!("the distance worker requires --cfg cocycle_distance_bench");
+
 pub use cocycle::{Error, Result, diagram};
 #[path = "../../src/diagram_distances/mod.rs"]
 mod diagram_distances;

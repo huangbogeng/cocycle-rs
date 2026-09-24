@@ -1,6 +1,8 @@
 //! Exact KD range queries and implicit-diagonal Hopcroft--Karp refinement.
 
-use super::{Diagnostics, NONE, Options, Pair, Route, bytes, candidates, cross, filled, reserve};
+#[cfg(any(test, cocycle_distance_bench))]
+use super::bytes;
+use super::{Diagnostics, NONE, Options, Pair, Route, candidates, cross, filled, reserve};
 use crate::{Error, Result};
 
 #[derive(Clone, Copy)]
@@ -72,7 +74,7 @@ impl KdIndex {
         radius: f64,
         cursor: &mut usize,
         remaining: Option<&[usize]>,
-        stats: &mut Diagnostics,
+        _stats: &mut Diagnostics,
     ) -> Option<(usize, usize)> {
         let low = [
             (query[0] - radius).next_down(),
@@ -89,8 +91,8 @@ impl KdIndex {
                 continue;
             }
             *cursor += 1;
-            stats.kd_nodes_visited += 1;
-            stats.adjacency_checks += 1;
+            record! { _stats.kd_nodes_visited += 1; }
+            record! { _stats.adjacency_checks += 1; }
             // Outward-rounded bounding boxes only discover candidates. This
             // scalar comparison is the exact threshold membership certificate.
             if cross(query, points[node.point]) <= radius {
@@ -166,7 +168,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         left: usize,
         radius: f64,
         cursor: &mut Cursor,
-        stats: &mut Diagnostics,
+        _stats: &mut Diagnostics,
     ) -> Option<usize> {
         let n = self.pair.first.points.len();
         let m = self.pair.second.points.len();
@@ -177,7 +179,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
                 radius,
                 &mut cursor.node,
                 None,
-                stats,
+                _stats,
             ) {
                 return Some(point);
             }
@@ -205,7 +207,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         }
     }
 
-    fn greedy(&mut self, radius: f64, stats: &mut Diagnostics) {
+    fn greedy(&mut self, radius: f64, _stats: &mut Diagnostics) {
         for (point, active) in self.active.iter_mut().enumerate() {
             *active = self.right[point] == NONE;
         }
@@ -231,7 +233,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
                 radius,
                 &mut cursor,
                 Some(&self.remaining),
-                stats,
+                _stats,
             ) {
                 if !self.active[point] {
                     continue;
@@ -284,7 +286,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         }
     }
 
-    fn bfs(&mut self, radius: f64, stats: &mut Diagnostics) -> bool {
+    fn bfs(&mut self, radius: f64, _stats: &mut Diagnostics) -> bool {
         self.queue.clear();
         self.levels.fill(NONE);
         for left in 0..self.pair.size {
@@ -299,7 +301,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
             let left = self.queue[head];
             head += 1;
             let mut cursor = Cursor::default();
-            while let Some(right) = self.next_neighbor(left, radius, &mut cursor, stats) {
+            while let Some(right) = self.next_neighbor(left, radius, &mut cursor, _stats) {
                 let next = self.right[right];
                 if next == NONE {
                     found = true;
@@ -312,7 +314,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         found
     }
 
-    fn augment(&mut self, left: usize, radius: f64, stats: &mut Diagnostics) -> bool {
+    fn augment(&mut self, left: usize, radius: f64, _stats: &mut Diagnostics) -> bool {
         self.stack.clear();
         self.stack.push(Frame {
             left,
@@ -323,7 +325,7 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
             let last = self.stack.len() - 1;
             let left = self.stack[last].left;
             let mut cursor = self.stack[last].cursor;
-            let next = self.next_neighbor(left, radius, &mut cursor, stats);
+            let next = self.next_neighbor(left, radius, &mut cursor, _stats);
             self.stack[last].cursor = cursor;
             let Some(right) = next else {
                 self.levels[left] = NONE;
@@ -351,17 +353,17 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         false
     }
 
-    fn within(&mut self, radius: f64, options: Options, stats: &mut Diagnostics) -> Result<bool> {
-        stats.threshold_decisions += 1;
+    fn within(&mut self, radius: f64, _options: Options, _stats: &mut Diagnostics) -> Result<bool> {
+        record! { _stats.threshold_decisions += 1; }
         if radius < self.pair.lower() {
             return Ok(false);
         }
-        if self.used && !options.reuse_scratch {
+        if self.used && !experiment!(_options.reuse_scratch, true) {
             self.allocate_scratch()?;
         } else if self.used {
-            stats.scratch_reuses += 1;
+            record! { _stats.scratch_reuses += 1; }
         }
-        if !options.reuse_matching {
+        if !experiment!(_options.reuse_matching, true) {
             self.left.fill(NONE);
             self.right.fill(NONE);
         } else if self.used {
@@ -374,30 +376,32 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
                     }
                 }
             }
+            #[cfg(any(test, cocycle_distance_bench))]
             if self.left.iter().any(|&right| right != NONE) {
-                stats.matching_reuses += 1;
+                record! { _stats.matching_reuses += 1; }
             }
         }
         self.radius = radius;
         self.used = true;
-        self.greedy(radius, stats);
+        self.greedy(radius, _stats);
         let mut size = self.left.iter().filter(|&&right| right != NONE).count();
-        while size < self.pair.size && self.bfs(radius, stats) {
+        while size < self.pair.size && self.bfs(radius, _stats) {
             let before = size;
             for left in 0..self.pair.size {
                 if self.left[left] == NONE {
-                    stats.augment_searches += 1;
-                    size += usize::from(self.augment(left, radius, stats));
+                    record! { _stats.augment_searches += 1; }
+                    size += usize::from(self.augment(left, radius, _stats));
                 }
             }
             if size == before {
                 break;
             }
         }
-        stats.workspace(self.pair.bytes().saturating_add(self.bytes()));
+        record! { _stats.workspace(self.pair.bytes().saturating_add(self.bytes())); }
         Ok(size == self.pair.size)
     }
 
+    #[cfg(any(test, cocycle_distance_bench))]
     fn bytes(&self) -> usize {
         bytes(&self.tree.nodes)
             .saturating_add(bytes(&self.left))
@@ -413,18 +417,18 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
 
 pub(super) fn distance(
     pair: &Pair<'_, '_>,
-    options: Options,
-    stats: &mut Diagnostics,
+    _options: Options,
+    _stats: &mut Diagnostics,
 ) -> Result<f64> {
     let mut oracle = Oracle::new(pair)?;
     let mut lower = pair.lower();
     let mut upper = pair.upper();
-    if oracle.within(lower, options, stats)? {
+    if oracle.within(lower, _options, _stats)? {
         return Ok(lower);
     }
     if lower == 0.0 {
         let mut probe = upper * 0.5;
-        while probe > 0.0 && oracle.within(probe, options, stats)? {
+        while probe > 0.0 && oracle.within(probe, _options, _stats)? {
             upper = probe;
             probe *= 0.5;
         }
@@ -435,7 +439,7 @@ pub(super) fn distance(
         if middle == lower || middle == upper {
             break;
         }
-        if oracle.within(middle, options, stats)? {
+        if oracle.within(middle, _options, _stats)? {
             upper = middle;
         } else {
             lower = middle;
@@ -444,12 +448,12 @@ pub(super) fn distance(
     let mut radii = candidates(
         pair,
         Route::Refinement,
-        options.clip_candidates,
+        experiment!(_options.clip_candidates, true),
         lower,
         upper,
-        stats,
+        _stats,
     )?;
-    if options.clip_candidates {
+    if experiment!(_options.clip_candidates, true) {
         radii.retain(|&value| value > lower && value <= upper);
     }
     radii.sort_unstable_by(f64::total_cmp);
@@ -458,39 +462,39 @@ pub(super) fn distance(
     let mut end = radii.len();
     while begin < end {
         let middle = begin + (end - begin) / 2;
-        if oracle.within(radii[middle], options, stats)? {
+        if oracle.within(radii[middle], _options, _stats)? {
             end = middle;
         } else {
             begin = middle + 1;
         }
     }
-    stats.workspace(
+    record! { _stats.workspace(
         pair.bytes()
             .saturating_add(oracle.bytes())
             .saturating_add(bytes(&radii)),
-    );
+    ); }
     if let Some(&result) = radii.get(begin) {
         return Ok(result);
     }
     // A future range-index regression must never return an approximate bound.
-    radii = candidates(pair, Route::Refinement, false, 0.0, pair.upper(), stats)?;
+    radii = candidates(pair, Route::Refinement, false, 0.0, pair.upper(), _stats)?;
     radii.sort_unstable_by(f64::total_cmp);
     radii.dedup();
     begin = 0;
     end = radii.len();
     while begin < end {
         let middle = begin + (end - begin) / 2;
-        if oracle.within(radii[middle], options, stats)? {
+        if oracle.within(radii[middle], _options, _stats)? {
             end = middle;
         } else {
             begin = middle + 1;
         }
     }
-    stats.workspace(
+    record! { _stats.workspace(
         pair.bytes()
             .saturating_add(oracle.bytes())
             .saturating_add(bytes(&radii)),
-    );
+    ); }
     radii.get(begin).copied().ok_or(Error::InternalInvariant {
         reason: "exact bottleneck refinement has no feasible candidate",
     })
