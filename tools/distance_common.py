@@ -201,7 +201,8 @@ def identity():
             'source_sha256': source_hash()}
 
 
-def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc'):
+def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc',
+                  gudhi_source=None, cgal_include=None, boost_include=None):
     """Build into a fresh directory; read but never modify the external checkout."""
     directory = Path(output) / 'build'
     directory.mkdir()
@@ -211,6 +212,13 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc'):
                                      '--untracked-files=all'], text=True)
     if revision != PINS['topp']['revision'] or dirty:
         raise ValueError('Topp requires the pinned clean source checkout; never reset the user checkout')
+    gudhi_source = Path(gudhi_source or ROOT / 'target/native-sources/gudhi-distance').resolve()
+    gudhi_revision = subprocess.check_output(
+        ['git', '-C', str(gudhi_source), 'rev-parse', 'HEAD'], text=True).strip()
+    gudhi_dirty = subprocess.check_output(
+        ['git', '-C', str(gudhi_source), 'status', '--porcelain', '--untracked-files=all'], text=True)
+    if gudhi_revision != PINS['gudhi_bottleneck']['revision'] or gudhi_dirty:
+        raise ValueError('GUDHI bottleneck requires the pinned clean PR-1367 source')
     before = source_hash()
     commands = []
 
@@ -233,6 +241,13 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc'):
                ('bottleneck_core.cpp', 'geometric_backend.cpp', 'wasserstein.cpp')]
     run([cxx, '-std=c++20', '-O3', '-DNDEBUG', '-pthread', '-I', topp_source / 'include',
          *sources, WORKERS / 'topp.cpp', '-o', topp_binary])
+    gudhi_binary = directory / ('gudhi_bottleneck' + suffix)
+    includes = [gudhi_source / 'src/Bottleneck_distance/include']
+    includes.extend(Path(path).resolve() for path in (cgal_include, boost_include) if path)
+    # This double-coordinate KD-tree oracle needs no GMP number type.
+    run([cxx, '-std=c++17', '-O3', '-DNDEBUG', '-DCGAL_DISABLE_GMP=1',
+         *(part for path in includes for part in ('-I', path)),
+         WORKERS / 'gudhi.cpp', '-o', gudhi_binary])
     if source_hash() != before:
         raise ValueError('distance sources changed while compiling; use a new run')
     metadata = {'pins': PINS, 'commands': commands, 'topp_revision': revision,
@@ -240,7 +255,17 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc'):
                                        for directory in ('src', 'include')
                                        for p in sorted((topp_source / directory).rglob('*'))
                                        if p.is_file() and p.suffix in ('.hpp', '.cpp')},
-                'binaries_sha256': {'cocycle': sha256(rust_binary), 'topp': sha256(topp_binary)},
+                'gudhi_revision': gudhi_revision,
+                'gudhi_headers_sha256': {str(p.relative_to(gudhi_source)): sha256(p)
+                    for p in sorted((gudhi_source / 'src/Bottleneck_distance/include').rglob('*.h'))},
+                'reference_dependency_headers': {
+                    name: {'path': str(path), 'sha256': sha256(path)}
+                    for name, path in (
+                        ('CGAL', Path(cgal_include or '/usr/include') / 'CGAL/version.h'),
+                        ('Boost', Path(boost_include or '/usr/include') / 'boost/version.hpp'))
+                    if path.is_file()},
+                'binaries_sha256': {'cocycle': sha256(rust_binary), 'topp': sha256(topp_binary),
+                                   'gudhi_bottleneck': sha256(gudhi_binary)},
                 'rustc': subprocess.check_output([rustc, '-Vv'], text=True),
                 'cxx': subprocess.check_output([cxx, '--version'], text=True),
                 'avx2': 'not enabled; pinned Topp portable scalar build',
@@ -248,7 +273,8 @@ def build_workers(output, topp_source, cxx='c++', cargo='cargo', rustc='rustc'):
                 'cxx_arithmetic': 'Topp compiler-dependent long double in weighted matching; Rust f64',
                 'source_sha256': before}
     save(directory / 'build.json', metadata)
-    return {'cocycle': [str(rust_binary)], 'topp': [str(topp_binary)]}, metadata
+    return {'cocycle': [str(rust_binary)], 'topp': [str(topp_binary)],
+            'gudhi_bottleneck': [str(gudhi_binary)]}, metadata
 
 
 def invoke(command, fixture, metric, variant='baseline', timeout=60, memory_mib=None, cpu=None):
@@ -301,6 +327,9 @@ def add_build_arguments(parser):
     parser.add_argument('--rustc', default='rustc')
     parser.add_argument('--timeout', type=float, default=60)
     parser.add_argument('--gudhi-python', default=sys.executable)
+    parser.add_argument('--gudhi-source', type=Path, default=ROOT / 'target/native-sources/gudhi-distance')
+    parser.add_argument('--cgal-include', type=Path)
+    parser.add_argument('--boost-include', type=Path)
 
 
 def build_from_args(args):
@@ -308,4 +337,5 @@ def build_from_args(args):
         raise ValueError('timeout must be positive')
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
-    return build_workers(args.output, args.topp_source, args.cxx, args.cargo, args.rustc)
+    return build_workers(args.output, args.topp_source, args.cxx, args.cargo, args.rustc,
+                         args.gudhi_source, args.cgal_include, args.boost_include)

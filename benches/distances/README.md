@@ -9,7 +9,8 @@ evidence and never qualifies as a native timing reference.
 
 ## Setup and commands
 
-Requirements are Rust 1.91+, Python 3.10+, a GCC-compatible C++20 compiler and Git.
+Requirements are Rust 1.91+, Python 3.10+, a GCC-compatible C++20 compiler, Git,
+CGAL and Boost headers for the independent fixed GUDHI bottleneck oracle.
 Linux is required for formal resource measurements; Windows supports correctness.
 The library gains no dependencies. [sources.json](sources.json) pins Topp and the
 exact GUDHI/POT/NumPy versions. Use a dedicated clean external source checkout:
@@ -17,6 +18,8 @@ exact GUDHI/POT/NumPy versions. Use a dedicated clean external source checkout:
 ```sh
 git clone https://github.com/proffitteoy/Topp.git target/native-sources/topp
 git -C target/native-sources/topp checkout --detach ffa1da051ca7ac5e313c74cc9fb92a2bcb20c234
+git clone https://github.com/GUDHI/gudhi-devel.git target/native-sources/gudhi-distance
+git -C target/native-sources/gudhi-distance checkout --detach 4ec34ac55e6d2e8cfd7c322e84c1b0a56d516d51
 python3 -m venv target/distance-oracle-venv
 target/distance-oracle-venv/bin/python -m pip install gudhi==3.11.0 numpy==2.4.6 POT==0.9.6.post1
 python3 tools/compare_distances.py --quick --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-correctness-001
@@ -26,6 +29,8 @@ python3 tools/benchmark_distances.py --quick --samples 1 --exploratory --groups 
 
 Every output directory must be new. `--topp-source`, `--cargo`, `--rustc`, `--cxx`
 and `--gudhi-python` accept explicit paths. The builder rejects wrong/dirty Topp
+and GUDHI sources. `--gudhi-source`, `--cgal-include` and `--boost-include` locate
+the fixed native oracle and non-system headers. The builder reads external
 sources and never installs packages, resets, or modifies an external checkout.
 It fingerprints source, native binaries, commands and toolchains. Topp uses its
 portable scalar build: MSVC-only AVX2 dispatch is disabled. Weighted Topp matching
@@ -68,7 +73,12 @@ empty, repeated, unequal-size, near-diagonal, negative-scale, tied and essential
 examples supplement deterministic random inputs. Every supported backend is
 checked against independent expectations, not merely Rust/Topp mutual agreement.
 
-GUDHI uses Hera bottleneck `delta=0`, or explicit Wasserstein order/internal norm with
+The primary GUDHI bottleneck reference is the native `e=0` implementation at the
+fixed head of [merged PR #1367](https://github.com/GUDHI/gudhi-devel/pull/1367),
+which corrects the premature matching shortcut. It uses double-coordinate KD
+trees and builds with `CGAL_DISABLE_GMP`; it is a correctness oracle only. Full
+source identity and header hashes are retained. The correctness suite additionally
+checks GUDHI 3.11.0 Hera bottleneck `delta=0`. Wasserstein uses explicit order/internal norm with
 `keep_essential_parts=True`, no autodiff and POT's exact transport solver. The
 isolated worker uses NumPy and loads only the requested metric's native backend;
 Wasserstein disables optional POT GPU/autodiff imports. Hera requires removal of
@@ -77,7 +87,10 @@ wheel's default `gudhi.bottleneck_distance(e=0)` returned 2 instead of the indep
 oracle's 1.375 on an ordinary tiny fixture, even before POT was loaded. Its failed
 attempt is retained separately; it is not counted as agreement. Hera's zero-delta
 mode is independently checked on supported inputs and retains its own extreme-
-value limitations in stress results. Backend identity is fixed in `sources.json`.
+value limitations in stress results. Backend identities are fixed in `sources.json`.
+GUDHI 3.11.0 predates PR #1367 (merged 2026-08-27 and labeled 3.14.0); its default
+backend is not the acceptance reference. Do not treat that known old-version
+failure as a new Rust defect or silently call Hera the repaired implementation.
 Versions/settings are retained; a missing reference makes validation fail.
 Small dyadic bottleneck/W1 cases use zero tolerance. Other cases use the fixed
 bound `64 * f64_epsilon * (n+m+1) * max(cost_scale, |expected|)`, with scale from

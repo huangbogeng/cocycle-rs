@@ -174,6 +174,12 @@ jobs:
           repository: proffitteoy/Topp
           ref: ffa1da051ca7ac5e313c74cc9fb92a2bcb20c234
           path: target/native-sources/topp
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: GUDHI/gudhi-devel
+          ref: 4ec34ac55e6d2e8cfd7c322e84c1b0a56d516d51
+          path: target/native-sources/gudhi-distance
+      - run: sudo apt-get update && sudo apt-get install -y libcgal-dev libboost-dev
       - run: python -m pip install gudhi==3.11.0 numpy==2.4.6 POT==0.9.6.post1
       - run: python tools/compare_distances.py --quick --output target/distance-reference
       - run: python tools/benchmark_distances.py --quick --samples 1 --groups baseline arena --families uniform sparse --sizes 8 32 --output target/distance-smoke

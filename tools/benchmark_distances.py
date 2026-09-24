@@ -185,7 +185,8 @@ def run(args):
             references = {
                 'public': invoke(commands['cocycle'], path, metric, 'public', args.timeout),
                 'topp': invoke(commands['topp'], path, metric, 'default', args.timeout),
-                'gudhi': invoke(gudhi, path, metric, 'baseline', args.timeout),
+                'gudhi': invoke(commands['gudhi_bottleneck'] if metric == 'bottleneck' else gudhi,
+                                path, metric, 'baseline', args.timeout),
             }
             record['references'] = references
             expected = None

@@ -37,7 +37,11 @@ def run(args):
                       'expected': number(expected),
                       'absolute_tolerance': tolerance(case, metric, expected) if expected != float('inf') else 0,
                       'workers': {}, 'validation': 'passed'}
-            for backend, command in commands.items():
+            references = {name: commands[name] for name in ('cocycle', 'topp')}
+            references['gudhi'] = commands['gudhi_bottleneck'] if metric == 'bottleneck' else commands['gudhi']
+            if metric == 'bottleneck':
+                references['hera'] = commands['gudhi']
+            for backend, command in references.items():
                 variant = 'public' if backend == 'cocycle' else 'default' if backend == 'topp' else 'baseline'
                 sample = invoke(command, path, metric, variant, args.timeout)
                 if sample['status'] == 'completed':
