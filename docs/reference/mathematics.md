@@ -318,11 +318,17 @@ H0 pairings and H1 clearing must use the same total order. An apparent pair
 $(\sigma,\tau)$ requires sigma to be tau's latest facet and tau to be sigma's
 earliest cofacet. Omitting its public interval also requires equal filtration
 values. Do not indiscriminately remove columns that eventually reduce to zero.
+The default kernel retains pivot owners and transformation columns for shortcut
+pairs. A private omission configuration, exercised by tests and diagnostic
+profiling, instead reconstructs zero apparent pairs as described below.
 
-Initialize an original edge column and inspect shortcut candidates in one cofacet
-traversal, before any column addition. Cofacets are enumerated by descending ID,
+The default initializer probes for a shortcut without caching cofacets. If the
+probe fails, enumerate the full coboundary into the working heap. A private
+single-pass configuration instead initializes the column and inspects shortcut
+candidates in one traversal, before any column addition.
+Cofacets are enumerated by descending ID,
 and their values are at least the edge value. The first equal-valued triangle is
-therefore the original column's earliest cofacet. Retain the preceding cofacets
+therefore the original column's earliest cofacet. In single-pass mode, retain the preceding cofacets
 in a temporary buffer. If no shortcut applies, continue the same traversal and
 build the working heap from the complete buffer; do not enumerate the prefix or
 an empty column again. Reuse the buffer only after its previous contents have
@@ -334,7 +340,8 @@ $V_j=e_j$ without generating remaining rows. If owned, fall back to ordinary
 reduction, not the next equal-valued triangle. Apparent-only mode additionally
 checks the latest-facet condition. Mid-reduction emergent shortcuts are not used.
 
-For a zero-lifetime apparent pair $(\sigma,\tau)$, the same initial traversal
+In the omission configuration, for a zero-lifetime apparent pair $(\sigma,\tau)$,
+the same initial traversal
 certifies both conditions: tau is sigma's first equal-valued cofacet, and sigma
 is tau's latest facet. Skip this pair without storing its pivot owner or
 transformation column. It remains a virtual column $V_\sigma=e_\sigma$;

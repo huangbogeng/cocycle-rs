@@ -23,7 +23,12 @@ type Coboundary = BinaryHeap<Reverse<SimplexEntry>>;
 
 // Bits 0/1 select original-column apparent/emergent shortcuts. Bit 2 also
 // omits zero apparent columns and reconstructs their pivots during reduction.
-const PRODUCTION_SHORTCUTS: u8 = 7;
+// Retain ordinary owners in production; private tests and profiling also
+// exercise the omission candidate and its transformation invariant.
+const PRODUCTION_SHORTCUTS: u8 = 3;
+// Shortcut-heavy columns can pay more for cached prefixes than they save in
+// rescans. Keep the single-pass candidate independently available to tests.
+const PRODUCTION_SINGLE_PASS: bool = false;
 
 /// Position in the forward-ordered edge array, not a combinatorial simplex ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -82,7 +87,12 @@ struct Stats {
 }
 
 pub(super) fn compute(rips: &impl FlagAccess, budget: &mut WorkBudget<'_>) -> Result<RawIntervals> {
-    run_access::<true, true, PRODUCTION_SHORTCUTS>(rips, &mut Stats::default(), budget)
+    let mut stats = Stats::default();
+    #[cfg(test)]
+    {
+        stats.two_pass_initialization = !PRODUCTION_SINGLE_PASS;
+    }
+    run_access::<true, true, PRODUCTION_SHORTCUTS>(rips, &mut stats, budget)
 }
 
 // Retain independent optimization configurations for the dense test oracle.
@@ -307,7 +317,7 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
     Ok(raw)
 }
 
-/// Initialize the original column in one scan, stopping at a valid shortcut.
+/// Initialize the original column, retaining independently testable strategies.
 fn initialize_coboundary<const SHORTCUTS: u8>(
     rips: &impl FlagAccess,
     edge: SimplexEntry,
@@ -317,15 +327,11 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     budget: &mut WorkBudget<'_>,
 ) -> Result<(Option<SimplexEntry>, bool)> {
     #[cfg(test)]
-    if stats.two_pass_initialization {
-        return tests::initialize_two_pass::<SHORTCUTS>(
-            rips,
-            edge,
-            pivot_owners,
-            working,
-            stats,
-            budget,
-        );
+    let two_pass = stats.two_pass_initialization;
+    #[cfg(not(test))]
+    let two_pass = !PRODUCTION_SINGLE_PASS;
+    if two_pass {
+        return initialize_two_pass::<SHORTCUTS>(rips, edge, pivot_owners, working, stats, budget);
     }
     // Recover the existing heap allocation as an unsorted scratch buffer.
     let mut rows = std::mem::take(working).into_vec();
@@ -404,6 +410,90 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
         stats.peak_heap = stats.peak_heap.max(working.len());
     }
     Ok((found, apparent_pair))
+}
+
+/// Probe without caching a prefix; enumerate the full column on failure.
+/// Omission stays independent so tests can compare all four combinations.
+fn initialize_two_pass<const SHORTCUTS: u8>(
+    rips: &impl FlagAccess,
+    edge: SimplexEntry,
+    owners: &HashMap<usize, ColumnPosition>,
+    working: &mut Coboundary,
+    stats: &mut Stats,
+    budget: &mut WorkBudget<'_>,
+) -> Result<(Option<SimplexEntry>, bool)> {
+    working.clear();
+    let mut found = None;
+    let mut omitted = false;
+    #[cfg(test)]
+    let mut candidates = 0;
+    let budget = std::cell::RefCell::new(budget);
+    if SHORTCUTS != 0 {
+        rips.visit_cofacets(
+            edge,
+            &mut || {
+                #[cfg(test)]
+                {
+                    candidates += 1;
+                }
+                budget.borrow_mut().step()
+            },
+            |triangle| {
+                count_cofacet(stats);
+                if triangle.value != edge.value {
+                    return Ok(true);
+                }
+                if SHORTCUTS & 4 != 0 && rips.latest_facet(triangle) == edge {
+                    if owners.contains_key(&triangle.id) {
+                        return Err(Error::InternalInvariant {
+                            reason: "zero apparent pivot has an ordinary owner",
+                        });
+                    }
+                    found = Some(triangle);
+                    omitted = true;
+                } else if !owners.contains_key(&triangle.id)
+                    && (SHORTCUTS & 2 != 0
+                        || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge))
+                    && (SHORTCUTS & 4 == 0
+                        || zero_apparent_facet(rips, triangle, stats, &mut budget.borrow_mut())?
+                            .is_none())
+                {
+                    found = Some(triangle);
+                    #[cfg(test)]
+                    {
+                        stats.shortcuts += 1;
+                    }
+                }
+                // Stop the probe even when the first equal candidate is owned.
+                Ok(false)
+            },
+        )?;
+    }
+    let budget = budget.into_inner();
+    if found.is_none() {
+        rips.visit_cofacets(
+            edge,
+            &mut || {
+                #[cfg(test)]
+                {
+                    candidates += 1;
+                }
+                budget.step()
+            },
+            |triangle| {
+                count_cofacet(stats);
+                push_heap(working, Reverse(triangle))?;
+                Ok(true)
+            },
+        )?;
+    }
+    #[cfg(test)]
+    {
+        stats.initial_candidates += candidates;
+        stats.peak_heap = stats.peak_heap.max(working.len());
+    }
+    budget.check()?;
+    Ok((found, omitted))
 }
 
 /// A zero apparent pair is determined by mutual earliest-cofacet/latest-facet
