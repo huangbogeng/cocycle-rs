@@ -133,7 +133,13 @@ migration; cross-language absolute times answer a different question.
 Workers read pre-call `VmRSS`/`VmHWM` and final `VmHWM` after cleanup, before JSON.
 Report absolute peak and high-water growth separately; zero growth does not mean
 no allocations. RSS includes runtime, input, allocator retention and outputs.
-Explicit container capacities are not allocator peaks. `--address-space-mib`
+Explicit container capacities are not allocator peaks.
+Rust Wasserstein records separate maximum capacities for retained graph storage,
+residual storage (including vector headers or arena offsets), and search scratch
+(vectors and heap). These maxima exclude construction temporaries and must not
+be summed into a simultaneous memory peak. Compare them only within matching
+categories and representation sizes; C++ long-double edges can be larger.
+`--address-space-mib`
 (default 2048 MiB) caps virtual address space, and `--timeout` (default 60 seconds)
 limits whole-process wall time. Neither is a library budget; timeout is censored
 evidence, not a measured runtime equal to the limit.

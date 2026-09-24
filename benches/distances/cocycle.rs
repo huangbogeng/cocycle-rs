@@ -209,7 +209,8 @@ fn run() -> std::result::Result<(), Box<dyn std::error::Error>> {
             "\"capacity_edges\":{},\"peak_workspace_bytes\":{},\"candidate_pairs\":{},",
             "\"positive_edges\":{},\"dense_solves\":{},\"sparse_solves\":{},\"augmentations\":{},",
             "\"components\":{},\"tiny_components\":{},\"duplicate_groups\":{},\"greedy_certificates\":{},",
-            "\"direct_cost_fallbacks\":{}}}"
+            "\"direct_cost_fallbacks\":{},\"peak_graph_storage_bytes\":{},",
+            "\"peak_residual_storage_bytes\":{},\"peak_sparse_scratch_bytes\":{}}}"
         ),
         bs.route,
         bs.threshold_decisions,
@@ -230,7 +231,10 @@ fn run() -> std::result::Result<(), Box<dyn std::error::Error>> {
         ws.tiny_components,
         ws.duplicate_groups,
         ws.greedy_certificates,
-        ws.direct_cost_fallbacks
+        ws.direct_cost_fallbacks,
+        ws.peak_graph_storage_bytes,
+        ws.peak_residual_storage_bytes,
+        ws.peak_sparse_scratch_bytes
     );
     println!(
         concat!(

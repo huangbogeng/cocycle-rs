@@ -67,6 +67,15 @@ pub(crate) struct Stats {
     pub(crate) greedy_certificates: usize,
     pub(crate) scratch_reuses: usize,
     pub(crate) direct_cost_fallbacks: usize,
+    /// Maximum capacities of individual retained graphs, excluding temporaries.
+    pub(crate) peak_graph_storage_bytes: usize,
+    pub(crate) peak_residual_storage_bytes: usize,
+    /// Search vectors and heap only; not simultaneous total storage or RSS.
+    pub(crate) peak_sparse_scratch_bytes: usize,
+}
+
+fn capacity_bytes<T>(values: &Vec<T>) -> usize {
+    values.capacity().saturating_mul(std::mem::size_of::<T>())
 }
 
 fn allocation() -> Error {
@@ -247,6 +256,16 @@ impl Iterator for Edges<'_> {
 }
 
 impl Graph {
+    fn record_capacity(&self, stats: &mut Stats) {
+        let bytes = match &self.storage {
+            Storage::Dense(values) => capacity_bytes(values),
+            Storage::Csr { offsets, edges } => {
+                capacity_bytes(offsets).saturating_add(capacity_bytes(edges))
+            }
+        };
+        stats.peak_graph_storage_bytes = stats.peak_graph_storage_bytes.max(bytes);
+    }
+
     fn edges(&self, row: usize) -> Edges<'_> {
         match &self.storage {
             Storage::Dense(values) => Edges::Dense(
@@ -774,6 +793,7 @@ fn solve_components(
             }
         }
         let local = Graph::from_candidates(candidates, component.columns.len(), true)?;
+        local.record_capacity(stats);
         let local_matching = if sum_size(local.rows, local.columns)? <= 8 {
             stats.tiny_components += 1;
             tiny(&local)?
@@ -936,6 +956,7 @@ pub(crate) fn distance_with_options(
                 return restore_scale(from_matching(&first, &second, matching, metric)?, scale);
             }
             let graph = Graph::from_candidates(candidates, second_groups.len(), true)?;
+            graph.record_capacity(stats);
             let flows = sparse::solve(&graph, Some((&rows, &columns)), options.sparse, stats)?;
             return restore_scale(
                 from_flows(
@@ -951,6 +972,7 @@ pub(crate) fn distance_with_options(
         }
     }
     let graph = generate(&first, &second, metric, stats)?;
+    graph.record_capacity(stats);
     let matching = if graph.direct_cost_required {
         direct::matching(&first, &second, metric, stats)?
     } else if options.force_sparse {

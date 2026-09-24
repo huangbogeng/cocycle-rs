@@ -6,7 +6,10 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use super::{Graph, SparseLayout, Stats, allocation, buffer, finite, numerical, push, sum_size};
+use super::{
+    Graph, SparseLayout, Stats, allocation, buffer, capacity_bytes, finite, numerical, push,
+    sum_size,
+};
 use crate::{Error, Result};
 
 #[derive(Clone, Copy, Default)]
@@ -26,6 +29,17 @@ enum Network {
 }
 
 impl Network {
+    fn capacity_bytes(&self) -> usize {
+        match self {
+            Self::Vectors(rows) => rows.iter().fold(capacity_bytes(rows), |bytes, row| {
+                bytes.saturating_add(capacity_bytes(row))
+            }),
+            Self::Arena { offsets, edges } => {
+                capacity_bytes(offsets).saturating_add(capacity_bytes(edges))
+            }
+        }
+    }
+
     fn new(nodes: usize, degree: &[usize], layout: SparseLayout) -> Result<Self> {
         match layout {
             SparseLayout::Vectors => Ok(Self::Vectors(buffer(nodes, Vec::new())?)),
@@ -132,6 +146,17 @@ struct Scratch {
 }
 
 impl Scratch {
+    fn capacity_bytes(&self) -> usize {
+        capacity_bytes(&self.distance)
+            .saturating_add(capacity_bytes(&self.previous_node))
+            .saturating_add(capacity_bytes(&self.previous_edge))
+            .saturating_add(
+                self.heap
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<QueueItem>()),
+            )
+    }
+
     fn new(nodes: usize) -> Result<Self> {
         Ok(Self {
             distance: buffer(nodes, f64::INFINITY)?,
@@ -231,6 +256,9 @@ pub(super) fn solve(
         .iter()
         .copied()
         .fold(0.0, f64::min);
+    stats.peak_residual_storage_bytes = stats
+        .peak_residual_storage_bytes
+        .max(network.capacity_bytes());
     // The baseline allocates search buffers per augmentation. Arena mode keeps
     // their capacities, including the heap, throughout this one matching call.
     let mut scratch = Scratch::new(nodes)?;
@@ -287,6 +315,9 @@ pub(super) fn solve(
                 scratch.enqueue(candidate, edge.destination)?;
             }
         }
+        stats.peak_sparse_scratch_bytes = stats
+            .peak_sparse_scratch_bytes
+            .max(scratch.capacity_bytes());
         if scratch.previous_node[sink] == usize::MAX {
             break;
         }
