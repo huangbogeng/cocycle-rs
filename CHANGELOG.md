@@ -5,6 +5,16 @@
 - Add native safe Rust bottleneck (L-infinity), W1 (L-infinity) and W2
   (Euclidean) diagram distances, with complete-coverage and context validation,
   essential multiplicity, independent matching tests and native comparison tools.
+- Add reusable exact/approximate Rips builders with explicit `build_complex`
+  construction and a shared `.persistence().compute()` analysis workflow. Preserve
+  implicit engines, fields, representatives, callback ownership and source coverage.
+- Add contextual `SimplicialFiltration` for exact, approximate and supplied-flag
+  expansion. Keep simplex queries on explicit topology; move source provenance
+  below result assembly while retaining existing import paths.
+- Add cooperative `Execution` controls spanning whole builder operations, including
+  preparation and expansion. Legacy functions/options remain compatibility entry
+  points with their existing control scope. Migrate guides, examples and native
+  workers without changing benchmark protocols or previously measured results.
 
 - Remove all repository-local historical experiment outputs and reports. Keep
   generated data in ignored local directories or external artifacts; enforce
@@ -90,4 +100,4 @@ Initial pure Rust implementation, with no runtime dependencies. Requires Rust 1.
   explicit timeout/omission records and private workload diagnostics for H1.
 
 H1 avoids constructing the full 2-skeleton; repeated enumeration and reduction
-fill-in still limit scalability. Diagram distances, other filtrations and Polars bindings are future work.
+fill-in still limit scalability. Other filtrations and Polars bindings are future work.

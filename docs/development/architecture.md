@@ -16,6 +16,8 @@ defines invariants; rustdoc defines public signatures and error behavior.
 src/
   lib.rs                         public domains and Error/Result exports
   error.rs                       shared structured errors
+  execution/
+    mod.rs                       shared controls and private per-operation budget
   algebra/
     field/mod.rs                 validated PrimeField and modular arithmetic
     column/mod.rs                private ordered sparse coefficient columns
@@ -36,10 +38,15 @@ src/
       simplex.rs                 canonical vertices, IDs and shared filtration order
       incidence.rs               oriented codimension-one boundary terms
   filtration/
+    provenance.rs                construction coverage and source-kind identity
+    expansion/mod.rs             contextual explicit result and controlled construction
     rips/
+      builder.rs                 exact borrowed settings and one-shot callbacks
       exact.rs                   ThresholdRips construction, provenance, cone bound
       expansion.rs               explicit Rips and dimension/scale provenance
       approximation/
+        builder.rs               approximate settings and one-shot callbacks
+        metadata.rs              owned sampling provenance and conditional bounds
         options.rs               epsilon, sampling and range parameters
         greedy.rs                deterministic farthest-point permutation
         edges.rs                 modified sparse edge values
@@ -57,7 +64,9 @@ src/
       expansion.rs               shared explicit clique construction
   persistence/
     mod.rs                       public exports and result normalization
-    execution.rs                 cooperative per-call limits/cancellation
+    execution.rs                 compatibility control imports
+    builder.rs                   borrowed analysis settings and validated execution
+    source.rs                    sealed extension and private source dispatch
     options.rs                   prime-field PersistenceOptions
     rips/
       mod.rs                     legacy/new Rips entry points and source coverage
@@ -83,7 +92,6 @@ src/
   diagram/
     interval.rs                  interval validation and endpoint semantics
     persistence_diagram.rs       owned multiset and coverage
-    approximation.rs             sparse Rips parameters, mapping and bound target
     computation.rs               owned PersistenceResult and source context
     representative.rs            owned chain/cochain terms and local interval IDs
   descriptors/                   diagram-only lifetimes and Betti curves
@@ -105,9 +113,10 @@ files. Public paths are re-exported from domains, not every private directory.
 | `algebra` | Validated prime fields and private sparse arithmetic/reduction | Error utilities |
 | `geometry` | Input validation and distance access | Error utilities |
 | `complex` | Checked weighted graphs and frozen simplicial incidence | Geometry scalar validation, error utilities |
-| `filtration` | Rips construction, provenance and shared flag access | Geometry, complex, diagram coverage/provenance types, error utilities |
-| `persistence` | Algorithms, options, interval and representative assembly | Algebra, geometry, filtration, diagram |
-| `diagram` | Algorithm-independent result ownership and validation | Algebra field identity, metric evidence types, error utilities |
+| `execution` | Immutable controls and private per-operation budget | Error utilities |
+| `filtration` | Rips construction, provenance and shared flag access | Geometry, complex, execution, error utilities |
+| `persistence` | Algorithms, options, interval and representative assembly | Algebra, geometry, filtration, diagram, execution |
+| `diagram` | Algorithm-independent result ownership and validation | Algebra field identity, filtration provenance, error utilities |
 | `descriptors` | Read diagrams without recomputing persistence | Diagram, error utilities |
 | `diagram_distances` | Match complete diagrams with bottleneck/L-infinity, W1/L-infinity or W2/Euclidean costs | Diagram and context types, error utilities |
 
@@ -136,6 +145,21 @@ and the selected adaptive policy. Counter statements and capacity traversals
 are removed by conditional compilation, including in debug builds. Binary-search
 ablation and the experimental arena layout are excluded from ordinary builds.
 The worker links the ordinary public crate for its separate `public` checks.
+
+## Public workflow and ownership
+
+`RipsBuilder` and `ApproximateRipsBuilder` configure borrowed inputs.
+`build_complex(max_simplex_dimension)` performs explicit construction and returns
+an owned `SimplicialFiltration`; only expanded topology exposes simplex queries.
+Alternatively, importing `persistence::PersistenceExt` enables `.persistence()`
+and the returned request's `.compute()`. The extension is implemented entirely
+in the consumer module, so filtration never calls persistence.
+
+Advanced `prepare()` returns an owned exact/approximate source for reuse. Callback
+builders are consumed by preparation or explicit construction; analyses never
+replay them. `Execution` is shared configuration, not a shared counter. A new
+private budget spans each terminal's preparation and computation. Legacy free
+functions retain their existing persistence-only scope and test coverage.
 
 ## Computation path
 
@@ -171,7 +195,9 @@ of performance parity is made.
 Explicit expansion uses unique increasing-vertex extensions and freezes all
 stored simplices with lookup and both directions of incidence. Its ordering and
 the compact H1 entry order use the comparison authority in `complex/simplicial`.
-`RipsExpansion` retains construction dimension and scale provenance separately.
+`SimplicialFiltration` retains construction dimension and scale provenance
+separately for exact Rips, approximation and supplied flags. The old expansion
+types remain available during migration.
 Explicit computation reads its incidence, rejecting insufficient skeletons unless
 expansion certified clique exhaustion. Graph construction and expansion do not
 invoke persistence, and computation does not mutate stored topology.
@@ -283,7 +309,7 @@ for union-find. Oriented generic cohomology and representative reduction reuse
 this access without approximation-specific algebra. The blocker is hereditary,
 so unique-extension enumeration may prune rejected simplices safely.
 
-`diagram/approximation.rs` owns numerical parameters, full greedy order and radii,
+`filtration/rips/approximation/metadata.rs` owns numerical parameters, full greedy order and radii,
 retained IDs, metric evidence and conditional bound targets. This module depends
 only on geometry's evidence enum, not on a borrowed distance input or algorithm.
 Descriptors still consume ordinary diagrams; a caller choosing to discard result

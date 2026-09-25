@@ -45,7 +45,8 @@ the [kernel design gates](../design/kernel.md), not create empty module trees.
 ## Public contracts and ownership
 
 The current public domains are `geometry`, `complex`, `filtration`, `persistence`,
-`diagram`, `diagram_distances`, and `descriptors`. These are not a permanent closed list. Add a public domain when a
+`diagram`, `diagram_distances`, `descriptors`, and `execution`. These are not a
+permanent closed list. Add a public domain when a
 concrete implemented capability needs it, with documented inputs, outputs,
 dependencies, and independent validation. Preserve established public paths when
 reorganizing private files. Prefer concrete types until real implementations
