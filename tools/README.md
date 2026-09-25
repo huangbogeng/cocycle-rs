@@ -58,10 +58,10 @@ Its raw unpaired endpoints are compared along with separately checked Rust cover
 
 ## Documentation and tool verification
 
-[check_algorithm.py](check_algorithm.py) provides focused diagram-analysis checks
-for algorithm contributors. See the
+[check_algorithm.py](check_algorithm.py) provides focused diagram-analysis and
+explicit complex-construction checks for algorithm contributors. See the
 [command and scope](../CONTRIBUTING.md#focused-algorithm-checks) and
-[walkthrough](../docs/development/diagram-analysis.md). It uses the local Rust
+[walkthroughs](../docs/development/algorithm-contributions.md). It uses the local Rust
 toolchain and Python standard library, stops on failure, and does not invoke
 native comparisons. These developer tools are available in source checkouts;
 crate packages include the tutorial and runnable Rust example, not `tools/`.

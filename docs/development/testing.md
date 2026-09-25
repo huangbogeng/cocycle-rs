@@ -7,12 +7,14 @@ requirements are in [CONTRIBUTING.md](../../CONTRIBUTING.md#verification); measu
 protocols belong in the [benchmark guide](../../benches/README.md).
 
 Algorithm authors can start with the
-[focused diagram-analysis check](../../CONTRIBUTING.md#focused-algorithm-checks).
+[focused domain checks](../../CONTRIBUTING.md#focused-algorithm-checks).
 The [contributor tutorial](diagram-analysis.md) uses manually supplied intervals;
 the example and descriptor tests do not need a complex constructor or a persistence
 calculation. Maintainer/CI checks retain the broader integration coverage below.
-The CI quality job exercises the focused command itself; the platform test jobs
-also run the standalone diagram-analysis example.
+The [construction tutorial](complex-construction.md) validates explicit topology
+before composing it with persistence. The CI quality job exercises both focused
+commands; platform jobs run both examples and explicitly execute the construction
+example's colocated tests in debug/release. MSRV also runs those example tests.
 
 ## Test layers
 
@@ -29,6 +31,7 @@ also run the standalone diagram-analysis example.
 | `tests/sparse_rips.rs` | Metric hypotheses, sampling provenance, blocker topology, original IDs, approximate coverage and computation parity |
 | `tests/descriptors.rs` | Formula, endpoint, exclusion, overflow, empty-result behavior and translation/rescaling properties |
 | `tests/filtered_complex.rs` | Supplied simplicial/cell inputs, signed scales, unequal vertex births, oriented boundaries, source coverage and invalid contracts |
+| `examples/complex_construction.rs` tests | Lower-star construction, analytic circle persistence, triangle incidence, ties, isolates and invalid topology; run with `--example complex_construction` |
 | `src/persistence/reference/` | Independent explicit filtration and boundary reducer |
 | `src/filtration/flag/dense.rs` tests | Indexing, overflow, and independent cofacet enumeration |
 | `src/persistence/flag/cohomology/tests.rs` | Seven optimization settings, duality, and difficult numeric cases |

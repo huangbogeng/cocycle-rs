@@ -11,6 +11,21 @@ import check_algorithm
 
 
 class AlgorithmChecksTests(unittest.TestCase):
+    def test_construction_selects_the_actual_example_tests_and_tutorial(self):
+        with patch.object(check_algorithm, "run") as run:
+            with patch.object(check_algorithm, "library_artifact",
+                              return_value=Path("target/debug/libcocycle.rlib")):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(check_algorithm.main(["complex-construction"]), 0)
+        commands = [call.args[0] for call in run.call_args_list]
+        tests = next(command for command in commands if command[:2] == ["cargo", "test"])
+        self.assertEqual(tests[tests.index("--example") + 1], "complex_construction")
+        self.assertIn("filtered_complex", tests)
+        self.assertNotIn("descriptors", tests)
+        self.assertTrue(any(command[0] == "rustdoc"
+                            and "docs/development/complex-construction.md" in command
+                            for command in commands))
+
     def test_failed_step_stops_before_later_checks(self):
         failure = subprocess.CalledProcessError(7, ["check_source"])
         with patch.object(check_algorithm, "run", side_effect=failure) as run:

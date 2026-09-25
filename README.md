@@ -63,9 +63,12 @@ for cutoffs, input layouts, and result semantics.
 [Rips comparison](benches/reports/rips-comparison.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](docs/design/roadmap.md)
 
 Contributing an algorithm? Start with the [research-area navigation](docs/development/algorithm-contributions.md)
-or the [diagram-analysis walkthrough](docs/development/diagram-analysis.md).
+and the [diagram-analysis](docs/development/diagram-analysis.md) or
+[complex-construction](docs/development/complex-construction.md) walkthrough.
 Run `cargo run --locked --example diagram_analysis` to analyze supplied intervals
 without constructing a complex.
+Run `cargo run --locked --example complex_construction` to construct a lower-star
+filtration, inspect its simplices and compute persistence using existing APIs.
 
 Build the API reference with `cargo doc --no-deps --open`, or run the example with
 `cargo run --locked --example square`. Dimension-generic prime-field persistence and

@@ -30,37 +30,57 @@ def library_artifact():
     raise ValueError("Cargo did not report the cocycle library artifact")
 
 
-def check_diagram_analysis():
+DOMAINS = {
+    "diagram-analysis": {
+        "sources": ("src/descriptors", "src/diagram"),
+        "tests": ("descriptors", "contracts"),
+        "example": "diagram_analysis",
+        "guides": ("docs/development/diagram-analysis.md",),
+    },
+    "complex-construction": {
+        "sources": ("src/complex", "src/filtration/simplicial"),
+        "tests": ("filtered_complex",),
+        "example": "complex_construction",
+        "guides": ("docs/development/complex-construction.md",
+                   "docs/guides/filtered-complexes.md"),
+    },
+}
+
+
+def check_algorithm(domain):
+    selected = DOMAINS[domain]
     run([sys.executable, "tools/check_source.py"])
     run([sys.executable, "tools/check_docs.py"])
-    sources = [*sorted((ROOT / "src/descriptors").glob("*.rs")),
-               *sorted((ROOT / "src/diagram").glob("*.rs")),
-               ROOT / "tests/descriptors.rs", ROOT / "tests/contracts.rs",
-               ROOT / "examples/diagram_analysis.rs"]
+    sources = [path for directory in selected["sources"]
+               for path in sorted((ROOT / directory).rglob("*.rs"))]
+    sources += [ROOT / f"tests/{name}.rs" for name in selected["tests"]]
+    sources.append(ROOT / f"examples/{selected['example']}.rs")
     run(["rustfmt", "--edition", "2024", "--check",
          *(str(path.relative_to(ROOT)) for path in sources)])
-    run(["cargo", "clippy", "--locked", "--all-features", "--lib",
-         "--test", "descriptors", "--test", "contracts", "--example", "diagram_analysis",
+    targets = [arg for name in selected["tests"] for arg in ("--test", name)]
+    targets += ["--example", selected["example"]]
+    run(["cargo", "clippy", "--locked", "--all-features", "--lib", *targets,
          "--", "-D", "warnings"])
-    run(["cargo", "test", "--locked", "--all-features",
-         "--test", "descriptors", "--test", "contracts"])
-    run(["cargo", "run", "--locked", "--example", "diagram_analysis"])
+    # Explicit --example is necessary: ordinary cargo test does not run the
+    # constructor's colocated algorithm tests.
+    run(["cargo", "test", "--locked", "--all-features", *targets])
+    run(["cargo", "run", "--locked", "--example", selected["example"]])
     library = library_artifact()
-    run(["rustdoc", "--edition", "2024", "-D", "warnings", "--test",
-         "docs/development/diagram-analysis.md", "--extern", f"cocycle={library}",
-         "-L", f"dependency={library.parent / 'deps'}"])
+    for guide in selected["guides"]:
+        run(["rustdoc", "--edition", "2024", "-D", "warnings", "--test", guide,
+             "--extern", f"cocycle={library}", "-L", f"dependency={library.parent / 'deps'}"])
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("domain", choices=["diagram-analysis"])
-    parser.parse_args(argv)
+    parser.add_argument("domain", choices=DOMAINS)
+    args = parser.parse_args(argv)
     try:
-        check_diagram_analysis()
+        check_algorithm(args.domain)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f"Algorithm checks failed: {error}", file=sys.stderr)
         return 1
-    print("Diagram-analysis checks passed. Full maintainer/CI checks remain separate.")
+    print(f"{args.domain} checks passed. Full maintainer/CI checks remain separate.")
     return 0
 
 

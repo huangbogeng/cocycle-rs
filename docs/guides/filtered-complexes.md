@@ -9,6 +9,9 @@ Both paths compute ordinary persistence over a selected prime field. They suppor
 signed scales and unequal vertex birth times. Alpha geometry and a production
 cubical container are not implemented by these interfaces.
 
+Algorithm authors can follow the [construction walkthrough](../development/complex-construction.md)
+for a tested lower-star constructor example and its focused development command.
+
 ## Terminology and types
 
 | Name | Meaning |

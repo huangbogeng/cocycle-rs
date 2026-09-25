@@ -2,6 +2,10 @@
 
 ## 0.1.0 (unreleased)
 
+- Add an explicit complex-construction contributor walkthrough, a lower-star
+  example with mathematical tests, and a focused construction check. Reuse the
+  existing simplicial storage and persistence engine without adding public APIs.
+
 - Add research-area contribution navigation, an executable diagram-analysis
   tutorial, an interval-only analysis example and a focused contributor check.
   Keep full CI verification while separating algorithm work from kernel integration.

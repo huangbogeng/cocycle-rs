@@ -34,6 +34,7 @@ proposed APIs and remaining acceptance gates.
 | --- | --- |
 | How do I contribute an algorithm in my research area? | [Algorithm contribution paths](development/algorithm-contributions.md) |
 | How do I implement and test a diagram descriptor? | [Diagram analysis walkthrough](development/diagram-analysis.md) |
+| How do I construct and validate explicit simplicial filtrations? | [Complex construction walkthrough](development/complex-construction.md) |
 | What mathematical and numerical guarantees apply? | [Mathematical specification](reference/mathematics.md) |
 | Which papers justify the definitions and algorithms? | [Bibliography](reference/bibliography.md) |
 | Where does code belong and how do the parts interact? | [Current architecture](development/architecture.md) |

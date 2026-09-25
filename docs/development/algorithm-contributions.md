@@ -12,15 +12,15 @@ is implemented.
 | Research task | Input and output | Start here |
 | --- | --- | --- |
 | Geometry and distances | Coordinates or distances to geometric quantities | [Geometry](../../src/geometry/mod.rs); [geometry tests](../../tests/euclidean.rs) |
-| Complex and filtration construction | Data to simplices and filtration values, or a specialized cell representation | [Supplied complex guide](../guides/filtered-complexes.md); [filtration modules](../../src/filtration/mod.rs) |
+| Complex and filtration construction | Data to simplices and filtration values, or a specialized cell representation | [Construction tutorial](complex-construction.md); [supplied complex guide](../guides/filtered-complexes.md) |
 | Persistent homology | A filtered source to intervals and optional representatives | [Persistence](../../src/persistence/mod.rs); [reference reducer](../../src/persistence/reference/mod.rs); [algebra](../../src/algebra/mod.rs) |
 | Diagram analysis | One or more diagrams to statistics, curves, features or comparisons | [Diagram analysis tutorial](diagram-analysis.md); [descriptors](../../src/descriptors/mod.rs) |
 | Analysis examples | Compose existing operations into a reproducible calculation | [Examples](../../examples/); [library guides](../README.md#use-the-library) |
 
-Diagram analysis has a complete contributor walkthrough and a focused check
-command today. The construction guide documents the available public types;
-construction and reduction contributor walkthroughs are later work. Alpha and
-cubical constructors and diagram distances are not supplied by this navigation.
+Diagram analysis and explicit simplicial construction have contributor
+walkthroughs and focused check commands today. A reduction contributor walkthrough
+is later work. Alpha and cubical constructors and diagram distances are not
+supplied by this navigation.
 
 ## Agree on the mathematics first
 
@@ -83,8 +83,8 @@ the production algorithm to calculate its expected answer or hide endpoint
 conventions inside a fixture helper. Existing [descriptor tests](../../tests/descriptors.rs)
 are a compact example of hand calculations, numerical limits and invariance.
 
-For local checks, start with the [diagram-analysis command](../../CONTRIBUTING.md#focused-algorithm-checks)
-when that is your contribution path. Maintainers and CI also run the applicable
+For local checks, choose your [focused command](../../CONTRIBUTING.md#focused-algorithm-checks).
+Maintainers and CI also run the applicable
 [full verification](../../CONTRIBUTING.md#verification). Explain the algorithm,
 resulting behavior and checks actually run in the PR; mark incomplete integration
 work explicitly. Generated outputs remain outside Git.

@@ -590,3 +590,25 @@ values are read from the source. Maximum edge value is not used to bound general
 filtrations: an Alpha triangle can enter after all its edges. Certified Rips
 expansions additionally preserve original scale coverage and skeleton sufficiency;
 a bare supplied complex does not assert that relationship to a larger source.
+
+## 17. Lower-star construction example
+
+For a finite simplicial complex K and a finite scalar function g on its vertices,
+define f(sigma) = max {g(v) : v in sigma} for every nonempty simplex. If tau is
+a face of sigma, its vertex set is a subset, so f(tau) <= f(sigma). Thus sublevel
+sets are face-closed. This lower-star filtration permits negative and tied values;
+its units are those of g, not necessarily distance or squared distance.
+
+The [contributor example](../../examples/complex_construction.rs) supplies all
+vertices and all nonvertex simplices explicitly. It validates rather than infers
+missing nonvertex faces. Its vertex labels are the indices of g, and shared
+simplices must occur only once. This is a filtration assignment on given topology,
+not a geometric triangulation algorithm or a public production constructor.
+
+For the four-cycle with edges 01, 12, 23, 03 and vertex values (-2, 1, -1, 0),
+two components are born at -2 and -1. They merge at 0 through vertex 3. At 1,
+vertex 1 and its two edges close the loop. Omitting zero-lifetime pairs gives
+H0 intervals [-2, infinity), [-1, 0) and H1 interval [1, infinity) over every
+prime field. At cutoff -0.5 both components are right-censored. A filled triangle
+with every vertex value 2 enters with all faces at 2 and has only the essential
+H0 interval [2, infinity); it has no positive-lifetime H1 interval.

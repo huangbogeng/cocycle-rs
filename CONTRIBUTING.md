@@ -33,18 +33,25 @@ use a new minor version for incompatible changes. MSRV changes must be explicit.
 
 ## Focused algorithm checks
 
-For diagram statistics, curves and features, follow the
-[diagram-analysis tutorial](docs/development/diagram-analysis.md). From a source
-checkout, run:
+Choose the command for your contribution from a source checkout:
+
+| Path | Tutorial |
+| --- | --- |
+| Diagram statistics, curves and features | [Diagram analysis](docs/development/diagram-analysis.md) |
+| Explicit simplicial construction | [Complex construction](docs/development/complex-construction.md) |
 
 ```sh
 python3 tools/check_algorithm.py diagram-analysis
+python3 tools/check_algorithm.py complex-construction
 ```
 
-This checks source/documentation hygiene, diagram/descriptor formatting, Clippy
-for the library and selected targets, contract and descriptor tests, the analysis
-example and tutorial doctest. Rust compiles the library, but these tests do not
-run persistent homology. No native C++ setup is needed. Python invokes the local
+Each command checks source/documentation hygiene, domain formatting, Clippy for
+the library and selected targets, domain tests, example tests, the example and
+tutorial doctests. Diagram analysis does not run persistent homology; construction
+checks also verify persistence of hand-derived complexes. The lower-star example's
+colocated tests are explicitly run with `cargo test --example complex_construction`;
+ordinary `cargo test` alone does not execute them. No native C++ setup is needed.
+Python invokes the local
 Rust toolchain; generated files remain in Cargo's target directory. New test files
 or tutorial pages in this path must also be added to the focused check.
 
@@ -72,9 +79,13 @@ cargo run --locked --example rips_sphere
 cargo run --locked --example rips_representatives
 cargo run --locked --example sparse_rips
 cargo run --locked --example diagram_analysis
+cargo run --locked --example complex_construction
+cargo test --locked --example complex_construction
+cargo test --locked --release --example complex_construction
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
+cargo +1.91.0 test --locked --example complex_construction
 python3 tools/check_source.py
 python3 tools/check_artifacts.py
 python3 tools/check_docs.py
@@ -87,6 +98,7 @@ rustdoc --edition 2024 --test docs/guides/rips-representatives.md --extern cocyc
 rustdoc --edition 2024 --test docs/guides/sparse-rips.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/guides/filtered-complexes.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/development/diagram-analysis.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/development/complex-construction.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 ```
 
 Select additional checks by the changed contract:
