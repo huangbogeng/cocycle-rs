@@ -30,13 +30,17 @@ fn profile_stage() {
     let execute = |stats: &mut Stats| {
         stats.two_pass_initialization = matches!(stage.as_str(), "two-pass" | "virtual-two-pass");
         match stage.as_str() {
-            "explicit" => run::<false, false, false, 0>(input, cutoff, stats),
-            "clearing" => run::<false, true, false, 0>(input, cutoff, stats),
-            "implicit" => run::<true, true, false, 0>(input, cutoff, stats),
-            "cone" => run::<true, true, true, 0>(input, cutoff, stats),
-            "apparent" => run::<true, true, true, 1>(input, cutoff, stats),
-            "emergent" | "two-pass" => run::<true, true, true, 3>(input, cutoff, stats),
-            "virtual" | "virtual-two-pass" => run::<true, true, true, 7>(input, cutoff, stats),
+            "explicit" => run::<false, false, false, NO_SHORTCUTS>(input, cutoff, stats),
+            "clearing" => run::<false, true, false, NO_SHORTCUTS>(input, cutoff, stats),
+            "implicit" => run::<true, true, false, NO_SHORTCUTS>(input, cutoff, stats),
+            "cone" => run::<true, true, true, NO_SHORTCUTS>(input, cutoff, stats),
+            "apparent" => run::<true, true, true, APPARENT>(input, cutoff, stats),
+            "emergent" | "two-pass" => {
+                run::<true, true, true, APPARENT_EMERGENT>(input, cutoff, stats)
+            }
+            "virtual" | "virtual-two-pass" => {
+                run::<true, true, true, ALL_SHORTCUTS>(input, cutoff, stats)
+            }
             _ => panic!("unknown stage"),
         }
     };
@@ -107,10 +111,7 @@ fn profile_workload() {
     let input = DissimilarityView::new(&values, integer(16)).unwrap();
     let options = RipsOptions::new(1, (!cutoff.is_nan()).then_some(cutoff)).unwrap();
     let (cutoff, coverage) = resolve_rips_range(input, &options);
-    let mut stats = Stats {
-        two_pass_initialization: !PRODUCTION_SINGLE_PASS,
-        ..Stats::default()
-    };
+    let mut stats = Stats::default();
     let raw = run::<true, true, true, PRODUCTION_SHORTCUTS>(input, cutoff, &mut stats).unwrap();
     let diagram = assemble_diagram(1, coverage, raw).unwrap();
     print!(

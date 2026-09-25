@@ -21,12 +21,14 @@ use crate::{Error, Result};
 type RawIntervals = Vec<(usize, f64, Option<f64>)>;
 type Coboundary = BinaryHeap<Reverse<SimplexEntry>>;
 
-// Bits 0/1 select original-column apparent/emergent shortcuts. Bit 2 also
-// omits zero apparent columns and reconstructs their pivots during reduction.
-// Production combines single-pass initialization with apparent-pair omission.
-// Private tests retain independent configurations and verify transformation replay.
-const PRODUCTION_SHORTCUTS: u8 = 7;
-const PRODUCTION_SINGLE_PASS: bool = true;
+const NO_SHORTCUTS: u8 = 0;
+const APPARENT: u8 = 1;
+const EMERGENT: u8 = 2;
+// Omit zero apparent columns and reconstruct their pivots during reduction.
+const VIRTUAL_APPARENT: u8 = 4;
+const APPARENT_EMERGENT: u8 = APPARENT | EMERGENT;
+const ALL_SHORTCUTS: u8 = APPARENT_EMERGENT | VIRTUAL_APPARENT;
+const PRODUCTION_SHORTCUTS: u8 = ALL_SHORTCUTS;
 
 /// Position in the forward-ordered edge array, not a combinatorial simplex ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -86,10 +88,6 @@ struct Stats {
 
 pub(super) fn compute(rips: &impl FlagAccess, budget: &mut WorkBudget<'_>) -> Result<RawIntervals> {
     let mut stats = Stats::default();
-    #[cfg(test)]
-    {
-        stats.two_pass_initialization = !PRODUCTION_SINGLE_PASS;
-    }
     run_access::<true, true, PRODUCTION_SHORTCUTS>(rips, &mut stats, budget)
 }
 
@@ -190,7 +188,7 @@ fn run_access<const IMPLICIT: bool, const CLEAR: bool, const SHORTCUTS: u8>(
                     break None;
                 };
                 let Some(&owner) = pivot_owners.get(&pivot.id) else {
-                    if SHORTCUTS & 4 != 0
+                    if SHORTCUTS & VIRTUAL_APPARENT != 0
                         && let Some(edge) = zero_apparent_facet(rips, pivot, stats, budget)?
                     {
                         let position =
@@ -325,10 +323,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     budget: &mut WorkBudget<'_>,
 ) -> Result<(Option<SimplexEntry>, bool)> {
     #[cfg(test)]
-    let two_pass = stats.two_pass_initialization;
-    #[cfg(not(test))]
-    let two_pass = !PRODUCTION_SINGLE_PASS;
-    if two_pass {
+    if stats.two_pass_initialization {
         return initialize_two_pass::<SHORTCUTS>(rips, edge, pivot_owners, working, stats, budget);
     }
     // Recover the existing heap allocation as an unsorted scratch buffer.
@@ -336,7 +331,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
     rows.clear();
     let mut found = None;
     let mut apparent_pair = false;
-    let mut check_shortcut = SHORTCUTS != 0;
+    let mut check_shortcut = SHORTCUTS != NO_SHORTCUTS;
     #[cfg(test)]
     let mut candidates = 0;
     // The access callbacks execute sequentially. An eligible cofacet can
@@ -359,7 +354,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
                 // An occupied first equal-valued cofacet requires ordinary
                 // reduction; never try a later equal-valued cofacet instead.
                 check_shortcut = false;
-                if SHORTCUTS & 4 != 0 && rips.latest_facet(triangle) == edge {
+                if SHORTCUTS & VIRTUAL_APPARENT != 0 && rips.latest_facet(triangle) == edge {
                     if pivot_owners.contains_key(&triangle.id) {
                         return Err(Error::InternalInvariant {
                             reason: "zero apparent pivot has an ordinary owner",
@@ -369,11 +364,11 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
                     apparent_pair = true;
                     return Ok(false);
                 }
-                let eligible = SHORTCUTS & 2 != 0
-                    || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge);
+                let eligible = SHORTCUTS & EMERGENT != 0
+                    || (SHORTCUTS & APPARENT != 0 && rips.latest_facet(triangle) == edge);
                 if eligible
                     && !pivot_owners.contains_key(&triangle.id)
-                    && (SHORTCUTS & 4 == 0
+                    && (SHORTCUTS & VIRTUAL_APPARENT == 0
                         || zero_apparent_facet(rips, triangle, stats, &mut budget.borrow_mut())?
                             .is_none())
                 {
@@ -412,6 +407,7 @@ fn initialize_coboundary<const SHORTCUTS: u8>(
 
 /// Probe without caching a prefix; enumerate the full column on failure.
 /// Omission stays independent so tests can compare all four combinations.
+#[cfg(test)]
 fn initialize_two_pass<const SHORTCUTS: u8>(
     rips: &impl FlagAccess,
     edge: SimplexEntry,
@@ -423,17 +419,13 @@ fn initialize_two_pass<const SHORTCUTS: u8>(
     working.clear();
     let mut found = None;
     let mut omitted = false;
-    #[cfg(test)]
     let mut candidates = 0;
     let budget = std::cell::RefCell::new(budget);
-    if SHORTCUTS != 0 {
+    if SHORTCUTS != NO_SHORTCUTS {
         rips.visit_cofacets(
             edge,
             &mut || {
-                #[cfg(test)]
-                {
-                    candidates += 1;
-                }
+                candidates += 1;
                 budget.borrow_mut().step()
             },
             |triangle| {
@@ -441,7 +433,7 @@ fn initialize_two_pass<const SHORTCUTS: u8>(
                 if triangle.value != edge.value {
                     return Ok(true);
                 }
-                if SHORTCUTS & 4 != 0 && rips.latest_facet(triangle) == edge {
+                if SHORTCUTS & VIRTUAL_APPARENT != 0 && rips.latest_facet(triangle) == edge {
                     if owners.contains_key(&triangle.id) {
                         return Err(Error::InternalInvariant {
                             reason: "zero apparent pivot has an ordinary owner",
@@ -450,17 +442,14 @@ fn initialize_two_pass<const SHORTCUTS: u8>(
                     found = Some(triangle);
                     omitted = true;
                 } else if !owners.contains_key(&triangle.id)
-                    && (SHORTCUTS & 2 != 0
-                        || (SHORTCUTS & 1 != 0 && rips.latest_facet(triangle) == edge))
-                    && (SHORTCUTS & 4 == 0
+                    && (SHORTCUTS & EMERGENT != 0
+                        || (SHORTCUTS & APPARENT != 0 && rips.latest_facet(triangle) == edge))
+                    && (SHORTCUTS & VIRTUAL_APPARENT == 0
                         || zero_apparent_facet(rips, triangle, stats, &mut budget.borrow_mut())?
                             .is_none())
                 {
                     found = Some(triangle);
-                    #[cfg(test)]
-                    {
-                        stats.shortcuts += 1;
-                    }
+                    stats.shortcuts += 1;
                 }
                 // Stop the probe even when the first equal candidate is owned.
                 Ok(false)
@@ -472,10 +461,7 @@ fn initialize_two_pass<const SHORTCUTS: u8>(
         rips.visit_cofacets(
             edge,
             &mut || {
-                #[cfg(test)]
-                {
-                    candidates += 1;
-                }
+                candidates += 1;
                 budget.step()
             },
             |triangle| {
@@ -485,11 +471,8 @@ fn initialize_two_pass<const SHORTCUTS: u8>(
             },
         )?;
     }
-    #[cfg(test)]
-    {
-        stats.initial_candidates += candidates;
-        stats.peak_heap = stats.peak_heap.max(working.len());
-    }
+    stats.initial_candidates += candidates;
+    stats.peak_heap = stats.peak_heap.max(working.len());
     budget.check()?;
     Ok((found, omitted))
 }
