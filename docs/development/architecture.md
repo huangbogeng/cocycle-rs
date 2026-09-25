@@ -168,16 +168,28 @@ buffer. The richer point API with a finite cutoff streams distances into a
 threshold graph. Supplied graphs never require a dense matrix. H0-only requests use
 union-find. F2 H0/H1 requests use the specialized implicit Rips path: ordered edges supply H0
 merges and candidate H1 births; triangle cofacets are generated during reverse
-coboundary reduction. Stored change-of-basis columns reconstruct reduced columns.
+coboundary reduction. Stored change-of-basis columns and virtual zero-lifetime
+apparent pairs supply later eliminations.
 
-Within `src/persistence/flag/cohomology/mod.rs`, `run_access` first classifies edges in forward
-order, then reduces their coboundaries in reverse order. `find_shortcut` handles
-apparent and emergent pairs on original columns; an unsuccessful search falls back to ordinary
-reduction. `TransformColumn` stores `EdgePosition` values in the ordered edge
-array, whereas `pivot_owners` maps triangle simplex IDs to `ColumnPosition` values
-in the stored-column array. These private types prevent treating the two array
-positions as interchangeable; combinatorial simplex IDs remain separate. The
-explicit reduced-column payload exists only in tests.
+Within `src/persistence/flag/cohomology/mod.rs`, `run_access` classifies edges in
+forward order and reduces their coboundaries in reverse order.
+`initialize_coboundary` scans each original column once, combining initialization
+with the apparent/emergent shortcut decision. If the first equal-valued candidate
+cannot take a shortcut, the collected cofacets form the ordinary working column.
+`initialize_two_pass` and its selection branch exist only under `cfg(test)` for
+independent comparisons.
+
+`pivot_owners` records only stored, non-virtual ownership: it maps triangle
+simplex IDs to `ColumnPosition` values in the stored-column array.
+`TransformColumn` holds `EdgePosition` values in the forward-ordered edge array.
+These private types distinguish the two array positions from each other and from
+combinatorial simplex IDs. Zero-lifetime apparent pairs occupy neither structure.
+For a pivot without a stored owner, `zero_apparent_facet` checks the mutual
+pairing conditions; the reduction loop then reconstructs the paired edge's full
+coboundary and adds its position to the active transformation. Only an edge
+already processed in reverse order can supply a virtual owner. This preserves
+the [reconstruction invariant](../reference/mathematics.md#implicit-reconstruction-invariant).
+Explicit reduced-column payloads and replay checks exist only in tests.
 
 Higher-dimensional and odd-prime requests dispatch to `cohomology/dimensions.rs`. This path
 classifies H0 edges, then advances through dimensions with clearing. It retains
