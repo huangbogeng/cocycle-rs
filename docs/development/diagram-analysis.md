@@ -4,9 +4,9 @@
 
 This walkthrough is for researchers implementing statistics, curves or features
 from persistence diagrams. It needs Rust 1.91 or later with rustfmt and Clippy,
-and Python's standard library for the focused checks. It needs no C++ reference installation or Python
-TDA package. Start from intervals; persistent homology is already computed input
-to this part of the library.
+and Python's standard library for the focused checks. It needs no C++ reference
+installation or Python TDA package. Start from intervals; persistent homology is
+already computed input to this part of the library.
 
 ## The objects you need
 

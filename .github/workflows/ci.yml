@@ -92,6 +92,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo package --locked
       - run: cargo run --locked --manifest-path target/package/cocycle-0.1.0/Cargo.toml --example square
+      - run: cargo run --locked --manifest-path target/package/cocycle-0.1.0/Cargo.toml --example diagram_analysis
+      - run: cargo run --locked --manifest-path target/package/cocycle-0.1.0/Cargo.toml --example complex_construction
+      - run: cargo test --locked --manifest-path target/package/cocycle-0.1.0/Cargo.toml --example complex_construction
 
   reference:
     name: Native C++ reference comparisons

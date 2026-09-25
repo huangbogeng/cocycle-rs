@@ -7,6 +7,10 @@ approximation includes blocker-aware computation and explicit metric hypotheses.
 Owned results preserve coverage, field and approximation context; cycle and
 cocycle bases are available on request at specified scales. Descriptors derive
 lifetime statistics and Betti curves from diagrams.
+
+Supplied simplicial and filtered-cell complexes support boundary reduction with
+signed scales and unequal vertex births. Contributor walkthroughs cover diagram
+analysis and explicit simplicial construction.
 Start with a task below; design pages distinguish implemented decisions from
 proposed APIs and remaining acceptance gates.
 
@@ -14,7 +18,6 @@ proposed APIs and remaining acceptance gates.
 
 - [Supplied filtered complexes](guides/filtered-complexes.md): validated simplicial
   storage, the filtered-cell contract, signed scales and generic boundary reduction.
-
 - [Rips guide](guides/rips.md): choose an input, compute persistence, interpret
   coverage and endpoints, and derive measurements.
 - [Rips construction guide](guides/rips-construction.md): matrix layouts, custom

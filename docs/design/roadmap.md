@@ -37,6 +37,12 @@ validated supplied simplices, a four-method cell trait, signed-scale boundary
 reduction and shared source context. This supplies an integration boundary for
 future Alpha geometry; it does not implement triangulation or Alpha construction.
 
+[Algorithm contribution paths](../development/algorithm-contributions.md) now
+include executable diagram-analysis and explicit construction walkthroughs,
+mathematical tests and focused checks exercised by CI. The lower-star constructor
+is a teaching example, not an additional production API. A reduction-algorithm
+contributor walkthrough remains the next part of this developer workflow.
+
 ## Next priorities
 
 The [API design](rips-api.md) is implemented with a compatibility stage:

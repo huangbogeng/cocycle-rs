@@ -51,9 +51,9 @@ tutorial doctests. Diagram analysis does not run persistent homology; constructi
 checks also verify persistence of hand-derived complexes. The lower-star example's
 colocated tests are explicitly run with `cargo test --example complex_construction`;
 ordinary `cargo test` alone does not execute them. No native C++ setup is needed.
-Python invokes the local
-Rust toolchain; generated files remain in Cargo's target directory. New test files
-or tutorial pages in this path must also be added to the focused check.
+Python invokes the local Rust toolchain; generated files remain in Cargo's target
+directory. New test files or tutorial pages in this path must also be added to
+the focused check.
 
 The author supplies mathematical assumptions, implementation and independent
 tests. Maintainers help with public exports, errors, allocation/execution policies
@@ -210,7 +210,9 @@ For every release:
 1. Finalize the version and changelog, review public API and MSRV changes.
 2. Run the required CI jobs for the exact release commit; inspect their results.
 3. Run `cargo package --locked`, inspect the package file list, and execute its
-   `square` example. Exclude raw experiments and temporary files from the crate.
+   `square`, `diagram_analysis` and `complex_construction` examples. Run the
+   packaged construction example's tests with `--example complex_construction`.
+   Exclude raw experiments and temporary files from the crate.
 4. Publish only after those checks pass, then verify installation from crates.io.
 5. Record the release tag and notes for the published source.
 

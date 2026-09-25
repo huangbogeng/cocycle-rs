@@ -10,6 +10,10 @@ responsibilities without requiring each computation to construct every possible
 intermediate object. The [mathematical specification](../reference/mathematics.md)
 defines invariants; rustdoc defines public signatures and error behavior.
 
+Algorithm authors can start with the [contribution paths](algorithm-contributions.md)
+for focused diagram-analysis and explicit-construction workflows. This page owns
+the broader dependency map used for kernel integration.
+
 ## Production code
 
 ```text
