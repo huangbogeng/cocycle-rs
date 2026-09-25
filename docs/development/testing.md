@@ -12,8 +12,9 @@ The [contributor tutorial](diagram-analysis.md) uses manually supplied intervals
 the example and descriptor tests do not need a complex constructor or a persistence
 calculation. Maintainer/CI checks retain the broader integration coverage below.
 The [construction tutorial](complex-construction.md) validates explicit topology
-before composing it with persistence. The CI quality job exercises both focused
-commands; platform jobs run both examples and explicitly execute the construction
+before composing it with persistence. The distance path adds public context checks
+and private matching oracles. The CI quality job exercises all three focused
+commands; platform jobs run their examples and explicitly execute the construction
 example's colocated tests in debug/release. MSRV also runs those example tests.
 
 ## Test layers
@@ -27,16 +28,19 @@ example's colocated tests in debug/release. MSRV also runs those example tests.
 | `tests/rips_construction.rs`, `tests/flag.rs` | Construction coverage, callbacks, sparse results, limits/cancellation and isolated vertices |
 | `tests/rips_expansion.rs` | Oriented incidence, skeleton sufficiency, H2/H3/H4 spheres, independent high-dimensional boundary oracle and sparse resource regression |
 | `tests/prime_fields.rs` | Full-u32 modular arithmetic, field-sensitive flag RP2, independent ranks, cycle/cocycle closure, nontriviality, duality and interval identity |
-| `tests/rips_resources.rs` | Budget/cancellation recovery across 12 paths and concurrent independent prime-field calls |
+| `tests/rips_resources.rs` | Budget/cancellation recovery across public paths, every-work-budget F2/H1 retry, and concurrent read-only F2/H1 and prime-field calls |
 | `tests/sparse_rips.rs` | Metric hypotheses, sampling provenance, blocker topology, original IDs, approximate coverage and computation parity |
 | `tests/descriptors.rs` | Formula, endpoint, exclusion, overflow, empty-result behavior and translation/rescaling properties |
 | `tests/filtered_complex.rs` | Supplied simplicial/cell inputs, signed scales, unequal vertex births, oriented boundaries, source coverage and invalid contracts |
 | `examples/complex_construction.rs` tests | Lower-star construction, analytic circle persistence, triangle incidence, ties, isolates and invalid topology; run with `--example complex_construction` |
+| `tests/diagram_distances.rs` | Uninstrumented public distances, independent partial matching, essential multiplicity, coverage, field/scale context, supplied versus certified sources and numerical regressions |
+| `src/diagram_distances/bottleneck/tests.rs`, `src/diagram_distances/wasserstein/tests.rs` | Kernel oracles, adaptive routes, forced alternatives and diagnostic counters |
 | `src/persistence/reference/` | Independent explicit filtration and boundary reducer |
 | `src/filtration/flag/dense.rs` tests | Indexing, overflow, and independent cofacet enumeration |
-| `src/persistence/flag/cohomology/tests.rs` | Seven optimization settings, duality, and difficult numeric cases |
+| `src/persistence/flag/cohomology/tests.rs` | Independent optimization combinations, transformation replay, duality, cancellation checkpoints and difficult numeric cases |
 | `tools/test_*.py` | Source/documentation checks, external comparison, and benchmark protocol behavior |
 | `docs/development/diagram-analysis.md` | Executable contributor example: finite counts, multiplicity, endpoint exclusions and computed dimensions |
+| `tools/test_compare_distances.py`, `tools/test_benchmark_distances.py` | Distance transport, independent rational oracle, failure retention, profiling hooks and selection gates |
 
 The two ignored profiling tests are deliberately invoked only by developer tools.
 They do not represent missing ordinary regression coverage. Instrumented timings
@@ -92,12 +96,29 @@ Complete bipartite fixtures additionally use the analytic multiplicities in
 - Descriptor tests check entropy ln(2) for two equal lifetimes, zero for one,
   `None` for none, and explicit exclusion of essential/censored intervals.
 
-The cohomology tests compare seven settings: explicit cohomology, clearing,
-implicit reconstruction, cone stopping, apparent only, emergent only, and both
-shortcuts. They cover all 729 four-vertex distance assignments from {0,1,2},
-random f64/nonmetric inputs, ties, adjacent floats, subnormals, huge scales, and
-cutoff endpoints. Reversed-transpose matrix tests check pair and unpaired-index
-mapping independently of production simplex indexing.
+The cohomology tests compare explicit cohomology, clearing, implicit
+reconstruction, cone stopping and apparent/emergent shortcuts. Two additional
+independent axes compare single-pass versus two-pass initialization and stored
+apparent owners versus virtual zero-apparent reconstruction. The combinations
+cover all 729 four-vertex distance assignments from {0,1,2}, random f64/nonmetric
+inputs, ties, adjacent floats, subnormals, huge scales and cutoff endpoints.
+Reversed-transpose matrix tests check pair and unpaired-index mapping independently
+of production simplex indexing.
+
+Dense and sparse tests independently replay each stored transformation by XORing
+its original edge coboundaries and compare the result with the reduced column,
+checking $R=CV$ as well as diagram equality. Directed cases exercise an occupied
+first equal-valued cofacet, alternating heap capacities, parity cancellation and
+repeated virtual-owner use. F2/H1 resource tests interrupt at every work budget
+below completion and retry the same read-only input; private tests also cancel
+at each cofacet checkpoint. Concurrent calls verify per-call state isolation.
+
+The diagnostic stages in `tools/profile_rips.py` are `explicit`, `clearing`,
+`implicit`, `cone`, `apparent`, `two-pass`, `emergent`, `virtual-two-pass` and
+`virtual`. The historical `emergent` stage includes both apparent and emergent
+shortcuts; its `two-pass` counterpart changes only initialization. The two virtual
+stages add apparent-pair omission. Each stage checks the independent explicit
+oracle; its instrumented timings do not rank production performance.
 
 ## External comparison
 
@@ -118,6 +139,16 @@ correctness-only for those rows. The [historical tools](../../tools/legacy-bench
 retain the optional 512-case Ripser.py correctness check and wrapper benchmarks;
 their timings are not the native performance baseline.
 
+Diagram distances have a separate [native protocol](../../benches/distances/README.md).
+Independent partial-injection enumeration checks finite, diagonal and essential
+matching costs; public tests exercise the ordinary uninstrumented crate, while
+kernel tests exercise private counters and forced routes. The external suite
+uses pinned Topp, native GUDHI bottleneck with the merged matching fix, Hera at
+zero relative error, and isolated GUDHI/POT W1/W2 workers with explicit norms.
+It preserves f64 endpoint bits and records numerical stress disagreements without
+widening tolerances. Missing references, timeouts and POT nonconvergence remain
+failures or unavailable evidence, never successful comparisons.
+
 ## CI and evidence
 
 CI is configured to run source hygiene/Python syntax checks, all tool unit tests,
@@ -127,6 +158,12 @@ and external comparison smoke checks. Full performance runs are manual, with no
 machine-dependent speed gates. Actual hosted results are available in
 [GitHub Actions](https://github.com/Aequiludium/cocycle-rs/actions/workflows/ci.yml);
 check the exact commit rather than inferring success from the workflow definition.
+
+The diagram-distance CI job runs the quick supported comparison and a small
+resource smoke. Full supported acceptance uses `tools/compare_distances.py`
+without `--quick`, with the pinned native Topp/fixed-GUDHI and isolated weighted
+GUDHI/POT references. Record the exact tested SHA and retained summary; a quick
+CI pass does not establish that the full suite ran.
 
 Performance evidence is indexed by measured revision and associated PR under
 [benchmarks](../../benches/README.md); execution dates are metadata.

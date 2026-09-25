@@ -44,6 +44,13 @@ DOMAINS = {
         "guides": ("docs/development/complex-construction.md",
                    "docs/guides/filtered-complexes.md"),
     },
+    "diagram-distances": {
+        "sources": ("src/diagram_distances",),
+        "tests": ("diagram_distances",),
+        "example": "diagram_distances",
+        "guides": ("docs/development/diagram-analysis.md",),
+        "unit_filter": "diagram_distances::",
+    },
 }
 
 
@@ -64,6 +71,8 @@ def check_algorithm(domain):
     # Explicit --example is necessary: ordinary cargo test does not run the
     # constructor's colocated algorithm tests.
     run(["cargo", "test", "--locked", "--all-features", *targets])
+    if "unit_filter" in selected:
+        run(["cargo", "test", "--locked", "--all-features", "--lib", selected["unit_filter"]])
     run(["cargo", "run", "--locked", "--example", selected["example"]])
     library = library_artifact()
     for guide in selected["guides"]:

@@ -13,7 +13,7 @@ The [runnable example](../../examples/complex_construction.rs) implements a
 lower-star filtration on supplied simplicial topology. A finite scalar function
 on vertices determines each simplex's value by taking the maximum over its
 vertices. The definition, monotonicity argument and hand-derived circle are in
-[mathematics section 17](../reference/mathematics.md#17-lower-star-construction-example).
+[mathematics section 18](../reference/mathematics.md#18-lower-star-construction-example).
 
 This example constructs a filtration on a given complex. It does not infer a
 triangulation from points or construct Rips, Alpha or cubical topology. The local

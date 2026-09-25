@@ -1,7 +1,7 @@
 //! Cocycle is a general-purpose topological data analysis library in pure Rust.
 //!
 //! Computes Vietoris-Rips persistent homology in arbitrary dimensions over prime fields
-//! and descriptors of the resulting persistence diagrams. Constructs exact
+//! and descriptors and matching distances of persistence diagrams. Constructs exact
 //! threshold graphs and computes supplied weighted flag filtrations with sparse
 //! adjacency access and explicit original-input coverage. Accepts supplied
 //! simplicial and filtered-cell complexes, including signed filtration values
@@ -38,6 +38,7 @@ pub mod algebra;
 pub mod complex;
 pub mod descriptors;
 pub mod diagram;
+pub mod diagram_distances;
 mod error;
 pub mod execution;
 pub mod filtration;

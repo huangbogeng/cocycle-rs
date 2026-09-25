@@ -19,6 +19,8 @@ interval representation is not restricted to these dimensions or scales.
 Supplied `SimplicialComplex` and `FilteredComplex` analysis also supports signed
 filtrations and unequal vertex births; see [the guide](../guides/filtered-complexes.md).
 
+Matching distances between complete diagrams are specified in section 16.
+
 | Symbol | Meaning |
 | --- | --- |
 | $n,d$ | Vertex count and ambient dimension |
@@ -66,7 +68,7 @@ A simplex is a nonempty finite vertex set, with dimension $|\sigma|-1$. A
 simplicial complex is closed under nonempty faces. A filtration satisfies
 $\tau\subseteq\sigma\Rightarrow f(\tau)\le f(\sigma)$.
 
-Cocycle uses edge-length scales:
+Rips and supplied flag filtrations use edge-length scales:
 
 $$
 f(\{i\})=0,\qquad
@@ -320,18 +322,49 @@ H0 pairings and H1 clearing must use the same total order. An apparent pair
 $(\sigma,\tau)$ requires sigma to be tau's latest facet and tau to be sigma's
 earliest cofacet. Omitting its public interval also requires equal filtration
 values. Do not indiscriminately remove columns that eventually reduce to zero.
+The kernel omits stored zero-lifetime apparent pairs and reconstructs them when
+later columns need their pivots. Other shortcut pairs retain their pivot owners
+and transformation columns.
 
-The implemented emergent shortcut is restricted to original edge columns, before
-any column addition. Cofacets are enumerated by descending ID, and their values
-are at least the edge value. The first equal-valued triangle is therefore the
-original column's earliest cofacet. If its pivot is unowned, ordinary reduction
-would accept it immediately; retain $V_j=e_j$ without generating remaining rows.
-If owned, fall back to full reduction, not the next equal-valued triangle.
-Apparent-only mode additionally checks the latest-facet condition.
+Initialize the column and inspect shortcut candidates in one traversal, before
+any column addition. Cofacets are enumerated by descending ID,
+and their values are at least the edge value. The first equal-valued triangle is
+therefore the original column's earliest cofacet. Retain preceding cofacets in a
+temporary buffer. If no shortcut applies, continue the same traversal and
+build the working heap from the complete buffer; do not enumerate the prefix or
+an empty column again. Reuse the buffer only after its previous contents have
+been consumed or discarded.
 
-Zero-lifetime pairs are absent from public output but retain pivot/transform
-entries for later elimination. Mid-reduction emergent shortcuts and omission of
-apparent-pair pivot entries are not implemented. Test each optimization separately.
+An emergent shortcut accepts this first equal-valued pivot only when it has no
+stored or virtual owner. Ordinary reduction would accept it immediately; retain
+$V_j=e_j$ without generating remaining rows. If owned, fall back to ordinary
+reduction, not the next equal-valued triangle. Apparent-only mode additionally
+checks the latest-facet condition. Mid-reduction emergent shortcuts are not used.
+
+For a zero-lifetime apparent pair $(\sigma,\tau)$, the same initial traversal
+certifies both conditions: tau is sigma's first equal-valued cofacet, and sigma
+is tau's latest facet. Skip this pair without storing its pivot owner or
+transformation column. It remains a virtual column $V_\sigma=e_\sigma$;
+omitting its storage does not remove its role in later elimination.
+
+When a working pivot has no stored owner, test for that virtual pair on demand:
+take the triangle's latest facet sigma, require equal filtration values, and
+check that the triangle is sigma's earliest equal-valued cofacet. Only an edge
+preceding the active column in reverse computation order may serve as its
+virtual owner. Add $Ce_\sigma$ to cancel the pivot and include sigma in the
+active transformation, with F2 parity as for an ordinary stored owner. This
+preserves $R=CV$ and triangularity; every elimination strictly lowers the pivot.
+A triangle that fails these conditions cannot be treated as a virtual owner.
+
+Zero-lifetime H1 pairs are omitted before raw interval storage; the shared result
+assembler still removes zero-lifetime H0 pairs. Union-find, clearing, and the
+stored or virtual reduction state still account for those pairs. In particular,
+zero-lifetime emergent pairs that are
+not apparent retain their pivot/transform entries. Positive-lifetime, essential,
+and right-censored intervals retain their multiplicities. Test ordinary,
+apparent, emergent, and combined configurations against the independent oracle.
+Independent two-pass tests also check storage omission independently of
+single-pass caching, including the invariant $R=CV$ on dense and sparse inputs.
 
 ### Cone stopping bound
 
@@ -436,7 +469,7 @@ Only the current dimension, transformations, pivot ownership and a working
 coboundary are needed on the implicit path. These can still be exponentially
 large. Legacy explicit Rips entry points adapt stored incidence to this reducer.
 Explicit builder results instead use the filtered-cell boundary reduction in
-section 16, including for zero-born Rips sources. Both explicit paths also pay
+section 17, including for zero-born Rips sources. Both explicit paths also pay
 for the already materialized skeleton. H0/H1-only implicit requests
 retain the specialized compact-index engine and its pair shortcuts.
 
@@ -575,7 +608,57 @@ refer to original input IDs, while the exposed graph uses a documented compact
 map. Representative bases describe this approximate filtration and do not claim
 a chain map into original Rips at the same scale.
 
-## 16. Supplied filtered-cell boundary contract
+## 16. Diagram matching distances
+
+The `diagram_distances` domain compares one explicitly computed homology dimension
+of two complete diagrams. Points are a multiset: repetitions remain separate
+matching obligations. For finite points, allow partial bijections between the
+two multisets and match every unused point to the diagonal.
+
+| Operation | Ground cost between finite points | Diagonal cost | Objective |
+| --- | --- | --- | --- |
+| `bottleneck_distance` | L-infinity | `(death-birth)/2` | Minimum largest cost |
+| `wasserstein_1_infinity` | L-infinity | `(death-birth)/2` | Minimum sum of costs |
+| `wasserstein_2_euclidean` | Euclidean | `(death-birth)/sqrt(2)` | Square root of minimum sum of squared costs |
+
+Only `(finite birth, positive infinity)` essential points are representable.
+They match essential points in sorted birth order, with absolute birth difference
+as cost. Unequal counts give positive infinity. Combine finite and essential
+contributions by maximum, sum, or Euclidean norm for the three operations.
+Empty computed dimensions are valid; uncomputed dimensions are errors. Reject
+all `Coverage::Through` inputs, even if no current interval is censored: future
+births and deaths are unknown. A cutoff must not replace a death or certify
+essentiality. Diagonal points, non-finite births and other infinite endpoint
+categories remain excluded by the existing interval constructors.
+
+The `_results` functions additionally require equal coefficient characteristics
+and declared edge-length scales on both inputs. An unspecified scale is rejected,
+even when both sources have unspecified scales; matching enum values do not
+establish comparable units. Supplied-complex users can explicitly pass raw diagrams
+after establishing their common scale. Even declared edge lengths do not certify
+physical units or normalization across datasets. Vertex counts, requested cutoffs
+and filtration kinds need not match when coverage is complete.
+Approximate constructions retain their provenance in the borrowed results;
+the returned scalar measures their actual diagrams without certifying a distance
+between the original datasets. Raw-diagram calls cannot establish provenance.
+
+Exactness excludes algorithmic approximation; it does not mean exact real
+arithmetic. Use binary64, deterministic tie handling and stable cost aggregation.
+W2 is recomputed from the chosen original cross/diagonal costs, rather than by
+subtracting two nearly equal total savings. Unrepresentable required arithmetic
+returns `NumericalFailure`, distinct from the mathematical infinity caused by
+unequal essential counts. Underflow must not silently erase a required nonzero
+cost. Scaling used by a solver must preserve representable input distinctions
+or fail explicitly.
+
+The native solvers are adapted from the MIT-licensed
+[Topp source](https://github.com/proffitteoy/Topp/tree/ffa1da051ca7ac5e313c74cc9fb92a2bcb20c234).
+Implementation-local license notices retain attribution. Their private routing
+and benchmark switches are not public API. Independent exhaustive partial
+matching, hand-derived cases and Topp/GUDHI comparisons validate the supported
+domain; source translation alone is not independent evidence.
+
+## 17. Supplied filtered-cell boundary contract
 
 For ordered cells c_i, let D[j,i] be the integer incidence coefficient of c_j in
 the boundary of c_i. Nonzero entries require j < i, dimension(c_j) =
@@ -591,7 +674,7 @@ filtrations: an Alpha triangle can enter after all its edges. Certified Rips
 expansions additionally preserve original scale coverage and skeleton sufficiency;
 a bare supplied complex does not assert that relationship to a larger source.
 
-## 17. Lower-star construction example
+## 18. Lower-star construction example
 
 For a finite simplicial complex K and a finite scalar function g on its vertices,
 define f(sigma) = max {g(v) : v in sigma} for every nonempty simplex. If tau is

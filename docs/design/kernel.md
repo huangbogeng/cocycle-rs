@@ -237,9 +237,10 @@ dimension ordering, and endpoint policy. If parameter fitting is added, freeze
 the fitted configuration for new data; do not silently refit each sample or use
 held-out data to choose a feature grid.
 
-For an initial finite-diagram distance implementation, reject unsupported
-essential/censored intervals or require an explicitly named projection. Never
-drop them silently. Numerical approximation tolerances must be documented
+The implemented matching distances preserve essential multiplicity and reject
+incomplete coverage; see the [matching contract](../reference/mathematics.md#16-diagram-matching-distances).
+Future distance operations must state their supported endpoint domain and never
+drop intervals silently. Numerical approximation tolerances must be documented
 separately from filtration coverage.
 
 These operations can expose ordinary slices, iterators, and owned arrays.
@@ -261,7 +262,8 @@ new public namespaces or require empty directories.
 ### Where future capabilities belong
 
 Matrix layouts, frozen simplicial storage, prime-field algebra, owned computation
-context and cooperative execution controls are already implemented. Their current
+context, filtered-cell access, diagram distances and cooperative execution controls
+are already implemented. Their current
 locations belong in the architecture page. The remaining map identifies future
 ownership; create files only with concrete consumers, not one file per class.
 
@@ -272,10 +274,10 @@ ownership; create files only with concrete consumers, not one file per class.
 | Cubical topology and values | `complex/cubical/` | Grid incidence and validated data are distinct from reduction state |
 | Cubical filtration access, when needed separately | `filtration/cubical.rs` | Adapt the grid; do not duplicate the grid or its incidence implementation |
 | Cubical persistence | `persistence/cubical.rs` or a directory when needed | Select or implement a reducer without routing through simplex storage |
-| General ordered boundary access for another consumer | Extend existing `algebra/reduction/` with a demonstrated access contract | Preserve independence from any concrete complex |
+| Another filtered-cell representation | Implement the existing `complex::FilteredComplex` contract | Preserve independence from any concrete complex |
 | Landscapes or persistence images | Add named operation files to `descriptors/` | Consume diagrams only; share validated feature configurations when semantics agree |
-| Diagram matching distances | `diagram_distances/{mod,bottleneck}.rs` initially | Keep diagram matching separate from geometric point distances |
-| Context for another filtration family | Extend `diagram` or use an operation-owned result wrapper | Preserve engine-independent mathematical interpretation |
+| Additional diagram metrics | Named operations in the existing `diagram_distances/` domain | Keep diagram matching separate from geometric point distances |
+| Context for another filtration family | Extend source and scale conventions in `filtration/` | Share interpretation between construction and analysis; update distance compatibility deliberately |
 | Hard resource limits or reusable workspaces beyond current cooperative controls | Feature-local first; `execution/` only for actual shared policy | Controls do not alter mathematical input or silently change the algorithm's guarantee |
 
 For example, adding a landscape should not require changes to filtration or

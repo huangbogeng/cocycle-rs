@@ -9,10 +9,12 @@ Application workflows and language bindings are outside this crate.
 Use Rust 1.91 or later, rustfmt, and Clippy. The core has no external runtime or
 test dependencies. Python's standard library runs documentation checks and tool
 tests. Native comparisons need a C++17 compiler, Boost headers, and pinned GUDHI
-and Ripser sources; see the [native setup](benches/native/README.md). Python TDA
-packages are only needed for [optional wrapper checks](tools/legacy-benchmarks.md).
+and Ripser sources; see the [native setup](benches/native/README.md). Diagram-distance
+comparisons additionally require a C++20 Topp adapter, CGAL headers and pinned
+Python GUDHI/NumPy/POT packages; see the [distance setup](benches/distances/README.md#prepare-the-reference-environment).
+Other Python TDA wrappers remain [optional checks](tools/legacy-benchmarks.md).
 Algorithm authors can start with the [contribution paths](docs/development/algorithm-contributions.md)
-and the focused command below. For wider kernel work, start with
+and the focused commands below. For wider kernel work, start with
 `cargo test --locked` and the [architecture](docs/development/architecture.md).
 
 Use the [issue tracker](https://github.com/Aequiludium/cocycle-rs/issues) for
@@ -39,16 +41,20 @@ Choose the command for your contribution from a source checkout:
 | --- | --- |
 | Diagram statistics, curves and features | [Diagram analysis](docs/development/diagram-analysis.md) |
 | Explicit simplicial construction | [Complex construction](docs/development/complex-construction.md) |
+| Diagram matching distances | [Distance contribution path](docs/development/diagram-analysis.md#contribute-diagram-distances) |
 
 ```sh
 python3 tools/check_algorithm.py diagram-analysis
 python3 tools/check_algorithm.py complex-construction
+python3 tools/check_algorithm.py diagram-distances
 ```
 
 Each command checks source/documentation hygiene, domain formatting, Clippy for
 the library and selected targets, domain tests, example tests, the example and
 tutorial doctests. Diagram analysis does not run persistent homology; construction
-checks also verify persistence of hand-derived complexes. The lower-star example's
+checks also verify persistence of hand-derived complexes. Distance checks run
+public contracts, private matching oracles and the distance example; context tests
+also compute small supplied and Rips filtrations. The lower-star example's
 colocated tests are explicitly run with `cargo test --example complex_construction`;
 ordinary `cargo test` alone does not execute them. No native C++ setup is needed.
 Python invokes the local Rust toolchain; generated files remain in Cargo's target
@@ -68,7 +74,7 @@ quality, test, and MSRV jobs:
 
 ```sh
 cargo fmt --all -- --check
-rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
+rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs benches/distances/cocycle.rs
 cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --locked --all-features
 cargo test --locked --release --all-features
@@ -82,6 +88,7 @@ cargo run --locked --example diagram_analysis
 cargo run --locked --example complex_construction
 cargo test --locked --example complex_construction
 cargo test --locked --release --example complex_construction
+cargo run --locked --example diagram_distances
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps
 cargo +1.91.0 test --locked --all-features
 cargo +1.91.0 check --locked --all-targets --all-features
@@ -108,6 +115,7 @@ Select additional checks by the changed contract:
 | Documentation only | Source and Markdown checks; run affected Rust examples/doctests |
 | Rust implementation or public API | Commands above; update contract tests and relevant rustdoc |
 | Mathematical algorithm | Independent expectation/property and relevant native comparisons, in addition to Rust checks |
+| Diagram-distance algorithm | Independent tiny matching oracle, pinned Topp and GUDHI comparisons under the [distance protocol](benches/distances/README.md) |
 | Python checks or controllers | Source and Markdown checks, all `test_*.py`; exercise the changed command on a small case |
 | Native adapters, builder, or benchmark protocol | Tool tests, standalone Rust formatting when affected, and the native smoke command below |
 | Performance | Comparable before/after measurements under the applicable native suite and reporting rules; keep unfavorable results |
@@ -145,6 +153,18 @@ with a fresh output directory. For workflow timing/resource changes, also run
 `python3 tools/benchmark_rips_pipeline.py --quick --samples 1 --output target/rips-pipeline-smoke`.
 Treat unsupported reference inputs as documented exclusions, not successful
 cross-library comparisons. See the native guide for platform requirements.
+
+For diagram-distance implementation changes, run the full supported suite after
+the distance setup, with a fresh output directory:
+
+```sh
+python3 tools/compare_distances.py --gudhi-python target/distance-oracle-venv/bin/python --output target/distance-correctness-full
+```
+
+Record the tested commit and summary in the PR. CI's `--quick` distance check
+covers a smaller suite. Worker/instrumentation changes also need the small
+[distance resource smoke](benches/distances/README.md#check-correctness-and-the-harness),
+including `--profile-rust` when changing generated timing hooks.
 
 Documentation-only changes need source/documentation checks and any affected examples;
 they do not require rerunning large performance experiments. See
@@ -210,7 +230,7 @@ For every release:
 1. Finalize the version and changelog, review public API and MSRV changes.
 2. Run the required CI jobs for the exact release commit; inspect their results.
 3. Run `cargo package --locked`, inspect the package file list, and execute its
-   `square`, `diagram_analysis` and `complex_construction` examples. Run the
+   `square`, `diagram_analysis`, `diagram_distances` and `complex_construction` examples. Run the
    packaged construction example's tests with `--example complex_construction`.
    Exclude raw experiments and temporary files from the crate.
 4. Publish only after those checks pass, then verify installation from crates.io.

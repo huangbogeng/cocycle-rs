@@ -11,6 +11,20 @@ import check_algorithm
 
 
 class AlgorithmChecksTests(unittest.TestCase):
+    def test_distances_run_public_contracts_private_oracles_and_example(self):
+        with patch.object(check_algorithm, "run") as run:
+            with patch.object(check_algorithm, "library_artifact",
+                              return_value=Path("target/debug/libcocycle.rlib")):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(check_algorithm.main(["diagram-distances"]), 0)
+        commands = [call.args[0] for call in run.call_args_list]
+        tests = [command for command in commands if command[:2] == ["cargo", "test"]]
+        self.assertTrue(any("--test" in command and "diagram_distances" in command
+                            and "--example" in command for command in tests))
+        self.assertTrue(any("--lib" in command and "diagram_distances::" in command
+                            for command in tests))
+        self.assertFalse(any("filtered_complex" in command for command in tests))
+
     def test_construction_selects_the_actual_example_tests_and_tutorial(self):
         with patch.object(check_algorithm, "run") as run:
             with patch.object(check_algorithm, "library_artifact",

@@ -11,11 +11,29 @@ no Python TDA binding is imported into the measured computation. Source setup,
 commands and artifacts are documented in the [native guide](../benches/native/README.md),
 with execution rules in the [H0/H1 protocol](../benches/protocol.md). The separate
 [Rips pipeline suite](#rips-workflow-resources) measures broader public workflows.
-Both follow the shared [reporting rules](../benches/reporting.md).
+These suites and the [distance suite](#diagram-distance-correctness-and-ablations)
+follow the shared [reporting rules](../benches/reporting.md).
 
 [build_native.py](build_native.py) verifies pinned sources and compiles workers.
 [benchmark_inputs.py](benchmark_inputs.py) owns deterministic fixture generation,
 shared with historical controllers without sharing their Python worker path.
+
+## Diagram-distance correctness and ablations
+
+[compare_distances.py](compare_distances.py) checks bottleneck/L-infinity,
+W1/L-infinity and W2/Euclidean against independent rational small-diagram
+matching, pinned Topp, repaired native GUDHI bottleneck and isolated GUDHI/POT
+weighted workers. The default supported suite is full; `--quick` selects a
+smaller CI check, and `--suite stress` retains numerical reference disagreements.
+
+[benchmark_distances.py](benchmark_distances.py) compares native Rust/Topp
+single-pair calls and controlled memory/search variants on Linux.
+[distance_common.py](distance_common.py) owns their f64 transport, pins/builds,
+independent oracle and process protocol. The Rust worker compiles private
+instrumentation with `--cfg cocycle_distance_bench`; its public-library reference
+uses the separately built ordinary crate. No experiment feature is added to the
+public API. The [distance guide](../benches/distances/README.md) owns setup,
+commands, measurement boundaries, exclusions and artifact interpretation.
 
 ## Native Rips correctness checks
 
@@ -58,8 +76,8 @@ Its raw unpaired endpoints are compared along with separately checked Rust cover
 
 ## Documentation and tool verification
 
-[check_algorithm.py](check_algorithm.py) provides focused diagram-analysis and
-explicit complex-construction checks for algorithm contributors. See the
+[check_algorithm.py](check_algorithm.py) provides focused `diagram-analysis`,
+`diagram-distances` and `complex-construction` checks for algorithm contributors. See the
 [command and scope](../CONTRIBUTING.md#focused-algorithm-checks) and
 [walkthroughs](../docs/development/algorithm-contributions.md). It uses the local Rust
 toolchain and Python standard library, stops on failure, and does not invoke
@@ -71,7 +89,7 @@ python3 tools/check_source.py
 python3 tools/check_artifacts.py
 python3 tools/check_docs.py
 python3 -m unittest discover -s tools -p 'test_*.py'
-rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs
+rustfmt --edition 2024 --check tools/diagram_dump.rs tools/benchmark_driver.rs benches/native/cocycle.rs tools/reference/rips_cocycle.rs tools/reference/sparse_cocycle.rs benches/pipeline/cocycle.rs benches/distances/cocycle.rs
 ```
 
 Run the artifact check after staging. It rejects generated paths and log/archive/
@@ -90,9 +108,12 @@ listed in the native guide. No tests assert machine-dependent speed thresholds.
 
 ## Algorithm diagnostics
 
-[profile_rips.py](profile_rips.py) invokes six private cumulative H1 optimization
-stages and checks each against the independent explicit reducer. Use it to inspect
-algorithm work, not to rank public API performance.
+[profile_rips.py](profile_rips.py) invokes private H1 optimization stages and
+checks each against the independent explicit reducer. It varies single/two-pass
+initialization independently of virtual apparent-pair reconstruction; the
+[testing guide](../docs/development/testing.md#independent-invariants-and-properties)
+lists the stages. Use it to inspect algorithm work, not to rank public API
+performance.
 
 [profile_scaling.py](profile_scaling.py) reads the historical scaling artifact
 schema and requires matching source hashes and validated diagrams. It is not an

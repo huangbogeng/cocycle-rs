@@ -26,7 +26,7 @@ The implemented core provides borrowed point clouds and matrix layouts, exact
 threshold graph construction, supplied weighted flag filtrations, ordinary prime-field
 persistence through dense/sparse access, explicit simplicial expansion and
 incidence queries, requested cycle/cocycle bases, blocker-aware sparse approximation,
-owned diagrams/context and basic descriptors.
+owned diagrams/context, basic descriptors and exact bottleneck/Wasserstein distances.
 Cooperative work limits and cancellation are available on the richer compute
 entry points. An independent explicit boundary implementation remains a test oracle; the
 production representative path owns a separate reducer. The
@@ -38,7 +38,7 @@ reduction and shared source context. This supplies an integration boundary for
 future Alpha geometry; it does not implement triangulation or Alpha construction.
 
 [Algorithm contribution paths](../development/algorithm-contributions.md) now
-include executable diagram-analysis and explicit construction walkthroughs,
+include descriptor, diagram-distance and explicit construction paths,
 mathematical tests and focused checks exercised by CI. The lower-star constructor
 is a teaching example, not an additional production API. A reduction-algorithm
 contributor walkthrough remains the next part of this developer workflow.

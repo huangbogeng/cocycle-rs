@@ -14,13 +14,14 @@ is implemented.
 | Geometry and distances | Coordinates or distances to geometric quantities | [Geometry](../../src/geometry/mod.rs); [geometry tests](../../tests/euclidean.rs) |
 | Complex and filtration construction | Data to simplices and filtration values, or a specialized cell representation | [Construction tutorial](complex-construction.md); [supplied complex guide](../guides/filtered-complexes.md) |
 | Persistent homology | A filtered source to intervals and optional representatives | [Persistence](../../src/persistence/mod.rs); [reference reducer](../../src/persistence/reference/mod.rs); [algebra](../../src/algebra/mod.rs) |
-| Diagram analysis | One or more diagrams to statistics, curves, features or comparisons | [Diagram analysis tutorial](diagram-analysis.md); [descriptors](../../src/descriptors/mod.rs) |
+| Diagram descriptors | Diagrams to statistics, curves and features | [Diagram analysis tutorial](diagram-analysis.md); [descriptors](../../src/descriptors/mod.rs) |
+| Diagram distances | Two complete diagrams to a matching distance | [Matching contribution path](diagram-analysis.md#contribute-diagram-distances); [distance kernels](../../src/diagram_distances/mod.rs) |
 | Analysis examples | Compose existing operations into a reproducible calculation | [Examples](../../examples/); [library guides](../README.md#use-the-library) |
 
-Diagram analysis and explicit simplicial construction have contributor
-walkthroughs and focused check commands today. A reduction contributor walkthrough
-is later work. Alpha and cubical constructors and diagram distances are not
-supplied by this navigation.
+Diagram descriptors, diagram distances and explicit simplicial construction have
+contributor paths and focused check commands today. A reduction contributor
+walkthrough is later work. Alpha and cubical constructors remain unimplemented;
+this navigation does not imply that every research family is available.
 
 ## Agree on the mathematics first
 

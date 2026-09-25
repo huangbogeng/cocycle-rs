@@ -123,8 +123,8 @@ cargo run --locked --example diagram_analysis
    information is excluded or rejected. Do not silently invent finite deaths.
 2. Implement the operation in a named file under `src/descriptors/`, borrowing a
    diagram and returning an owned result. For a small operation, start with a
-   function. A genuinely different capability, such as diagram matching, should
-   have its placement discussed with a maintainer instead of accumulating here.
+   function. Matching algorithms belong in `src/diagram_distances/`; use the
+   [distance contribution path](#contribute-diagram-distances) for those operations.
 3. Add tests to `tests/descriptors.rs`, starting from hand-built intervals. Update
    the relevant mathematical specification and write rustdoc beside the function.
 4. Work with a maintainer on the export in `src/descriptors/mod.rs`, error variants
@@ -170,3 +170,55 @@ For a Rust failure, the file and line in the diagnostic identify the first place
 to inspect. Preserve the failing mathematical input when seeking help. The
 maintainer checklist and CI still cover release/MSRV builds, packaging and wider
 regressions before merge; a focused pass is not evidence for those other checks.
+
+## Contribute diagram distances
+
+Matching algorithms live in `src/diagram_distances/`, independently of Rips and
+complex construction. The public facade validates diagrams and context; the
+bottleneck and Wasserstein modules own matching, numeric preparation and private
+workspaces. Start with the [distance example](../../examples/diagram_distances.rs)
+and [mathematical contract](../reference/mathematics.md#16-diagram-matching-distances).
+
+Decide the ground metric and Wasserstein order explicitly. Preserve repeated
+intervals, require complete coverage and distinguish unequal essential counts
+(mathematical infinity) from failed arithmetic (an error). For example, a single
+interval of lifetime two has diagonal costs one for bottleneck/W1 and sqrt(2)
+for W2, including when its birth is negative:
+
+```rust
+use cocycle::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceInterval};
+use cocycle::diagram_distances::{bottleneck_distance, wasserstein_1_infinity,
+    wasserstein_2_euclidean};
+
+let first = PersistenceDiagram::new(0, Coverage::Complete, vec![
+    PersistenceInterval::new(0, -2.0, IntervalEnd::Finite(0.0))?,
+])?;
+let empty = PersistenceDiagram::new(0, Coverage::Complete, vec![])?;
+assert_eq!(bottleneck_distance(&first, &empty, 0)?, 1.0);
+assert_eq!(wasserstein_1_infinity(&first, &empty, 0)?, 1.0);
+assert!((wasserstein_2_euclidean(&first, &empty, 0)? - 2.0_f64.sqrt()).abs() < 1e-14);
+# Ok::<(), cocycle::Error>(())
+```
+
+Raw-diagram functions assume the caller has established comparable scales and
+appropriate coefficient fields. The `_results` wrappers additionally require equal
+fields and declared edge-length conventions. A supplied complex has unspecified
+units, so these wrappers reject it, even against another unspecified source.
+After establishing a common scale, pass `result.diagram()` explicitly. This
+choice discards automatic context checks; it does not rescale the values.
+A certified Rips expansion retains the convention, while extracting its bare
+complex discards that certificate. Physical units and normalization remain the
+caller's responsibility even when both sources declare edge lengths.
+
+Put public contracts and hand-derived cases in `tests/diagram_distances.rs`.
+Use the private kernel tests for matching invariants and an independent exhaustive
+oracle. Test ties, multiplicity, diagonal costs, essential points, numerical
+boundaries and symmetry. Expected answers must not come from another production
+matching path. Keep routing experiments and diagnostics out of ordinary builds.
+
+Run `python3 tools/check_algorithm.py diagram-distances`. It checks formatting,
+lint, public contracts, private kernel oracles, the example and this tutorial's
+code. It needs no C++ environment. Before merging a matching-kernel change,
+maintainers additionally run the pinned [native distance comparisons](../../benches/distances/README.md)
+and record relevant numerical limitations. Local Rust checks alone do not certify
+agreement with external implementations or establish performance rankings.
