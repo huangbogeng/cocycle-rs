@@ -23,12 +23,10 @@ type Coboundary = BinaryHeap<Reverse<SimplexEntry>>;
 
 // Bits 0/1 select original-column apparent/emergent shortcuts. Bit 2 also
 // omits zero apparent columns and reconstructs their pivots during reduction.
-// Retain ordinary owners in production; private tests and profiling also
-// exercise the omission candidate and its transformation invariant.
-const PRODUCTION_SHORTCUTS: u8 = 3;
-// Shortcut-heavy columns can pay more for cached prefixes than they save in
-// rescans. Keep the single-pass candidate independently available to tests.
-const PRODUCTION_SINGLE_PASS: bool = false;
+// Production combines single-pass initialization with apparent-pair omission.
+// Private tests retain independent configurations and verify transformation replay.
+const PRODUCTION_SHORTCUTS: u8 = 7;
+const PRODUCTION_SINGLE_PASS: bool = true;
 
 /// Position in the forward-ordered edge array, not a combinatorial simplex ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
