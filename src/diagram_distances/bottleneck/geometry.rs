@@ -363,22 +363,22 @@ impl<'a, 'p, 'q> Oracle<'a, 'p, 'q> {
         } else if self.used {
             record! { _stats.scratch_reuses += 1; }
         }
-        if !experiment!(_options.reuse_matching, true) {
+        let reuse_matching = experiment!(_options.reuse_matching, true);
+        if !reuse_matching {
             self.left.fill(NONE);
             self.right.fill(NONE);
-        } else if self.used {
-            if radius < self.radius {
-                for left in 0..self.pair.size {
-                    let right = self.left[left];
-                    if right != NONE && !self.pair.allowed(left, right, radius) {
-                        self.left[left] = NONE;
-                        self.right[right] = NONE;
-                    }
+        } else if self.used && radius < self.radius {
+            for left in 0..self.pair.size {
+                let right = self.left[left];
+                if right != NONE && !self.pair.allowed(left, right, radius) {
+                    self.left[left] = NONE;
+                    self.right[right] = NONE;
                 }
             }
-            #[cfg(any(test, cocycle_distance_bench))]
-            if self.left.iter().any(|&right| right != NONE) {
-                record! { _stats.matching_reuses += 1; }
+        }
+        record! {
+            if reuse_matching && self.used && self.left.iter().any(|&right| right != NONE) {
+                _stats.matching_reuses += 1;
             }
         }
         self.radius = radius;
