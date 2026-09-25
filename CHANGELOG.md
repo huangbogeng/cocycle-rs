@@ -2,10 +2,12 @@
 
 ## 0.1.0 (unreleased)
 
-- Initialize F2 H1 coboundaries in one pass with reusable safe buffers, omit
-  discarded zero-lifetime H1 output, and reconstruct zero apparent pairs without
-  retaining their owner columns. Preserve public APIs, f64 ordering and coverage;
-  extend independent-oracle and intermediate resource-failure checks.
+- Reduce discarded zero-lifetime F2 H1 output allocation. Add independently
+  verified private candidates for single-pass initialization with reusable safe
+  buffers and zero apparent-pair omission with transformation replay. The default
+  retains two-pass initialization and ordinary pivot owners. Preserve public
+  APIs, f64 ordering and coverage; extend independent-oracle and intermediate
+  resource-failure checks.
 
 - Remove all repository-local historical experiment outputs and reports. Keep
   generated data in ignored local directories or external artifacts; enforce
