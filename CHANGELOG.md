@@ -2,6 +2,13 @@
 
 ## 0.1.0 (unreleased)
 
+- Initialize F2 H1 coboundaries in one pass with reusable safe buffers. Omit
+  stored zero-lifetime apparent pairs and reconstruct their transformations when
+  later columns need them. Avoid allocating discarded zero-lifetime H1 intervals.
+  Preserve public APIs, f64 ordering, coverage and interval multiplicity; extend
+  independent-oracle, transformation-replay and intermediate resource-failure
+  checks.
+
 - Add reusable exact/approximate Rips builders with explicit `build_complex`
   construction and a shared `.persistence().compute()` analysis workflow. Preserve
   implicit engines, fields, representatives, callback ownership and source coverage.

@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// representatives. Counted units include distance reads, metric inequalities,
 /// sampling updates, simplex/cofacet candidates, stored incidence terms and
 /// reduction steps. Repeated visits count again; counts are not timings or bytes.
-/// Cancellation is checked around sorting/allocation and user callbacks, which
-/// cannot be interrupted internally. Previously validated input is outside the
+/// Cancellation is checked around sorting, allocation, heap construction and user
+/// callbacks, which cannot be interrupted internally. Previously validated input is outside the
 /// operation budget. Each terminal starts fresh; no partial result is returned.
 /// Legacy persistence functions retain their documented persistence-only scope.
 #[derive(Clone, Copy, Debug, Default)]
