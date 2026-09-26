@@ -8,7 +8,7 @@ use crate::filtration::{
     simplicial::{ZeroBornExplicitAccess, ZeroBornSimplicialAccess},
 };
 use crate::persistence::{
-    ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, flag,
+    ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, simplicial,
 };
 use crate::{Error, Result};
 
@@ -132,18 +132,17 @@ fn compute(
     budget: &mut WorkBudget<'_>,
 ) -> Result<PersistenceResult> {
     let (diagram, representatives) =
-        flag::finish(access, options, requests, coverage, budget, |budget| {
-            flag::compute_simplicial(
+        simplicial::finish_zero_born(access, options, requests, coverage, budget, |budget| {
+            simplicial::cohomology::compute(
                 access,
                 options.max_homology_dimension(),
                 options.field(),
                 budget,
             )
         })?;
-    Ok(PersistenceResult {
+    Ok(PersistenceResult::new(
         diagram,
-        representatives,
-        context: ComputationContext::new(
+        ComputationContext::new(
             options.field(),
             match kind {
                 RipsInputKind::Dissimilarities => FiltrationKind::SparseRipsDissimilarities,
@@ -155,5 +154,6 @@ fn compute(
             metadata.max_scale(),
             Some(metadata.clone()),
         ),
-    })
+        representatives,
+    ))
 }

@@ -129,6 +129,11 @@ fn signed_vertex_births_and_interleaved_cells_agree_with_representatives() -> Re
         }
         let bases = query.compute()?;
         assert_eq!(plain.diagram(), bases.diagram());
+        let mut generic = PersistenceBuilder::from_complex(&complex).max_homology_dimension(0);
+        if let Some(t) = cap {
+            generic = generic.max_filtration_value(t);
+        }
+        assert_eq!(plain.diagram(), generic.compute()?.diagram());
         for rep in bases.representatives().unwrap() {
             for term in rep.terms() {
                 let id = complex.find(term.vertices()).unwrap();
@@ -153,6 +158,79 @@ fn signed_vertex_births_and_interleaved_cells_agree_with_representatives() -> Re
     assert_eq!(
         (intervals[2].birth(), intervals[2].end()),
         (1., IntervalEnd::Finite(2.))
+    );
+    Ok(())
+}
+
+#[test]
+fn low_degree_selection_reuses_frozen_incidence_and_range() -> Result<()> {
+    // Every nonempty face of a 9-simplex, with delayed positive-dimensional
+    // simplices. The full range includes values beyond the H0 skeleton.
+    let complex = SimplicialComplex::new(
+        (1_u32..1 << 10)
+            .map(|mask| {
+                let labels = (0..10)
+                    .filter(|v| mask & (1 << v) != 0)
+                    .map(|v| v * 7 + 10)
+                    .collect();
+                Simplex::new(labels, f64::from(mask.count_ones()) - 2.).unwrap()
+            })
+            .collect(),
+    )?;
+    assert_eq!(complex.vertex_count(), 10);
+    assert_eq!(complex.dimension(), Some(9));
+    for prime in [2, 3, 65537] {
+        let field = PrimeField::new(prime)?;
+        for cutoff in [-2., -1., 0., 8.] {
+            let requests = [RepresentativeRequest::new(
+                0,
+                cutoff,
+                RepresentativeSelection::Both,
+            )?];
+            let direct = complex
+                .persistence()
+                .max_homology_dimension(0)
+                .max_filtration_value(cutoff)
+                .field(field)
+                .compute()?;
+            let bases = complex
+                .persistence()
+                .max_homology_dimension(0)
+                .max_filtration_value(cutoff)
+                .field(field)
+                .representatives(&requests)
+                .compute()?;
+            let generic = PersistenceBuilder::from_complex(&complex)
+                .max_homology_dimension(0)
+                .max_filtration_value(cutoff)
+                .field(field)
+                .compute()?;
+            assert_eq!(direct.diagram(), generic.diagram());
+            assert_eq!(bases.diagram(), generic.diagram());
+            assert_eq!(direct.context().vertex_count(), 10);
+            assert_eq!(
+                direct.diagram().coverage(),
+                if cutoff < 8. {
+                    Coverage::Through(cutoff)
+                } else {
+                    Coverage::Complete
+                }
+            );
+        }
+    }
+    // A cutoff before the first vertex needs neither a full metadata traversal
+    // nor boundary validation. Keep margin for reduction/control bookkeeping.
+    let early = complex
+        .persistence()
+        .max_filtration_value(-2.)
+        .compute_with(&Execution::default().max_work(16))?;
+    assert!(early.diagram().intervals().is_empty());
+    let empty = SimplicialComplex::new(vec![])?;
+    assert_eq!(empty.vertex_count(), 0);
+    assert_eq!(empty.dimension(), None);
+    assert_eq!(
+        empty.persistence().compute()?.diagram().coverage(),
+        Coverage::Complete
     );
     Ok(())
 }

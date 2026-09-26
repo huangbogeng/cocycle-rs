@@ -65,6 +65,7 @@ pub use source::PersistenceExt;
 
 mod simplicial;
 pub use simplicial::representatives::{RepresentativeRequest, RepresentativeSelection};
+mod boundary;
 mod filtered;
 
 mod union_find;

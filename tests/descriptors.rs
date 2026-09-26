@@ -202,3 +202,26 @@ fn translation_and_positive_rescaling_preserve_counts_and_normalized_entropy() {
         }
     }
 }
+
+#[test]
+fn descriptors_distinguish_gaps_from_computed_empty_dimensions() -> cocycle::Result<()> {
+    use cocycle::diagram::ComputedDimensions;
+    let separated = PersistenceDiagram::with_dimensions(
+        ComputedDimensions::new(vec![1, 3])?,
+        Coverage::Complete,
+        vec![],
+    )?;
+    assert_eq!(betti_curve(&separated, 3, &[0., 1.])?, [0, 0]);
+    assert_eq!(finite_lifetime_summary(&separated, 3)?.finite_count(), 0);
+    for missing in [0, 2] {
+        assert!(matches!(
+            betti_curve(&separated, missing, &[]),
+            Err(cocycle::Error::DimensionNotComputed { .. })
+        ));
+        assert!(matches!(
+            finite_lifetime_summary(&separated, missing),
+            Err(cocycle::Error::DimensionNotComputed { .. })
+        ));
+    }
+    Ok(())
+}

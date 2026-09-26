@@ -29,14 +29,14 @@ pub(in crate::persistence) fn compute_explicit(
     budget: &mut WorkBudget<'_>,
 ) -> Result<(PersistenceDiagram, Vec<Representative>)> {
     validate(options, requests, coverage)?;
-    let input = crate::persistence::filtered::read(source, options, budget)?;
+    let input = super::super::input::read(source, options, budget)?;
     let mut simplices = Vec::new();
     simplices
         .try_reserve_exact(input.cells.len())
         .map_err(|_| allocation())?;
     for &id in &input.cells {
         budget.step()?;
-        // IDs came from this same borrowed source's FilteredComplex traversal.
+        // IDs came from this same borrowed immutable source.
         simplices.push(source.simplex(id).unwrap().clone());
     }
     let reduction =

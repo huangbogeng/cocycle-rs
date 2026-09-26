@@ -192,6 +192,13 @@ In incomplete coverage, all surviving births, including H0, are conservatively
 right-censored. The result retains computed dimensions and coverage. A single
 optional death value cannot express these distinctions.
 
+Computed dimensions form a nonempty declared set, independently of which interval
+lists are nonempty. An omitted dimension is unknown, not a claim of zero homology.
+`PersistenceDiagram::new(q, ...)` and current builders declare all dimensions
+from zero through q; `with_dimensions` also represents noncontiguous domains.
+Dimension-specific analysis requires membership in that set. The greatest
+computed dimension does not establish membership of smaller dimensions.
+
 One could extend the truncated filtration constantly and write infinite intervals
 for its survivors. Censoring instead describes uncertainty about the original
 full filtration. Surviving through T is not dying at T.

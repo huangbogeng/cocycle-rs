@@ -42,11 +42,13 @@ Choose the command for your contribution from a source checkout:
 | Diagram statistics, curves and features | [Diagram analysis](docs/development/diagram-analysis.md) |
 | Explicit simplicial construction | [Complex construction](docs/development/complex-construction.md) |
 | Diagram matching distances | [Distance contribution path](docs/development/diagram-analysis.md#contribute-diagram-distances) |
+| Persistence and reduction | [Persistence algorithm walkthrough](docs/development/persistence-reduction.md) |
 
 ```sh
 python3 tools/check_algorithm.py diagram-analysis
 python3 tools/check_algorithm.py complex-construction
 python3 tools/check_algorithm.py diagram-distances
+python3 tools/check_algorithm.py persistence-reduction
 ```
 
 Each command checks source/documentation hygiene, domain formatting, Clippy for
@@ -54,7 +56,9 @@ the library and selected targets, domain tests, example tests, the example and
 tutorial doctests. Diagram analysis does not run persistent homology; construction
 checks also verify persistence of hand-derived complexes. Distance checks run
 public contracts, private matching oracles and the distance example; context tests
-also compute small supplied and Rips filtrations. The lower-star example's
+also compute small supplied and Rips filtrations. Reduction checks run direct
+algorithm and independent-oracle tests, plus filtered-source, field, representative
+and resource integration tests. They use the existing flag example. The lower-star example's
 colocated tests are explicitly run with `cargo test --example complex_construction`;
 ordinary `cargo test` alone does not execute them. No native C++ setup is needed.
 Python invokes the local Rust toolchain; generated files remain in Cargo's target
@@ -106,6 +110,7 @@ rustdoc --edition 2024 --test docs/guides/sparse-rips.md --extern cocycle=target
 rustdoc --edition 2024 --test docs/guides/filtered-complexes.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/development/diagram-analysis.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 rustdoc --edition 2024 --test docs/development/complex-construction.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
+rustdoc --edition 2024 --test docs/development/persistence-reduction.md --extern cocycle=target/debug/libcocycle.rlib -L dependency=target/debug/deps
 ```
 
 Select additional checks by the changed contract:

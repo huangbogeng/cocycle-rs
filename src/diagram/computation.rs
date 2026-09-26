@@ -1,14 +1,14 @@
 //! Owned mathematical context without borrowed inputs or reducer state.
-use super::PersistenceDiagram;
+use super::{PersistenceData, PersistenceDiagram, Representative};
 
 use crate::filtration::FiltrationKind;
 
 /// Owned source context and ordinary persistence analysis settings.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComputationContext {
-    pub(crate) filtration: crate::filtration::FiltrationContext,
-    pub(crate) field: crate::algebra::PrimeField,
-    pub(crate) requested_cutoff: Option<f64>,
+    filtration: crate::filtration::FiltrationContext,
+    field: crate::algebra::PrimeField,
+    requested_cutoff: Option<f64>,
 }
 impl ComputationContext {
     /// Reusable source facts, including scale convention and construction metadata.
@@ -47,8 +47,8 @@ impl ComputationContext {
         construction_cutoff: Option<f64>,
         approximation: Option<super::RipsApproximation>,
     ) -> Self {
-        Self {
-            filtration: crate::filtration::FiltrationContext::new(
+        Self::from_filtration(
+            crate::filtration::FiltrationContext::new(
                 kind,
                 vertex_count,
                 construction_cutoff,
@@ -56,15 +56,18 @@ impl ComputationContext {
             ),
             field,
             requested_cutoff,
-        }
+        )
     }
-    pub(crate) fn set_kind(&mut self, kind: FiltrationKind) {
-        self.filtration = crate::filtration::FiltrationContext::new(
-            kind,
-            self.vertex_count(),
-            self.construction_cutoff(),
-            self.approximation().cloned(),
-        );
+    pub(crate) fn from_filtration(
+        filtration: crate::filtration::FiltrationContext,
+        field: crate::algebra::PrimeField,
+        requested_cutoff: Option<f64>,
+    ) -> Self {
+        Self {
+            filtration,
+            field,
+            requested_cutoff,
+        }
     }
 }
 
@@ -72,18 +75,27 @@ impl ComputationContext {
 /// Coverage and computed dimensions are recorded in the diagram, not duplicated.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PersistenceResult {
-    pub(crate) diagram: PersistenceDiagram,
-    pub(crate) context: ComputationContext,
-    pub(crate) representatives: Option<Vec<super::Representative>>,
+    data: PersistenceData,
+    representatives: Option<Vec<Representative>>,
 }
 impl PersistenceResult {
+    pub(crate) fn new(
+        diagram: PersistenceDiagram,
+        context: ComputationContext,
+        representatives: Option<Vec<Representative>>,
+    ) -> Self {
+        Self {
+            data: PersistenceData::new(diagram, context),
+            representatives,
+        }
+    }
     /// Borrow the diagram for existing descriptor operations.
     pub fn diagram(&self) -> &PersistenceDiagram {
-        &self.diagram
+        self.data.diagram()
     }
     /// Borrow the mathematical context.
     pub fn context(&self) -> &ComputationContext {
-        &self.context
+        self.data.context()
     }
     /// Requested representatives, or `None` when no requests were supplied.
     /// An empty slice means requests were made but no intervals were active.
@@ -92,6 +104,24 @@ impl PersistenceResult {
     }
     /// Consume the result, explicitly discarding context and representatives.
     pub fn into_diagram(self) -> PersistenceDiagram {
-        self.diagram
+        self.data.into_diagram()
+    }
+    /// Consume the result, retaining diagram/context and discarding representatives.
+    pub fn into_data(self) -> PersistenceData {
+        self.data
+    }
+    /// Move out common data and optional representatives without cloning or sorting.
+    /// Representative interval indices still address the returned data's diagram.
+    pub fn into_parts(self) -> (PersistenceData, Option<Vec<Representative>>) {
+        (self.data, self.representatives)
+    }
+    pub(crate) fn with_context(mut self, context: ComputationContext) -> Self {
+        self.data = self.data.with_context(context);
+        self
+    }
+}
+impl AsRef<PersistenceData> for PersistenceResult {
+    fn as_ref(&self) -> &PersistenceData {
+        &self.data
     }
 }

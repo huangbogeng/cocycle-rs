@@ -1,4 +1,5 @@
 //! Persistence and representatives of explicit simplicial topology.
+mod input;
 pub(super) mod representatives;
 
 use super::{PersistenceOptions, RepresentativeRequest};
@@ -44,7 +45,7 @@ pub(super) fn compute(
         let (diagram, representatives) =
             representatives::compute_explicit(source, options, requests, coverage, budget)?;
         (diagram, Some(representatives))
-    } else if options.max_edge().is_none_or(|t| t >= 0.) && zero_born(source, budget)? {
+    } else if options.max_edge().is_none_or(|t| t >= 0.) && source.has_zero_born_vertices() {
         // Select by the actual simplex invariant, not source/scale metadata.
         // Stored cofaces retain non-flag topology and arbitrary simplex values.
         let access = ZeroBornExplicitAccess {
@@ -69,7 +70,13 @@ pub(super) fn compute(
         )
     } else {
         (
-            super::filtered::diagram(source, options, Some(coverage), budget)?.0,
+            super::boundary::diagram(
+                input::read(source, options, budget)?,
+                options.max_homology_dimension(),
+                options.field(),
+                coverage,
+                budget,
+            )?,
             None,
         )
     };
@@ -77,17 +84,34 @@ pub(super) fn compute(
     Ok(result)
 }
 
-fn zero_born(source: &SimplicialComplex, budget: &mut WorkBudget<'_>) -> Result<bool> {
-    // Face monotonicity and (value, dimension, vertices) order imply that all
-    // vertices form this prefix exactly when every vertex is born at zero.
-    // This also establishes the compact vertex positions required by union-find.
-    for simplex in source.simplices().iter().take(source.vertex_count()) {
-        budget.step()?;
-        if simplex.dimension() != 0 || simplex.value() != 0. {
-            return Ok(false);
-        }
-    }
-    Ok(true)
-}
-
 pub(super) mod cohomology;
+
+/// Shared dispatch for optional representatives; ordinary calls keep their implicit engine.
+pub(super) fn finish_zero_born(
+    access: &impl crate::filtration::simplicial::ZeroBornSimplicialAccess,
+    options: &PersistenceOptions,
+    requests: &[RepresentativeRequest],
+    coverage: Coverage,
+    budget: &mut WorkBudget<'_>,
+    implicit: impl FnOnce(&mut WorkBudget<'_>) -> Result<super::RawIntervals>,
+) -> Result<(
+    crate::diagram::PersistenceDiagram,
+    Option<Vec<crate::diagram::Representative>>,
+)> {
+    let result = if requests.is_empty() {
+        (
+            super::assemble_diagram(
+                options.max_homology_dimension(),
+                coverage,
+                implicit(budget)?,
+            )?,
+            None,
+        )
+    } else {
+        let (diagram, representatives) =
+            representatives::compute(access, options, requests, coverage, budget)?;
+        (diagram, Some(representatives))
+    };
+    budget.check()?;
+    Ok(result)
+}

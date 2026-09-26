@@ -116,6 +116,11 @@ is imposed merely to unify the interface. Representative requests keep their
 separate documented materialization costs; direct computation is not a promise
 that no internal simplices are ever stored.
 
+Direct exact point analysis retains graph edges through the smaller of the
+construction and analysis caps. It still validates all pair distances and records
+the caller's construction cap independently of this temporary retention bound.
+Reusable `prepare()` continues to retain the full requested construction range.
+
 Both workflows compute the same mathematical source at equal field and range.
 They must agree on interval multisets and coverage when the explicit construction
 is sufficient. Representation metadata and work performed can differ.
@@ -278,10 +283,12 @@ behind a supposedly reusable request.
 
 ## Architecture and extension boundaries
 
-Keep `geometry/complex -> filtration -> persistence -> result assembly` as data
-flow, with consumers depending on their inputs. `execution` lives below construction
-and computation and imports neither. Filtration implementation files do not import
-persistence. Construction never performs reduction.
+Keep `geometry/complex -> filtration -> persistence -> result assembly` as the
+responsibility map for these Rips workflows, with consumers depending on their
+inputs. It does not require every algorithm to materialize those stages: a direct
+persistence algorithm may fuse preparation and reduction. `execution` lives below
+construction and computation and imports neither. Filtration implementation files
+do not import persistence; explicit construction terminals do not perform reduction.
 
 `PersistenceExt` lives in `persistence` and is implemented for supported library
 sources. Its sized-source method returns `PersistenceBuilder<'_, 'static, Self>` before representative requests. It borrows
@@ -309,8 +316,20 @@ Existing import paths and getters preserve their information. The legacy
 its public axes is deferred to the breaking revision.
 
 A new filtration family supplies its own construction and source adapter when
-needed; it is not forced through Rips clique enumeration. A new input layout or
-output request must not create another public persistence function family.
+needed; it is not forced through Rips clique enumeration. Avoid duplicating public
+function families merely for another layout or optional output under the same
+mathematical contract. A specialized algorithm with different preconditions,
+parameters or result semantics may have a focused entry point independently of
+default Builder dispatch. The [kernel design](kernel.md#algorithm-implementations-and-default-integration)
+owns that contribution policy and the implemented result contracts.
+Common `PersistenceData`, explicit computed-dimension sets and internal
+[source-context assembly](kernel.md#source-facts-and-result-assembly) are implemented
+locally. The [result API migration](kernel.md#result-api-migration) describes their
+pre-release semantic and signature changes; legacy Rips entry points remain available.
+The [extension boundaries](kernel.md#extension-boundaries) distinguish current
+static cell adaptation and in-crate contributions from future external result
+import and runtime plugins. This page describes the current Builder workflow
+and compatibility stage.
 Read-only explicit topology remains the current scope. Dynamic editing, new
 filtration families, collapse operations and language bindings are separate work.
 

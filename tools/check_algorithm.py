@@ -51,6 +51,13 @@ DOMAINS = {
         "guides": ("docs/development/diagram-analysis.md",),
         "unit_filter": "diagram_distances::",
     },
+    "persistence-reduction": {
+        "sources": ("src/algebra", "src/persistence"),
+        "tests": ("filtered_complex", "prime_fields", "rips_resources", "rips_api"),
+        "example": "flag_persistence",
+        "guides": ("docs/development/persistence-reduction.md",),
+        "unit_filter": "persistence::",
+    },
 }
 
 

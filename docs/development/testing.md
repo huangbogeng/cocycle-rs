@@ -13,7 +13,9 @@ the example and descriptor tests do not need a complex constructor or a persiste
 calculation. Maintainer/CI checks retain the broader integration coverage below.
 The [construction tutorial](complex-construction.md) validates explicit topology
 before composing it with persistence. The distance path adds public context checks
-and private matching oracles. The CI quality job exercises all three focused
+and private matching oracles. The [reduction tutorial](persistence-reduction.md)
+starts from hand-derived boundary columns, checks transformations independently
+and then exercises source/field/representative integration. The CI quality job exercises all four focused
 commands; platform jobs run their examples and explicitly execute the construction
 example's colocated tests in debug/release. MSRV also runs those example tests.
 

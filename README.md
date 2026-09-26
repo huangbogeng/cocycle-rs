@@ -20,7 +20,9 @@ dependencies and no unsafe code.
 - **Optional representatives** — owned persistent cycle bases and query-scale dual
   cocycles, associated with intervals and original vertex IDs.
 - **Meaningful results** — owned diagrams preserve multiplicity and distinguish
-  finite deaths, essential classes, and right-censored intervals.
+  finite deaths, essential classes, and right-censored intervals. Explicit computed
+  dimension sets distinguish empty results from uncomputed dimensions; common
+  diagram/context data can be shared by specialized result types.
 - **Useful summaries** — finite lifetimes, persistence entropy in nats, and Betti
   curves, computed directly from a diagram.
 - **Diagram distances** — exact bottleneck (L-infinity), W1 (L-infinity) and

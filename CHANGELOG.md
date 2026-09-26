@@ -2,6 +2,28 @@
 
 ## 0.1.0 (unreleased)
 
+- Separate owned boundary computation from filtered-source validation and keep
+  exact flag selection in a private dispatch module. Explicit and approximate
+  Rips call simplicial algorithms directly. Add a persistence-reduction contributor
+  walkthrough and focused CI check, including hand-derived column tests; no new
+  public algorithm-selection API is introduced.
+- Pre-release breaking result revision: `PersistenceDiagram::max_dimension()`
+  now reports only the greatest computed dimension, not membership of all lower
+  dimensions. Add `ComputedDimensions`, `with_dimensions` and
+  `computed_dimensions`; `new(q, ...)` and default builders still compute `0..=q`.
+  Dimension queries, descriptors and distances reject gaps. `DimensionNotComputed`
+  retains `computed_max` as an upper bound, with updated diagnostics.
+- Add owned `PersistenceData` for diagram/context composition, borrowed through
+  `AsRef<PersistenceData>`. `PersistenceResult` retains its accessors and adds
+  consuming `into_data`/`into_parts`; representatives keep their interval indices.
+  Context-aware distance functions are now generic over two compatible wrappers;
+  function-item types and explicit generic signatures therefore change. Common
+  result/context assembly stays crate-internal; no external import API is added.
+- Reuse frozen simplicial incidence during boundary analysis and representative
+  extraction, while retaining validation for external filtered-cell inputs.
+  Cache vertex count, dimension and the zero-born invariant at construction.
+  Direct exact point analysis retains edges only through the effective analysis
+  range, preserving the caller's construction cutoff and coverage semantics.
 - Retain H0 union-find and coface clearing for diagram-only zero-born explicit
   simplicial analysis, including non-flag topology with delayed simplex values.
   Keep negative cutoffs and arbitrary vertex births on the general boundary path.

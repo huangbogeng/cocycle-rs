@@ -11,6 +11,23 @@ import check_algorithm
 
 
 class AlgorithmChecksTests(unittest.TestCase):
+    def test_reduction_runs_direct_algorithms_and_source_integration(self):
+        with patch.object(check_algorithm, "run") as run:
+            with patch.object(check_algorithm, "library_artifact",
+                              return_value=Path("target/debug/libcocycle.rlib")):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(check_algorithm.main(["persistence-reduction"]), 0)
+        commands = [call.args[0] for call in run.call_args_list]
+        tests = [command for command in commands if command[:2] == ["cargo", "test"]]
+        self.assertTrue(any("--lib" in command and "persistence::" in command
+                            for command in tests))
+        self.assertTrue(any(all(name in command for name in
+                               ("filtered_complex", "prime_fields", "rips_resources", "rips_api"))
+                            for command in tests))
+        self.assertTrue(any(command[0] == "rustdoc" and
+                            "docs/development/persistence-reduction.md" in command
+                            for command in commands))
+
     def test_distances_run_public_contracts_private_oracles_and_example(self):
         with patch.object(check_algorithm, "run") as run:
             with patch.object(check_algorithm, "library_artifact",

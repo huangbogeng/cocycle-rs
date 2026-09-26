@@ -85,7 +85,7 @@ fn exact(
     budget: &mut WorkBudget<'_>,
 ) -> Result<PersistenceResult> {
     input.validate()?;
-    let mut result = match input.input {
+    let result = match input.input {
         Input::Matrix(matrix) => {
             if let Some(through) = input.max_edge.filter(|t| *t < matrix.diameter())
                 && options.max_edge().is_some_and(|t| t > through)
@@ -104,10 +104,16 @@ fn exact(
             rips::compute_rips_from_distances_budget(matrix, &effective, requests, budget)?
         }
         Input::Points(_) if input.max_edge.or(options.max_edge()).is_some() => {
-            // An analysis-only cap may limit preparation, but is not a new source cap.
+            // Retain only edges needed by this analysis. Construction still scans
+            // every pair, so coverage records omitted edges even across a gap in
+            // edge values. The caller's source cap is restored in result context.
+            let effective = match (input.max_edge, options.max_edge()) {
+                (Some(a), Some(b)) => Some(a.min(b)),
+                (a, b) => a.or(b),
+            };
             let prepared = RipsBuilder {
                 input: input.input,
-                max_edge: input.max_edge.or(options.max_edge()),
+                max_edge: effective,
             }
             .prepare_budget(budget)?;
             rips::compute_threshold_rips_budget(&prepared, options, requests, budget)?
@@ -120,14 +126,16 @@ fn exact(
             rips::compute_rips_from_distances_budget(matrix, options, requests, budget)?
         }
     };
-    result.context.set_kind(crate::filtration::expansion::kind(
-        input.input.kind(),
-        false,
-    ));
-    result.context.requested_cutoff = options.max_edge();
-    result.context.filtration.construction_cutoff = input.max_edge;
+    let context = ComputationContext::new(
+        options.field(),
+        crate::filtration::expansion::kind(input.input.kind(), false),
+        input.input.len(),
+        options.max_edge(),
+        input.max_edge,
+        None,
+    );
     budget.check()?;
-    Ok(result)
+    Ok(result.with_context(context))
 }
 fn approximate(
     input: &ApproximateRipsBuilder<'_>,
@@ -160,15 +168,15 @@ fn explicit(
         .with_field(options.field());
     let (diagram, representatives) =
         super::simplicial::compute(&input.complex, &effective, requests, coverage, budget)?;
-    Ok(PersistenceResult {
+    Ok(PersistenceResult::new(
         diagram,
+        ComputationContext::from_filtration(
+            input.context.clone(),
+            options.field(),
+            options.max_edge(),
+        ),
         representatives,
-        context: ComputationContext {
-            filtration: input.context.clone(),
-            field: options.field(),
-            requested_cutoff: options.max_edge(),
-        },
-    })
+    ))
 }
 
 fn supplied(
@@ -184,10 +192,9 @@ fn supplied(
     )?;
     let (diagram, representatives) =
         super::simplicial::compute(input, options, requests, coverage, budget)?;
-    Ok(PersistenceResult {
+    Ok(PersistenceResult::new(
         diagram,
-        representatives,
-        context: ComputationContext::new(
+        ComputationContext::new(
             options.field(),
             crate::filtration::FiltrationKind::SuppliedSimplicial,
             input.vertex_count(),
@@ -195,5 +202,6 @@ fn supplied(
             None,
             None,
         ),
-    })
+        representatives,
+    ))
 }

@@ -2,7 +2,9 @@
 
 use cocycle::Result;
 use cocycle::descriptors::{betti_curve, finite_lifetime_summary};
-use cocycle::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceInterval};
+use cocycle::diagram::{
+    ComputedDimensions, Coverage, IntervalEnd, PersistenceDiagram, PersistenceInterval,
+};
 
 fn main() -> Result<()> {
     // Two repeated H1 intervals of lifetime two, plus an essential class.
@@ -44,6 +46,18 @@ fn main() -> Result<()> {
     println!(
         "Computed empty H0: {:?}",
         betti_curve(&truncated, 0, &[0.0])?
+    );
+    // An H1-only algorithm must not declare H0 computed merely by omitting bars.
+    let h1_only = PersistenceDiagram::with_dimensions(
+        ComputedDimensions::new(vec![1])?,
+        Coverage::Complete,
+        vec![finite],
+    )?;
+    assert_eq!(betti_curve(&h1_only, 1, &[0.])?, [1]);
+    assert!(betti_curve(&h1_only, 0, &[0.]).is_err());
+    println!(
+        "H1-only computed dimensions: {:?}",
+        h1_only.computed_dimensions().iter().collect::<Vec<_>>()
     );
     Ok(())
 }

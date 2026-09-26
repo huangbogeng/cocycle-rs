@@ -36,7 +36,9 @@ impl ZeroBornSimplicialAccess for ZeroBornExplicitAccess<'_> {
             self.complex
                 .simplices()
                 .iter()
-                .filter(|s| s.dimension() == 0)
+                // Face monotonicity and value/dimension order put all zero-born
+                // vertices first. This access is only used under that invariant.
+                .take(self.vertex_count)
                 .cloned(),
         );
         Ok(result)

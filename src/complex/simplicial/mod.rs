@@ -20,6 +20,9 @@ pub struct SimplicialComplex {
     lookup: HashMap<Vec<usize>, SimplexId>,
     boundaries: Vec<Vec<BoundaryTerm>>,
     cofacets: Vec<Vec<SimplexId>>,
+    vertex_count: usize,
+    dimension: Option<usize>,
+    zero_born: bool,
 }
 impl SimplicialComplex {
     /// Validate and own a face-closed collection of filtered simplices.
@@ -46,7 +49,10 @@ impl SimplicialComplex {
     }
     /// Number of stored vertices, independent of their original IDs and birth order.
     pub fn vertex_count(&self) -> usize {
-        self.simplices.iter().filter(|s| s.dimension() == 0).count()
+        self.vertex_count
+    }
+    pub(crate) fn has_zero_born_vertices(&self) -> bool {
+        self.zero_born
     }
 
     pub(crate) fn from_simplices(
@@ -67,8 +73,16 @@ impl SimplicialComplex {
         cofacets
             .try_reserve_exact(simplices.len())
             .map_err(|_| allocation())?;
+        let mut vertex_count = 0;
+        let mut dimension = None;
+        let mut zero_born = true;
         for (position, simplex) in simplices.iter().enumerate() {
             checkpoint()?;
+            dimension = dimension.max(Some(simplex.dimension()));
+            if simplex.dimension() == 0 {
+                vertex_count += 1;
+                zero_born &= simplex.value() == 0.;
+            }
             let id = SimplexId(position);
             let mut boundary = Vec::new();
             if simplex.dimension() > 0 {
@@ -105,6 +119,9 @@ impl SimplicialComplex {
             lookup,
             boundaries,
             cofacets,
+            vertex_count,
+            dimension,
+            zero_born,
         })
     }
     /// Simplices in filtration order. The slice position equals the simplex ID.
@@ -121,7 +138,7 @@ impl SimplicialComplex {
     }
     /// Largest stored dimension, or `None` for an empty complex.
     pub fn dimension(&self) -> Option<usize> {
-        self.simplices.iter().map(Simplex::dimension).max()
+        self.dimension
     }
     /// Find a nonempty simplex by strictly increasing vertices; invalid order returns `None`.
     pub fn find(&self, vertices: &[usize]) -> Option<SimplexId> {

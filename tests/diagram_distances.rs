@@ -12,6 +12,112 @@ use cocycle::filtration::FlagFiltration;
 use cocycle::persistence::{ExecutionLimits, PersistenceOptions, compute_flag};
 
 type Distance = fn(&PersistenceDiagram, &PersistenceDiagram, usize) -> cocycle::Result<f64>;
+
+#[test]
+fn distances_respect_gaps_and_selected_dimensions() -> cocycle::Result<()> {
+    use cocycle::diagram::ComputedDimensions;
+    let only_h1 = PersistenceDiagram::with_dimensions(
+        ComputedDimensions::new(vec![1])?,
+        Coverage::Complete,
+        vec![],
+    )?;
+    let separated = PersistenceDiagram::with_dimensions(
+        ComputedDimensions::new(vec![1, 3])?,
+        Coverage::Complete,
+        vec![],
+    )?;
+    for distance in [
+        bottleneck_distance,
+        wasserstein_1_infinity,
+        wasserstein_2_euclidean,
+    ] {
+        // A selected common dimension does not require identical full domains.
+        assert_eq!(distance(&only_h1, &separated, 1)?, 0.);
+        for missing in [0, 2, 3] {
+            assert!(matches!(
+                distance(&only_h1, &separated, missing),
+                Err(cocycle::Error::DimensionNotComputed { .. })
+            ));
+            assert!(matches!(
+                distance(&separated, &only_h1, missing),
+                Err(cocycle::Error::DimensionNotComputed { .. })
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn compatible_results_borrow_common_data_and_keep_witness_indices() -> cocycle::Result<()> {
+    use cocycle::{
+        algebra::PrimeField,
+        diagram::{PersistenceData, PersistenceResult},
+        filtration::RipsBuilder,
+        geometry::PointCloudView,
+        persistence::{PersistenceExt, RepresentativeRequest, RepresentativeSelection},
+    };
+    struct ResearchResult {
+        data: PersistenceData,
+        iterations: usize,
+    }
+    impl AsRef<PersistenceData> for ResearchResult {
+        fn as_ref(&self) -> &PersistenceData {
+            &self.data
+        }
+    }
+    let points = PointCloudView::new(&[0., 1., 2.], 3, 1)?;
+    let source = RipsBuilder::from_points(points);
+    let requests = [RepresentativeRequest::new(
+        0,
+        0.5,
+        RepresentativeSelection::Both,
+    )?];
+    let result = source.persistence().representatives(&requests).compute()?;
+    let common: &PersistenceData = result.as_ref();
+    assert!(std::ptr::eq(common.diagram(), result.diagram()));
+    assert!(std::ptr::eq(common.context(), result.context()));
+    let interval_buffer = result.diagram().intervals().as_ptr();
+    let witnesses = result.representatives().unwrap().to_vec();
+    let (data, representatives) = result.into_parts();
+    assert_eq!(data.diagram().intervals().as_ptr(), interval_buffer);
+    assert_eq!(representatives.as_deref(), Some(witnesses.as_slice()));
+    for witness in representatives.unwrap() {
+        let interval = &data.diagram().intervals()[witness.interval_index()];
+        assert_eq!(interval.dimension(), witness.dimension());
+        assert!(interval.birth() <= witness.scale());
+    }
+    let research = ResearchResult {
+        data,
+        iterations: 7,
+    };
+    let plain = source.persistence().compute()?;
+    assert_eq!(research.iterations, 7);
+    assert_eq!(bottleneck_distance_results(&research, &plain, 0)?, 0.);
+    assert_eq!(
+        wasserstein_1_infinity_results(&plain, &research.data, 0)?,
+        0.
+    );
+    assert_eq!(
+        wasserstein_2_euclidean_results(&research, &research, 0)?,
+        0.
+    );
+    let distance: fn(&PersistenceResult, &ResearchResult, usize) -> cocycle::Result<f64> =
+        bottleneck_distance_results;
+    assert_eq!(distance(&plain, &research, 0)?, 0.);
+    let mod3 = source
+        .persistence()
+        .field(PrimeField::new(3)?)
+        .compute()?
+        .into_data();
+    assert!(matches!(
+        bottleneck_distance_results(&mod3, &research, 0),
+        Err(cocycle::Error::IncompatibleDiagramContext { .. })
+    ));
+    let moved = plain.into_data();
+    assert!(std::ptr::eq(moved.as_ref(), &moved));
+    assert_eq!(moved.into_diagram(), research.data.into_diagram());
+    Ok(())
+}
 const DISTANCES: [Distance; 3] = [
     bottleneck_distance,
     wasserstein_1_infinity,

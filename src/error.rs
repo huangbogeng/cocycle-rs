@@ -145,7 +145,7 @@ pub enum Error {
     DimensionNotComputed {
         /// Dimension requested or supplied by the caller.
         requested: usize,
-        /// Largest dimension recorded as computed, including all lower ones.
+        /// Largest computed dimension; lower dimensions may be absent.
         computed_max: usize,
     },
     /// A full-diagram operation requires complete filtration coverage.
@@ -241,7 +241,7 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "dimension {requested} was not computed; maximum is {computed_max}"
+                    "dimension {requested} is absent from the computed dimensions (maximum {computed_max})"
                 )
             }
             Self::IncompleteDiagram { through } => {

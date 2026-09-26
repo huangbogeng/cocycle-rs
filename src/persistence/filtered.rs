@@ -1,38 +1,27 @@
 //! Boundary reduction driven by the public filtered-cell contract.
 //! Only the requested q+1 skeleton is retained; metadata is read for all cells
 //! to establish the range. Boundary validity is checked on the retained skeleton.
-use super::{PersistenceOptions, RepresentativeRequest, assemble_diagram};
-use crate::algebra::{column::Column, reduction};
+use super::{
+    PersistenceOptions, RepresentativeRequest,
+    boundary::{self, BoundaryInput},
+};
+use crate::algebra::column::Column;
 use crate::complex::FilteredComplex;
-use crate::diagram::{ComputationContext, PersistenceDiagram, PersistenceResult};
+use crate::diagram::{ComputationContext, PersistenceResult};
 use crate::execution::WorkBudget;
 use crate::filtration::{Coverage, FiltrationKind};
 use crate::{Error, Result};
 use std::collections::HashMap;
 
-pub(super) struct BoundaryInput<I> {
-    pub(super) cells: Vec<I>,
-    pub(super) dimensions: Vec<usize>,
-    pub(super) values: Vec<f64>,
-    pub(super) columns: Vec<Column<usize>>,
-    pub(super) coverage: Coverage,
-    pub(super) vertex_count: usize,
-}
-
-pub(super) fn read<C: FilteredComplex>(
+fn read<C: FilteredComplex>(
     source: &C,
     options: &PersistenceOptions,
     budget: &mut WorkBudget<'_>,
-) -> Result<BoundaryInput<C::CellId>> {
+) -> Result<(BoundaryInput<C::CellId>, Coverage, usize)> {
     let field = options.field();
-    let mut input = BoundaryInput {
-        cells: Vec::new(),
-        dimensions: Vec::new(),
-        values: Vec::new(),
-        columns: Vec::new(),
-        coverage: Coverage::Complete,
-        vertex_count: 0,
-    };
+    let mut input = BoundaryInput::new();
+    let mut coverage = Coverage::Complete;
+    let mut vertex_count = 0_usize;
     let mut seen = HashMap::new();
     let mut selected = HashMap::new();
     let mut previous: Option<f64> = None;
@@ -49,15 +38,12 @@ pub(super) fn read<C: FilteredComplex>(
             return Err(invalid(index, "duplicate cell ID"));
         }
         if dimension == 0 {
-            input.vertex_count = input
-                .vertex_count
-                .checked_add(1)
-                .ok_or(Error::SizeOverflow {
-                    operation: "cell vertices",
-                })?;
+            vertex_count = vertex_count.checked_add(1).ok_or(Error::SizeOverflow {
+                operation: "cell vertices",
+            })?;
         }
         if options.max_edge().is_some_and(|t| value > t) {
-            input.coverage = Coverage::Through(options.max_edge().unwrap());
+            coverage = Coverage::Through(options.max_edge().unwrap());
             continue;
         }
         if dimension > options.max_homology_dimension().saturating_add(1) {
@@ -95,48 +81,11 @@ pub(super) fn read<C: FilteredComplex>(
         }
         let position = input.cells.len();
         selected.try_reserve(1).map_err(|_| allocation())?;
-        input.cells.try_reserve(1).map_err(|_| allocation())?;
-        input.dimensions.try_reserve(1).map_err(|_| allocation())?;
-        input.values.try_reserve(1).map_err(|_| allocation())?;
-        input.columns.try_reserve(1).map_err(|_| allocation())?;
+        input.push(cell, dimension, crate::canonical_zero(value), column)?;
         selected.insert(cell, position);
-        input.cells.push(cell);
-        input.dimensions.push(dimension);
-        input.values.push(crate::canonical_zero(value));
-        input.columns.push(column);
     }
     budget.check()?;
-    Ok(input)
-}
-
-pub(super) fn diagram<C: FilteredComplex>(
-    source: &C,
-    options: &PersistenceOptions,
-    coverage: Option<Coverage>,
-    budget: &mut WorkBudget<'_>,
-) -> Result<(PersistenceDiagram, usize)> {
-    let input = read(source, options, budget)?;
-    let reduced = reduction::reduce_pairs(input.columns, options.field(), &mut || budget.step())?;
-    let mut intervals = Vec::new();
-    for (birth, column) in reduced.reduced.iter().enumerate() {
-        budget.step()?;
-        if column.is_empty() && input.dimensions[birth] <= options.max_homology_dimension() {
-            intervals.try_reserve(1).map_err(|_| allocation())?;
-            intervals.push((
-                input.dimensions[birth],
-                input.values[birth],
-                reduced.deaths[birth].map(|d| input.values[d]),
-            ));
-        }
-    }
-    Ok((
-        assemble_diagram(
-            options.max_homology_dimension(),
-            coverage.unwrap_or(input.coverage),
-            intervals,
-        )?,
-        input.vertex_count,
-    ))
+    Ok((input, coverage, vertex_count))
 }
 
 pub(super) fn compute<C: FilteredComplex>(
@@ -151,11 +100,17 @@ pub(super) fn compute<C: FilteredComplex>(
             reason: "generic cell analysis has no simplex vertex labels; use a simplicial source",
         });
     }
-    let (diagram, vertex_count) = diagram(source, options, None, budget)?;
-    Ok(PersistenceResult {
+    let (input, coverage, vertex_count) = read(source, options, budget)?;
+    let diagram = boundary::diagram(
+        input,
+        options.max_homology_dimension(),
+        options.field(),
+        coverage,
+        budget,
+    )?;
+    Ok(PersistenceResult::new(
         diagram,
-        representatives: None,
-        context: ComputationContext::new(
+        ComputationContext::new(
             options.field(),
             FiltrationKind::SuppliedCells,
             vertex_count,
@@ -163,7 +118,8 @@ pub(super) fn compute<C: FilteredComplex>(
             None,
             None,
         ),
-    })
+        None,
+    ))
 }
 fn invalid(index: usize, reason: &'static str) -> Error {
     Error::InvalidComplex {

@@ -45,6 +45,7 @@ jobs:
       - run: python tools/check_algorithm.py diagram-analysis
       - run: python tools/check_algorithm.py complex-construction
       - run: python tools/check_algorithm.py diagram-distances
+      - run: python tools/check_algorithm.py persistence-reduction
       - run: cargo doc --locked --no-deps
         env:
           RUSTDOCFLAGS: -D warnings

@@ -77,7 +77,8 @@ Its raw unpaired endpoints are compared along with separately checked Rust cover
 ## Documentation and tool verification
 
 [check_algorithm.py](check_algorithm.py) provides focused `diagram-analysis`,
-`diagram-distances` and `complex-construction` checks for algorithm contributors. See the
+`diagram-distances`, `complex-construction` and `persistence-reduction` checks for
+algorithm contributors. See the
 [command and scope](../CONTRIBUTING.md#focused-algorithm-checks) and
 [walkthroughs](../docs/development/algorithm-contributions.md). It uses the local Rust
 toolchain and Python standard library, stops on failure, and does not invoke

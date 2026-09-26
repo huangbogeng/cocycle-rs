@@ -31,7 +31,7 @@
 //! # Ok::<(), cocycle::Error>(())
 //! ```
 
-use crate::diagram::{Coverage, IntervalEnd, PersistenceDiagram, PersistenceResult};
+use crate::diagram::{Coverage, IntervalEnd, PersistenceData, PersistenceDiagram};
 use crate::{Error, Result};
 
 // The standalone worker opts in with --cfg cocycle_distance_bench. Neither
@@ -111,6 +111,9 @@ pub fn wasserstein_2_euclidean(
 
 /// Bottleneck distance with additional computation-context validation.
 ///
+/// Accepts common data and compatible wrappers through a borrow of already stored
+/// [`PersistenceData`]. This adapter performs no copying or context reconstruction.
+///
 /// Requires equal coefficient characteristics and declared edge-length scales.
 /// Unspecified scales are rejected, including two unspecified scales: equality
 /// does not establish comparable units. Call the raw-diagram function after
@@ -128,13 +131,12 @@ pub fn wasserstein_2_euclidean(
 /// # Errors
 /// Returns [`Error::IncompatibleDiagramContext`] for unequal fields or unsupported
 /// scale conventions, in addition to errors from [`bottleneck_distance`].
-pub fn bottleneck_distance_results(
-    first: &PersistenceResult,
-    second: &PersistenceResult,
-    dimension: usize,
-) -> Result<f64> {
-    check_context(first, second)?;
-    bottleneck_distance(first.diagram(), second.diagram(), dimension)
+pub fn bottleneck_distance_results<L, R>(first: &L, second: &R, dimension: usize) -> Result<f64>
+where
+    L: AsRef<PersistenceData> + ?Sized,
+    R: AsRef<PersistenceData> + ?Sized,
+{
+    distance_results(first.as_ref(), second.as_ref(), dimension, Kind::Bottleneck)
 }
 
 /// W1-L-infinity distance with the context checks of [`bottleneck_distance_results`].
@@ -142,13 +144,12 @@ pub fn bottleneck_distance_results(
 /// # Errors
 /// Returns an error for incompatible fields/scales or any [`wasserstein_1_infinity`]
 /// input, allocation or numerical failure.
-pub fn wasserstein_1_infinity_results(
-    first: &PersistenceResult,
-    second: &PersistenceResult,
-    dimension: usize,
-) -> Result<f64> {
-    check_context(first, second)?;
-    wasserstein_1_infinity(first.diagram(), second.diagram(), dimension)
+pub fn wasserstein_1_infinity_results<L, R>(first: &L, second: &R, dimension: usize) -> Result<f64>
+where
+    L: AsRef<PersistenceData> + ?Sized,
+    R: AsRef<PersistenceData> + ?Sized,
+{
+    distance_results(first.as_ref(), second.as_ref(), dimension, Kind::W1)
 }
 
 /// W2-Euclidean distance with the context checks of [`bottleneck_distance_results`].
@@ -156,13 +157,12 @@ pub fn wasserstein_1_infinity_results(
 /// # Errors
 /// Returns an error for incompatible fields/scales or any [`wasserstein_2_euclidean`]
 /// input, allocation or numerical failure.
-pub fn wasserstein_2_euclidean_results(
-    first: &PersistenceResult,
-    second: &PersistenceResult,
-    dimension: usize,
-) -> Result<f64> {
-    check_context(first, second)?;
-    wasserstein_2_euclidean(first.diagram(), second.diagram(), dimension)
+pub fn wasserstein_2_euclidean_results<L, R>(first: &L, second: &R, dimension: usize) -> Result<f64>
+where
+    L: AsRef<PersistenceData> + ?Sized,
+    R: AsRef<PersistenceData> + ?Sized,
+{
+    distance_results(first.as_ref(), second.as_ref(), dimension, Kind::W2)
 }
 
 #[derive(Clone, Copy)]
@@ -254,7 +254,17 @@ fn distance(
     Ok(if value == 0.0 { 0.0 } else { value })
 }
 
-fn check_context(first: &PersistenceResult, second: &PersistenceResult) -> Result<()> {
+fn distance_results(
+    first: &PersistenceData,
+    second: &PersistenceData,
+    dimension: usize,
+    kind: Kind,
+) -> Result<f64> {
+    check_context(first, second)?;
+    distance(first.diagram(), second.diagram(), dimension, kind)
+}
+
+fn check_context(first: &PersistenceData, second: &PersistenceData) -> Result<()> {
     if first.context().characteristic() != second.context().characteristic() {
         return Err(Error::IncompatibleDiagramContext {
             reason: "coefficient field characteristics differ",

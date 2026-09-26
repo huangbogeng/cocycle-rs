@@ -17,17 +17,32 @@ already computed input to this part of the library.
 | `IntervalEnd::Essential` | Never dies in the complete supplied filtration |
 | `IntervalEnd::RightCensored { through: t }` | Known alive at the inclusive cutoff `t`; eventual death is unknown |
 | `PersistenceDiagram` | Validated interval multiset, computed dimensions and coverage |
+| `ComputedDimensions` | Nonempty set of computed dimensions, including computed empty ones |
 | `Coverage` | Complete source or a computation known only through a cutoff |
 
 Constructors validate finite scales and endpoint consistency. Signed scales are
 valid, multiplicities are preserved, and finite zero-length intervals are
-rejected. A diagram records every dimension from zero through its declared
-maximum, including empty ones. Querying an uncomputed dimension is an error.
+rejected. `PersistenceDiagram::new(q, ...)` records every dimension through q.
+`with_dimensions` accepts an explicit set, including H1-only or gapped results.
+Querying an absent dimension is an error even below `max_dimension()`; use
+`computed_dimensions().contains(k)` or `.iter()` instead of inferring membership.
 
 A complete diagram rejects censored intervals. A truncated diagram rejects
 essential intervals: survival at a cutoff alone cannot certify essentiality.
 The library does not verify the mathematical origin of a manually supplied diagram;
 the caller must declare its coverage truthfully.
+
+```rust
+use cocycle::diagram::{ComputedDimensions, Coverage, PersistenceDiagram};
+use cocycle::descriptors::betti_curve;
+let h1 = PersistenceDiagram::with_dimensions(
+    ComputedDimensions::new(vec![1])?, Coverage::Complete, vec![],
+)?;
+assert_eq!(betti_curve(&h1, 1, &[0.0])?, vec![0]);
+assert!(betti_curve(&h1, 0, &[0.0]).is_err()); // H0 was not computed.
+assert_eq!(h1.computed_dimensions().iter().collect::<Vec<_>>(), vec![1]);
+# Ok::<(), cocycle::Error>(())
+```
 
 ## Define a small descriptor
 
@@ -209,6 +224,15 @@ choice discards automatic context checks; it does not rescale the values.
 A certified Rips expansion retains the convention, while extracting its bare
 complex discards that certificate. Physical units and normalization remain the
 caller's responsibility even when both sources declare edge lengths.
+
+The `_results` functions accept `AsRef<PersistenceData>` operands independently.
+A result wrapper borrows the diagram/context data it already owns; borrowing
+performs no cloning or metadata reconstruction and certifies no additional units.
+For example, move library-created data with `result.into_data()` and retain it
+alongside algorithm-specific output. Use `into_parts()` when keeping associated
+representatives. Raw-diagram descriptors remain usable directly on `data.diagram()`.
+See the [migration notes](../design/kernel.md#result-api-migration) for changed
+maximum-dimension semantics and generic distance signatures.
 
 Put public contracts and hand-derived cases in `tests/diagram_distances.rs`.
 Use the private kernel tests for matching invariants and an independent exhaustive

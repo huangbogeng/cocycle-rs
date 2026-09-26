@@ -2,7 +2,7 @@
 use crate::diagram::{ComputationContext, FiltrationKind, PersistenceResult};
 use crate::filtration::{RipsExpansion, RipsInputKind, simplicial::ZeroBornExplicitAccess};
 use crate::persistence::{
-    ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, flag,
+    ExecutionLimits, PersistenceOptions, RepresentativeRequest, execution::WorkBudget, simplicial,
 };
 use crate::{Error, Result};
 
@@ -66,18 +66,17 @@ pub(in crate::persistence) fn compute_expanded_rips_budget(
         cutoff,
     };
     let (diagram, representatives) =
-        flag::finish(&access, options, requests, coverage, budget, |budget| {
-            flag::compute_simplicial(
+        simplicial::finish_zero_born(&access, options, requests, coverage, budget, |budget| {
+            simplicial::cohomology::compute(
                 &access,
                 options.max_homology_dimension(),
                 options.field(),
                 budget,
             )
         })?;
-    Ok(PersistenceResult {
+    Ok(PersistenceResult::new(
         diagram,
-        representatives,
-        context: ComputationContext::new(
+        ComputationContext::new(
             options.field(),
             match input.kind {
                 RipsInputKind::Dissimilarities => FiltrationKind::RipsDissimilarities,
@@ -89,5 +88,6 @@ pub(in crate::persistence) fn compute_expanded_rips_budget(
             input.requested_cutoff,
             None,
         ),
-    })
+        representatives,
+    ))
 }
