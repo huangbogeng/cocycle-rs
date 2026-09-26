@@ -2,8 +2,13 @@
 
 ## 0.1.0 (unreleased)
 
+- Retain H0 union-find and coface clearing for diagram-only zero-born explicit
+  simplicial analysis, including non-flag topology with delayed simplex values.
+  Keep negative cutoffs and arbitrary vertex births on the general boundary path.
+  Clarify that diagram-result scale checks establish a parameter convention,
+  while callers still establish common units and normalization.
 - Integrate diagram matching with supplied filtered complexes: result wrappers
-  require equal fields and declared compatible scale conventions; raw diagrams
+  require equal fields and declared edge-length parameter conventions; raw diagrams
   remain available when callers establish units. Add focused distance checks and
   preserve both H1 optimization and general filtered-cell workflows.
 

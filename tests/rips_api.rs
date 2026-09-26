@@ -360,3 +360,25 @@ fn representative_scales_follow_certified_coverage_not_the_requested_cap() -> Re
     ));
     Ok(())
 }
+
+#[test]
+fn expanded_negative_cutoff_does_not_create_zero_born_components() -> Result<()> {
+    let values = [1.];
+    let expanded = RipsBuilder::from_distance_matrix(matrix(&values, 2)).build_complex(1)?;
+    let requests = [RepresentativeRequest::new(
+        0,
+        -1.,
+        RepresentativeSelection::Both,
+    )?];
+    let early = expanded.persistence().max_filtration_value(-1.).compute()?;
+    assert!(early.diagram().intervals().is_empty());
+    assert_eq!(early.diagram().coverage(), Coverage::Through(-1.));
+    let bases = expanded
+        .persistence()
+        .max_filtration_value(-1.)
+        .representatives(&requests)
+        .compute()?;
+    assert_eq!(early.diagram(), bases.diagram());
+    assert!(bases.representatives().unwrap().is_empty());
+    Ok(())
+}

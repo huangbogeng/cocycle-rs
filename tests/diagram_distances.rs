@@ -441,7 +441,7 @@ fn result_wrappers_reject_unspecified_scales_but_raw_signed_diagrams_remain_usab
 }
 
 #[test]
-fn certified_expansion_keeps_scale_compatibility_but_bare_storage_does_not() {
+fn certified_expansion_keeps_scale_convention_but_bare_storage_does_not() {
     use cocycle::filtration::RipsBuilder;
     use cocycle::geometry::PointCloudView;
     use cocycle::persistence::PersistenceExt;
@@ -477,6 +477,55 @@ fn certified_expansion_keeps_scale_compatibility_but_bare_storage_does_not() {
             Err(Error::IncompatibleDiagramContext { .. })
         ));
         assert_eq!(raw(certified.diagram(), bare.diagram(), 0).unwrap(), 0.);
+    }
+}
+
+#[test]
+fn modified_sparse_edge_values_measure_diagrams_in_the_declared_parameter() {
+    use cocycle::filtration::{ApproximateRipsBuilder, RipsBuilder};
+    use cocycle::geometry::{MetricPolicy, PointCloudView};
+    use cocycle::persistence::PersistenceExt;
+
+    for unit in [1., 2.] {
+        let coordinates = [0., 3. * unit];
+        let points = PointCloudView::new(&coordinates, 2, 1).unwrap();
+        let exact = RipsBuilder::from_points(points)
+            .persistence()
+            .max_homology_dimension(0)
+            .compute()
+            .unwrap();
+        // With epsilon=3 and later insertion radius 3*unit, the retained edge
+        // is 2*(3*unit - 3*unit/3) = 4*unit. No interleaving bound is asserted
+        // for epsilon >= 1. Both diagrams also have one essential birth at 0.
+        let sparse = ApproximateRipsBuilder::from_points(points, 3., MetricPolicy::Check)
+            .persistence()
+            .max_homology_dimension(0)
+            .compute()
+            .unwrap();
+        assert!(
+            exact
+                .diagram()
+                .intervals()
+                .iter()
+                .any(|i| i.end() == IntervalEnd::Finite(3. * unit))
+        );
+        assert!(
+            sparse
+                .diagram()
+                .intervals()
+                .iter()
+                .any(|i| i.end() == IntervalEnd::Finite(4. * unit))
+        );
+        for (raw, contextual) in DISTANCES.into_iter().zip([
+            bottleneck_distance_results,
+            wasserstein_1_infinity_results,
+            wasserstein_2_euclidean_results,
+        ]) {
+            // Matching the finite points costs unit; sending both to the
+            // diagonal is more expensive under each of the three metrics.
+            assert_eq!(contextual(&exact, &sparse, 0).unwrap(), unit);
+            assert_eq!(raw(exact.diagram(), sparse.diagram(), 0).unwrap(), unit);
+        }
     }
 }
 

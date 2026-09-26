@@ -11,9 +11,11 @@ types; removing old names/functions requires a separate declared breaking revisi
 
 The Rust blocks illustrate the implemented interface; the runnable guides and
 rustdoc provide complete checked examples. This document supersedes earlier
-entry-point sketches in the [Rips subsystem design](rips.md). Rips mathematical semantics remain unchanged. Explicit builder analysis now uses
-the public filtered-cell boundary contract; existing timing reports describe their
-measured commits and are not evidence about the new explicit engine.
+entry-point sketches in the [Rips subsystem design](rips.md). Rips mathematical
+semantics remain unchanged. Diagram-only explicit analysis retains the zero-born
+coface reducer when its value and cutoff conditions hold; general supplied
+filtrations use the public filtered-cell boundary contract. Existing timing
+reports describe their measured commits, not later integration revisions.
 The public analysis builder carries separate source and representative-request
 lifetimes (`PersistenceBuilder<'s, 'r, S>`), normally inferred at the call site.
 

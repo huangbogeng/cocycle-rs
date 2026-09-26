@@ -157,6 +157,60 @@ fn signed_vertex_births_and_interleaved_cells_agree_with_representatives() -> Re
     Ok(())
 }
 
+#[test]
+fn zero_born_non_flag_cofaces_agree_with_boundary_reduction() -> Result<()> {
+    // A tetrahedron boundary, with edges at 1, three faces at 2 and the last
+    // face at 3. H1 has three [1, 2) bars; H2 has one [3, infinity) bar.
+    // No tetrahedron exists, despite its complete graph. Labels are not indices.
+    let labels = [10, 30, 90, 200];
+    let simplices = (1_u32..15)
+        .map(|mask| {
+            let vertices = labels
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &v)| (mask & (1 << i) != 0).then_some(v))
+                .collect();
+            let value = match mask.count_ones() {
+                1 => 0.,
+                2 => 1.,
+                _ if mask == 14 => 3.,
+                _ => 2.,
+            };
+            Simplex::new(vertices, value).unwrap()
+        })
+        .collect();
+    let complex = SimplicialComplex::new(simplices)?;
+    for prime in [2, 3, 65537] {
+        for cutoff in [-1., 0., 1., 2., 3.] {
+            let field = PrimeField::new(prime)?;
+            let actual = complex
+                .persistence()
+                .max_homology_dimension(2)
+                .max_filtration_value(cutoff)
+                .field(field)
+                .compute()?;
+            let boundary = PersistenceBuilder::from_complex(&complex)
+                .max_homology_dimension(2)
+                .max_filtration_value(cutoff)
+                .field(field)
+                .compute()?;
+            assert_eq!(actual.diagram(), boundary.diagram());
+            if cutoff == 3. {
+                let h1: Vec<_> = actual.diagram().intervals_in_dimension(1)?.collect();
+                assert_eq!(h1.len(), 3);
+                assert!(
+                    h1.iter()
+                        .all(|i| i.birth() == 1. && i.end() == IntervalEnd::Finite(2.))
+                );
+                let h2: Vec<_> = actual.diagram().intervals_in_dimension(2)?.collect();
+                assert_eq!(h2.len(), 1);
+                assert_eq!((h2[0].birth(), h2[0].end()), (3., IntervalEnd::Essential));
+            }
+        }
+    }
+    Ok(())
+}
+
 // A minimal cell adapter: the 2-cell attaches twice around a loop. This is
 // not a simplicial container, and detects lost integer incidence coefficients.
 struct AttachedDisk;

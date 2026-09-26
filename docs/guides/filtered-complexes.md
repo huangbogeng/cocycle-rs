@@ -151,10 +151,15 @@ scale units, vertex mapping and construction coverage; an arbitrary supplied
 complex cannot manufacture those certificates.
 
 Rips implicit coface algorithms retain a private, explicitly zero-born contract.
-They are distinct from the public boundary contract. Explicit builder results now
-use boundary reduction, so previous timing reports do not establish performance
-for this implementation. Native workers preserve their protocol; new performance
-claims require measurements bound to the new source commit.
+They are distinct from the public boundary contract. Diagram-only explicit
+simplicial analysis reuses H0 union-find and coface clearing when all vertices
+are born at zero and the query cutoff is nonnegative or absent. The decision
+checks actual simplex values; it also supports non-flag topology and delayed
+higher-simplex values through stored cofaces. Other inputs use boundary reduction,
+and representative requests retain their separate transformation work. Generic
+`PersistenceBuilder::from_complex` always uses the boundary contract. Native
+workers preserve their protocol; performance claims require measurements bound
+to the measured source commit.
 
 [g-complex]: https://gudhi.inria.fr/doc/latest/group__simplex__tree.html
 [g-contract]: https://gudhi.inria.fr/doc/latest/struct_filtered_complex.html

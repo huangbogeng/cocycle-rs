@@ -468,8 +468,11 @@ extension of the reversed-transpose duality in section 9 and [B21](bibliography.
 Only the current dimension, transformations, pivot ownership and a working
 coboundary are needed on the implicit path. These can still be exponentially
 large. Legacy explicit Rips entry points adapt stored incidence to this reducer.
-Explicit builder results instead use the filtered-cell boundary reduction in
-section 17, including for zero-born Rips sources. Both explicit paths also pay
+Diagram-only explicit simplicial analysis also uses it when all vertices are
+born at zero and the query cutoff is nonnegative (or absent). Stored cofaces,
+not graph reconstruction, preserve non-flag topology and delayed simplex values.
+Other explicit inputs use the filtered-cell boundary reduction in section 17.
+Both explicit paths also pay
 for the already materialized skeleton. H0/H1-only implicit requests
 retain the specialized compact-index engine and its pair shortcuts.
 
@@ -636,7 +639,12 @@ and declared edge-length scales on both inputs. An unspecified scale is rejected
 even when both sources have unspecified scales; matching enum values do not
 establish comparable units. Supplied-complex users can explicitly pass raw diagrams
 after establishing their common scale. Even declared edge lengths do not certify
-physical units or normalization across datasets. Vertex counts, requested cutoffs
+physical units or normalization across datasets; callers must establish them
+for both raw-diagram and result-based calls. In sparse Rips, the modified edge
+value `2 * (d - lambda / epsilon)` still has edge-length units, but changes the
+filtration. Comparing its diagram with exact Rips is a distance between the two
+actual diagrams, not a distance between their input metrics or an approximation
+error certificate. Vertex counts, requested cutoffs
 and filtration kinds need not match when coverage is complete.
 Approximate constructions retain their provenance in the borrowed results;
 the returned scalar measures their actual diagrams without certifying a distance

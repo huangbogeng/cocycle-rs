@@ -13,8 +13,9 @@
 //! endpoint categories are outside this API's input domain.
 //!
 //! Raw diagrams do not establish field or source compatibility. The `_results`
-//! functions additionally require equal fields and known compatible scale
-//! conventions. Raw calls leave unit compatibility to the caller. Distances between sparse
+//! functions additionally require equal fields and declared edge-length parameter
+//! conventions. Both APIs leave units and normalization to the caller; matching
+//! conventions do not establish those facts. Distances between sparse
 //! approximations describe the two supplied diagrams, not the unknown original
 //! diagrams and not an approximation error certificate.
 //!
@@ -114,7 +115,11 @@ pub fn wasserstein_2_euclidean(
 /// Unspecified scales are rejected, including two unspecified scales: equality
 /// does not establish comparable units. Call the raw-diagram function after
 /// establishing a common scale yourself for supplied filtrations. Even declared
-/// edge lengths do not certify physical units or normalization across datasets.
+/// edge lengths do not certify physical units or normalization across datasets;
+/// the caller must establish them before interpreting the returned distance.
+/// Original and modified sparse edge values use the same parameter convention,
+/// but describe different filtrations. Their distance compares the resulting
+/// diagrams and is not a distance between the original pairwise metrics.
 /// Vertex counts, construction kinds and cutoff requests
 /// need not agree when both diagrams have complete coverage. Approximation
 /// provenance remains in the borrowed results; no original-data guarantee is
@@ -267,7 +272,7 @@ fn check_context(first: &PersistenceResult, second: &PersistenceResult) -> Resul
         (FiltrationScale::EdgeLength, FiltrationScale::EdgeLength)
     ) {
         return Err(Error::IncompatibleDiagramContext {
-            reason: "diagram distance requires declared compatible scale conventions",
+            reason: "diagram distance requires declared edge-length parameter conventions",
         });
     }
     Ok(())

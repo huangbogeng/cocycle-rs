@@ -24,6 +24,8 @@ pub enum FiltrationSource {
 #[non_exhaustive]
 pub enum FiltrationScale {
     /// Original or modified edge lengths, as declared by the Rips/flag source.
+    /// This identifies the filtration parameter convention, not physical units,
+    /// a metric validation, or equality with the original pairwise distances.
     EdgeLength,
     /// Values supplied by the caller, with no geometric unit asserted by the library.
     Unspecified,
@@ -40,7 +42,8 @@ impl FiltrationContext {
     pub fn source(&self) -> &FiltrationSource {
         &self.source
     }
-    /// Numeric scale convention for this source.
+    /// Numeric parameter convention for this source, not a unit certificate.
+    /// Matching conventions still require caller-established units and normalization.
     pub fn scale(&self) -> FiltrationScale {
         match self.source {
             FiltrationSource::Rips { .. } | FiltrationSource::SuppliedFlag => {

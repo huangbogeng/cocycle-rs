@@ -215,7 +215,10 @@ coboundaries are regenerated on demand. Ordered vertex tuples avoid binomial-ID
 overflow in sparse high-dimensional input. `flag/cliques.rs` supplies dense candidates or common neighbors from the shortest
 sparse adjacency list through the private `ZeroBornSimplicialAccess` contract.
 The compatibility expansion entry points also adapt their zero-born stored
-incidence to this contract. The specialized H1
+incidence to this contract. Diagram-only explicit simplicial analysis selects
+this path when all vertices are born at zero and the cutoff is nonnegative or
+absent. The check uses actual simplex values, not source metadata. Stored cofaces
+preserve non-flag topology and delayed higher-simplex values. The specialized H1
 path keeps its existing apparent/emergent shortcuts; the generic path currently
 uses clearing without those shortcuts. Oriented cofacets use the sign of their
 omitted vertex; pivot columns are normalized over the selected field. No claim
@@ -227,8 +230,9 @@ the compact H1 entry order use the comparison authority in `complex/simplicial`.
 `SimplicialFiltration` retains construction dimension and scale provenance
 separately for exact Rips, approximation and supplied flags. The old expansion
 types remain available during migration.
-Explicit builder computation uses the filtered-cell boundary reducer and reads
-stored incidence, rejecting insufficient skeletons unless expansion certified
+Explicit builder computation reads stored incidence, retaining H0 union-find
+and dimension-wise clearing for zero-born inputs. Other inputs use the
+filtered-cell boundary reducer. It rejects insufficient skeletons unless expansion certified
 clique exhaustion. Graph construction and expansion do not
 invoke persistence, and computation does not mutate stored topology.
 
